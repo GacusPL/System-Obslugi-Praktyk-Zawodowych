@@ -56,7 +56,3 @@ Dokumentacja wymagań dla systemu cyfryzacji i obiegu dokumentacji praktyk zawod
 4.  **Zatwierdzenie końcowe (UOPZ)**: UOPZ ocenia merytorycznie cały Dziennik w ramach agregacji e-teczki. Pozytywna weryfikacja umożliwia dopuszczenie studenta do egzaminu ustnego.
 
 ---
-
-## 6. Diagramy Procesów i Architektury
-
-*(W tym miejscu zostaną dołączone schematy Mermaid zaktualizowane w ramach Lab 5, uwzględniające statusy w języku angielskim oraz podział na rolę UOPZ i ZOPZ).*
