@@ -1,6 +1,6 @@
 ### Bonus — Flowchart: Logika biznesowa kompletacji dokumentacji
 
-> Lab5 sekcja 5 wymaga zamodelowania wszystkich scenariuszy związanych z logiką biznesową. Ten diagram pokrywa kluczowy mechanizm checklisty przed złożeniem e-teczki (Proces 6), który jest najtrudniejszy do wyrażenia samym diagramem sekwencji.
+> Ten diagram pokrywa kluczowy mechanizm checklisty przed złożeniem e-teczki (Proces 6), który jest najtrudniejszy do wyrażenia samym diagramem sekwencji.
 
 ```mermaid
 flowchart TD

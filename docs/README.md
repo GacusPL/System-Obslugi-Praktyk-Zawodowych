@@ -6,6 +6,11 @@ W tym katalogu znajduje się dokumentacja systemu.
 
 - [Wymagania Systemowe](requirements.md)
 
+### Baza Danych i Diagram ERD
+Specyfikacja techniczna oraz model struktury danych:
+- [Diagram ERD](diagrams/erd/erd.md)
+- [Wybór i konfiguracja bazy danych](database.md)
+
 ### Diagramy Sekwencji (Procesy)
 Diagramy przedstawiające przepływ sterowania i interakcje między aktorami a systemem dla poszczególnych procesów:
 1. [Rejestracja i konfiguracja praktyki](diagrams/sequence/01_rejestracja.md)
@@ -23,3 +28,5 @@ Diagramy modelujące logikę biznesową i cykl życia obiektów:
 - [State Diagram: Cykl życia dokumentu](diagrams/flowcharts/state_diagram.md)
 - [Flowchart: Logika uprawnień do edycji dokumentu](diagrams/flowcharts/logika_uprawnien.md)
 - [Flowchart: Logika biznesowa kompletacji dokumentacji](diagrams/flowcharts/logika_kompletacji.md)
+
+
