@@ -84,6 +84,10 @@ CREATE TABLE praktyka (
                         )),
     ocena_koncowa   REAL    CHECK (ocena_koncowa BETWEEN 2.0 AND 5.0),
     ankieta_wypelniona INTEGER NOT NULL DEFAULT 0 CHECK (ankieta_wypelniona IN (0, 1)),
+    dziennik_status TEXT    NOT NULL DEFAULT 'Draft'
+                        CHECK (dziennik_status IN (
+                            'Draft', 'Under_Review', 'Closed', 'Rejected'
+                        )),
     created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES student (id),

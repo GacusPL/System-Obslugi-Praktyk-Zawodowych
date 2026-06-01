@@ -51,6 +51,7 @@ erDiagram
         string status
         float ocena_koncowa
         bool ankieta_wypelniona
+        string dziennik_status
         datetime created_at
         datetime updated_at
     }
