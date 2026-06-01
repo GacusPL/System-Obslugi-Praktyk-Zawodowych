@@ -50,6 +50,7 @@ erDiagram
         string rok_akademicki
         string status
         float ocena_koncowa
+        bool ankieta_wypelniona
         datetime created_at
         datetime updated_at
     }
@@ -88,7 +89,7 @@ erDiagram
     WPIS_EFEKT {
         int id PK
         int wpis_id FK
-        int efekt_nr
+        int efekt_id FK
     }
 
     EFEKT_UCZENIA {
@@ -136,6 +137,7 @@ erDiagram
         text ocena_opisowa_uopz
         float ocena_sprawozdania
         string status
+        datetime created_at
         datetime updated_at
     }
 
@@ -167,6 +169,15 @@ erDiagram
         string status
         datetime created_at
         datetime updated_at
+    }
+
+    ZALACZNIK_SKAN {
+        int id PK
+        int wniosek_id FK
+        string nazwa_pliku
+        string sciezka_pliku
+        string typ_dokumentu
+        datetime created_at
     }
 
     EGZAMIN {
@@ -210,12 +221,19 @@ erDiagram
     PRAKTYKA ||--o{ SPRAWOZDANIE : "ma"
     PRAKTYKA ||--|| KARTA_PRAKTYKI : "ma"
     STUDENT ||--o{ WNIOSEK_ALTERNATYWNY : "składa"
+    WNIOSEK_ALTERNATYWNY ||--o{ ZALACZNIK_SKAN : "zawiera"
     PRAKTYKA ||--o{ EGZAMIN : "kończy się"
     EGZAMIN ||--o{ KOMISJA_CZLONEK : "składa się z"
     KOMISJA_CZLONEK }o--|| UZYTKOWNIK : "jest"
     PRAKTYKA ||--o{ DOKUMENT : "generuje"
     ANKIETA ||--o{ ANKIETA_ODPOWIEDZ : "zawiera"
 ```
+
+## Uwagi projektowe
+
+- Status dziennika praktyk nie jest osobną encją — wynika z agregacji statusów wpisów w WPIS_DZIENNIKA oraz statusu PRAKTYKA.
+- Egzamin poprawkowy modelowany jest jako kolejny rekord w tabeli EGZAMIN (relacja 1:N z PRAKTYKA).
+- Wynik egzaminu przechowywany jest bezpośrednio w polach tabeli EGZAMIN (ocena_ustna, ocena_koncowa).
 
 ## Legenda relacji
 
@@ -230,3 +248,18 @@ erDiagram
 - `WPIS_EFEKT` — jeden wpis dziennika może realizować wiele efektów uczenia się
 - `POTWIERDZENIE_EFEKT_OCENA` — każdy z 13 efektów oceniany osobno per potwierdzenie
 - `KOMISJA_CZLONEK` — wielu użytkowników może zasiadać w komisji egzaminacyjnej
+
+## Dozwolone wartości statusów
+
+| Tabela | Dozwolone statusy |
+|---|---|
+| `PRAKTYKA` | Draft, Submitted, Under_Review, Approved, Rejected, Closed |
+| `HARMONOGRAM` | Draft, Submitted, Under_Review, Approved, Rejected |
+| `WPIS_DZIENNIKA` | Draft, Submitted, Approved, Rejected |
+| `POTWIERDZENIE_EFEKTOW` | Draft, Submitted, Under_Review, Approved, Rejected |
+| `SPRAWOZDANIE` | Draft, Submitted, Under_Review, Approved, Rejected |
+| `KARTA_PRAKTYKI` | Draft, Under_Review, Approved, Closed |
+| `WNIOSEK_ALTERNATYWNY` | Submitted, Under_Review, Approved, Rejected |
+| `EGZAMIN` | Draft, Approved, Rejected |
+| `ZAKLAD_PRACY` | Approved, Rejected |
+| `DOKUMENT` | Closed |

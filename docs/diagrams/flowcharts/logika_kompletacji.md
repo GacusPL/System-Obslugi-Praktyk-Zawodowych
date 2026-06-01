@@ -6,14 +6,17 @@
 flowchart TD
     A([Student inicjuje złożenie dokumentacji]) --> B[Backend pobiera\nchecklistę dokumentów]
 
-    B --> C{Zał. nr 3\nKarta Praktyki\nstatus = Approved?}
-    C -- Nie --> ERR[/Zwróć listę braków\nHTTP 422/]
+    B --> B1{Zał. nr 2a\nHarmonogram\nstatus = Approved?}
+    B1 -- Nie --> ERR[/Zwróć listę braków\nHTTP 422/]
     ERR --> A
+
+    B1 -- Tak --> C{Zał. nr 3\nKarta Praktyki\nstatus = Approved?}
+    C -- Nie --> ERR
 
     C -- Tak --> D{Zał. nr 4\nEfekty uczenia się\nstatus = Approved?}
     D -- Nie --> ERR
 
-    D -- Tak --> E{Zał. nr 5\nAnkieta\nstatus = Closed?}
+    D -- Tak --> E{Zał. nr 5\nAnkieta\nankieta_wypelniona = true?}
     E -- Nie --> ERR
 
     E -- Tak --> F{Zał. nr 6\nDziennik\nstatus = Closed\noraz 120 wpisów?}
@@ -29,7 +32,7 @@ flowchart TD
     J -- Odrzuca --> K[Status: Rejected\nPowiadomienie do Studenta\nz wykazem braków]
     K --> A
 
-    J -- Zatwierdza --> L[Backend generuje\narchiwum PDF\nZał. 3 + 4 + 6 + 7]
+    J -- Zatwierdza --> L[Backend generuje\narchiwum PDF\nZał. 2a + 3 + 4 + 6 + 7]
     L --> M[Status praktyki\nustawiony na Closed]
     M --> N([Dokumentacja\nzarchiwizowana])
 ```

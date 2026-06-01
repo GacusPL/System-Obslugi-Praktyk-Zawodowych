@@ -1,6 +1,6 @@
 ### Zadanie 2 — State Diagram: Cykl życia dokumentu
 
-> Modeluje wszystkie stany przez które przechodzi dowolny dokument w systemie (Dziennik, Sprawozdanie, Wniosek, Karta Praktyki). Rozgałęzienie przy `Under_Review` odzwierciedla decyzję opiekuna.
+> Modeluje ogólny cykl życia dokumentu w systemie. Nie wszystkie encje przechodzą przez każdy stan — patrz tabela poniżej.
 
 ```mermaid
 stateDiagram-v2
@@ -15,7 +15,8 @@ stateDiagram-v2
     Under_Review --> Approved : Opiekun zatwierdza dokument
     Under_Review --> Rejected : Opiekun odrzuca\nz komentarzem
 
-    Rejected --> Submitted : Student nanosi poprawki\ni wysyła ponownie
+    Rejected --> Draft : Student nanosi poprawki
+    Draft --> Submitted : Student wysyła ponownie
 
     Approved --> Closed : Dokumentacja skompletowana\ni zarchiwizowana
     Approved --> Under_Review : Wykryto braki formalne\n(cofnięcie przez UOPZ)
@@ -24,8 +25,8 @@ stateDiagram-v2
 
     note right of Draft
         Edycja dostępna
-        tylko w tym stanie
-        oraz po Rejected
+        w stanach Draft
+        oraz Rejected
     end note
 
     note right of Closed
@@ -34,3 +35,18 @@ stateDiagram-v2
         tylko do odczytu
     end note
 ```
+
+#### Mapowanie stanów na encje
+
+> Nie każda encja wykorzystuje wszystkie stany z diagramu powyżej. Poniższa tabela precyzuje dozwolone przejścia:
+
+| Encja | Draft | Submitted | Under_Review | Approved | Rejected | Closed |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| PRAKTYKA | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| HARMONOGRAM | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| WPIS_DZIENNIKA | ✓ | ✓ | — | ✓ | ✓ | — |
+| POTWIERDZENIE_EFEKTOW | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| SPRAWOZDANIE | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| KARTA_PRAKTYKI | ✓ | — | ✓ | ✓ | — | ✓ |
+| WNIOSEK_ALTERNATYWNY | — | ✓ | ✓ | ✓ | ✓ | — |
+| EGZAMIN | ✓ | — | — | ✓ | ✓ | — |

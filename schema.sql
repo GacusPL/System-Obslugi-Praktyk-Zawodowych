@@ -83,6 +83,7 @@ CREATE TABLE praktyka (
                             'Approved', 'Rejected', 'Closed'
                         )),
     ocena_koncowa   REAL    CHECK (ocena_koncowa BETWEEN 2.0 AND 5.0),
+    ankieta_wypelniona INTEGER NOT NULL DEFAULT 0 CHECK (ankieta_wypelniona IN (0, 1)),
     created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES student (id),
@@ -221,6 +222,7 @@ CREATE TABLE karta_praktyki (
                                 'Draft', 'Under_Review',
                                 'Approved', 'Closed'
                             )),
+    created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (praktyka_id) REFERENCES praktyka (id)
 );
@@ -273,6 +275,22 @@ CREATE TABLE wniosek_alternatywny (
     created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES student (id)
+);
+
+-- -------------------------------------------------------------
+-- Załączniki skanów (pliki przesłane przez studenta do wniosku)
+-- -------------------------------------------------------------
+CREATE TABLE zalacznik_skan (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    wniosek_id      INTEGER NOT NULL,
+    nazwa_pliku     TEXT    NOT NULL,
+    sciezka_pliku   TEXT    NOT NULL,
+    typ_dokumentu   TEXT    NOT NULL CHECK (typ_dokumentu IN (
+                        'umowa_o_prace', 'zakres_obowiazkow',
+                        'ceidg', 'krs', 'inny'
+                    )),
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (wniosek_id) REFERENCES wniosek_alternatywny (id)
 );
 
 -- -------------------------------------------------------------

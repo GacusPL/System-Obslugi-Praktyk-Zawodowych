@@ -14,6 +14,11 @@ flowchart TD
     D -- Admin --> E[/Udostępnij pełny\npodgląd i edycję/]
     E --> Z
 
+    D -- Dyrektor --> E2{Czy dotyczy\nwniosku alternatywnego?}
+    E2 -- Tak --> E3[/Udostępnij panel\ndecyzji wniosku/]
+    E3 --> Z
+    E2 -- Nie --> G
+
     D -- UOPZ lub ZOPZ --> F{Czy użytkownik jest\nprzypisany do tej praktyki?}
     F -- Nie --> G[/Zwróć błąd dostępu\nHTTP 403/]
     G --> Z
