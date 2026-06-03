@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Kompletacja Dokumentacji (P6) - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Dokumentacja (P6)</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-custom">
+            <h3 class="fw-bold mb-3"><i class="bi bi-folder-check text-primary me-2"></i>Kompletacja Dokumentacji Praktyki (P6)</h3>
+            <p class="text-muted mb-4">Aby sfinalizować praktykę zawodową, wszystkie poniższe dokumenty muszą zostać zatwierdzone (status ✓).</p>
+
+            {% set p1_status = 'Approved' if praktyka.harmonogram and praktyka.harmonogram.status == 'Approved' else 'Draft' %}
+            {% set p2_status = praktyka.dziennik_status %}
+            {% set p3_status = 'Approved' if praktyka.potwierdzenie_efektow and praktyka.potwierdzenie_efektow.status == 'Approved' else 'Draft' %}
+            {% set p4_status = 'Approved' if praktyka.sprawozdania and praktyka.sprawozdania[-1].status == 'Approved' else 'Draft' %}
+            {% set p5_status = 'Approved' if praktyka.ankieta_wypelniona == 1 else 'Draft' %}
+            {% set p6_status = 'Approved' if praktyka.karta_praktyki and praktyka.karta_praktyki.status == 'Approved' else 'Draft' %}
+
+            {% set docs = [
+                {"name": "Zgłoszenie & Harmonogram Praktyki (P1)", "status": p1_status, "desc": "Podpisany przez Studenta, ZOPZ i UOPZ"},
+                {"name": "Dziennik Praktyk Zawodowych (P2)", "status": p2_status, "desc": "120 zatwierdzonych dni wpisów"},
+                {"name": "Potwierdzenie Efektów Uczenia Się (P3)", "status": p3_status, "desc": "Weryfikacja 13 efektów przez ZOPZ"},
+                {"name": "Sprawozdanie Studenta (P4)", "status": p4_status, "desc": "Złożone i ocenione sprawozdanie"},
+                {"name": "Ankieta Ewaluacyjna (P5)", "status": p5_status, "desc": "Wypełniona anonimowa ankieta"},
+                {"name": "Karta Praktyki (P6)", "status": p6_status, "desc": "Podsumowanie ocen i podpisany skan"}
+            ] %}
+
+            {% set all_approved = namespace(value=true) %}
+
+            <ul class="list-group list-group-flush mb-4">
+                {% for doc in docs %}
+                <li class="list-group-item py-3 px-0 border-0 {% if not loop.first %}border-top{% endif %} d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold text-color">{{ doc.name }}</div>
+                        <span class="text-muted small">{{ doc.desc }}</span>
+                    </div>
+                    <div>
+                        {% if doc.status == 'Approved' or doc.status == 'Closed' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
+                                <i class="bi bi-check-circle-fill me-1"></i> Zatwierdzony
+                            </span>
+                        {% else %}
+                            {% set all_approved.value = false %}
+                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-3 py-1">
+                                <i class="bi bi-hourglass-split me-1"></i> W toku
+                            </span>
+                        {% endif %}
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <div class="d-grid mt-4">
+                <button class="btn btn-success py-2" 
+                        {% if not all_approved.value %}disabled{% endif %}
+                        hx-patch="/api/v1/dokumentacja/{{ praktyka.id }}/submit"
+                        hx-swap="none"
+                        onclick="alert('Dokumentacja została pomyślnie złożona!'); window.location.href='/dashboard';">
+                    <i class="bi bi-check-all me-2"></i> Złóż kompletną dokumentację praktyki
+                </button>
+                {% if not all_approved.value %}
+                <div class="form-text text-center text-danger mt-2">
+                    <i class="bi bi-info-circle me-1"></i> Przycisk będzie aktywny dopiero po zatwierdzeniu wszystkich 6 dokumentów.
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Powrót</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

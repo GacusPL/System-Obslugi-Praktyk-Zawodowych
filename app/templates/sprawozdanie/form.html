@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Sprawozdanie z Praktyki (P4) - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Sprawozdanie (P4)</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card card-custom">
+            <h3 class="fw-bold mb-3"><i class="bi bi-file-earmark-ruled text-primary me-2"></i>Sprawozdanie z Przebiegu Praktyki (P4)</h3>
+            <p class="text-muted mb-4">Opisz szczegółowo realizację praktyki zawodowej. Każda z sekcji musi zawierać minimum 100 znaków.</p>
+
+            {% if current_user.rola == 'student' and (not sprawozdanie or sprawozdanie.status in ['Draft', 'Rejected']) %}
+            <!-- Formularz Edycji dla Studenta -->
+            <form id="sprawozdanie-form">
+                <input type="hidden" name="praktyka_id" value="{{ praktyka.id }}">
+                <input type="hidden" id="sprawozdanie-status" name="status" value="Draft">
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Sekcja I: Opis struktury organizacyjnej zakładu pracy</label>
+                    <textarea name="sekcja_I" class="form-control char-count-textarea" data-counter-target="counter-I" data-min-chars="100" rows="5" required>{{ sprawozdanie.sekcja_I if sprawozdanie else '' }}</textarea>
+                    <div class="form-text text-end">Liczba znaków: <span id="counter-I" class="fw-bold">0</span> / min 100</div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Sekcja II: Opis stanowisk pracy i realizowanych zadań</label>
+                    <textarea name="sekcja_II" class="form-control char-count-textarea" data-counter-target="counter-II" data-min-chars="100" rows="5" required>{{ sprawozdanie.sekcja_II if sprawozdanie else '' }}</textarea>
+                    <div class="form-text text-end">Liczba znaków: <span id="counter-II" class="fw-bold">0</span> / min 100</div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Sekcja III: Podsumowanie, wnioski i ocena własna studenta</label>
+                    <textarea name="sekcja_III" class="form-control char-count-textarea" data-counter-target="counter-III" data-min-chars="100" rows="5" required>{{ sprawozdanie.sekcja_III if sprawozdanie else '' }}</textarea>
+                    <div class="form-text text-end">Liczba znaków: <span id="counter-III" class="fw-bold">0</span> / min 100</div>
+                </div>
+
+                <script>
+                    document.getElementById('sprawozdanie-form').addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const formData = new FormData(this);
+                        
+                        const payload = {
+                            praktyka_id: parseInt(formData.get('praktyka_id')),
+                            sekcja_I: formData.get('sekcja_I'),
+                            sekcja_II: formData.get('sekcja_II'),
+                            sekcja_III: formData.get('sekcja_III'),
+                            status: document.getElementById('sprawozdanie-status').value
+                        };
+                        
+                        fetch('/api/v1/sprawozdanie', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        }).then(res => {
+                            if (res.status === 201 || res.status === 200) {
+                                alert("Zapisano pomyślnie!");
+                                window.location.href = '/dashboard';
+                            } else {
+                                res.json().then(data => {
+                                    alert("Błąd walidacji: " + (data.error?.message || "Każda sekcja musi mieć min. 100 znaków."));
+                                });
+                            }
+                        });
+                    });
+                </script>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Powrót</a>
+                    <div class="d-flex gap-2">
+                        <button type="submit" onclick="document.getElementById('sprawozdanie-status').value='Draft';" class="btn btn-outline-primary">Zapisz Szkic</button>
+                        <button type="submit" onclick="document.getElementById('sprawozdanie-status').value='Submitted';" class="btn btn-primary btn-primary-custom">Złóż Sprawozdanie</button>
+                    </div>
+                </div>
+            </form>
+            
+            {% else %}
+            <!-- Tryb Podglądu i Oceny (UOPZ i inni) -->
+            {% if sprawozdanie %}
+            <div class="mb-4">
+                <span class="badge bg-{{ 'success' if sprawozdanie.status == 'Approved' else 'warning' if sprawozdanie.status == 'Submitted' else 'secondary' }} mb-2">
+                    Status: {{ sprawozdanie.status }}
+                </span>
+                <p class="text-muted small">Wersja sprawozdania: {{ sprawozdanie.wersja }} (z dnia {{ sprawozdanie.updated_at.strftime('%d.%m.%Y') }})</p>
+            </div>
+
+            <div class="mb-4 p-3 bg-light rounded">
+                <h6 class="fw-bold">Sekcja I: Opis struktury organizacyjnej</h6>
+                <p class="text-color" style="white-space: pre-wrap;">{{ sprawozdanie.sekcja_I }}</p>
+            </div>
+
+            <div class="mb-4 p-3 bg-light rounded">
+                <h6 class="fw-bold">Sekcja II: Opis stanowisk i zadań</h6>
+                <p class="text-color" style="white-space: pre-wrap;">{{ sprawozdanie.sekcja_II }}</p>
+            </div>
+
+            <div class="mb-4 p-3 bg-light rounded">
+                <h6 class="fw-bold">Sekcja III: Podsumowanie i ocena własna</h6>
+                <p class="text-color" style="white-space: pre-wrap;">{{ sprawozdanie.sekcja_III }}</p>
+            </div>
+
+            <!-- Panel Oceny dla UOPZ -->
+            {% if current_user.rola == 'uopz' and sprawozdanie.status == 'Submitted' %}
+            <div class="card p-4 border-primary border-start border-4 bg-light">
+                <h5 class="fw-bold mb-3"><i class="bi bi-star-fill text-warning me-2"></i>Ocena i Weryfikacja Sprawozdania</h5>
+                <form id="ocena-sprawozdania-form" data-sprawozdanie-id="{{ sprawozdanie.id }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Ocena sprawozdania</label>
+                            <select name="ocena" class="form-select" required>
+                                <option value="">Wybierz ocenę...</option>
+                                <option value="2.0">2.0 (ndst)</option>
+                                <option value="3.0">3.0 (dst)</option>
+                                <option value="3.5">3.5 (dst+)</option>
+                                <option value="4.0">4.0 (db)</option>
+                                <option value="4.5">4.5 (db+)</option>
+                                <option value="5.0">5.0 (bdb)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Status decyzji</label>
+                            <select name="status" class="form-select" required>
+                                <option value="Approved">Zatwierdź sprawozdanie (Approved)</option>
+                                <option value="Rejected">Odrzuć do poprawy (Rejected)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <script>
+                        document.getElementById('ocena-sprawozdania-form').addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            const sId = this.getAttribute('data-sprawozdanie-id');
+                            const formData = new FormData(this);
+                            
+                            const payload = {
+                                ocena: parseFloat(formData.get('ocena')),
+                                status: formData.get('status')
+                            };
+                            
+                            fetch(`/api/v1/sprawozdanie/${sId}/eval`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(payload)
+                            }).then(res => {
+                                if (res.ok) {
+                                    alert("Ocena została wystawiona!");
+                                    window.location.href = '/dashboard';
+                                } else {
+                                    alert("Wystąpił błąd przy wystawianiu oceny.");
+                                }
+                            });
+                        });
+                    </script>
+                    <button type="submit" class="btn btn-primary btn-primary-custom mt-3">Zapisz ocenę</button>
+                </form>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <p class="text-muted py-4 text-center">Student nie złożył jeszcze sprawozdania.</p>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/forms.js') }}"></script>
+{% endblock %}

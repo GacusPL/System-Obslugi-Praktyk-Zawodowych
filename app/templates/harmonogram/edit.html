@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Edycja Harmonogramu Praktyki (P1) - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Edycja Harmonogramu</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Status Bar z Podpisami -->
+        <div class="card card-custom mb-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-person-check text-primary me-2"></i>Status Podpisów Harmonogramu</h5>
+            <div class="row text-center g-3">
+                <div class="col-md-4">
+                    <div class="p-3 rounded bg-{{ 'success-subtle text-success' if harmonogram.podpis_student else 'light text-muted' }}">
+                        <i class="bi {{ 'bi-check-circle-fill' if harmonogram.podpis_student else 'bi-hourglass' }} fs-4 d-block mb-1"></i>
+                        <span class="fw-semibold d-block">Student</span>
+                        <span class="small">{{ 'Podpisano' if harmonogram.podpis_student else 'Oczekuje na podpis' }}</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 rounded bg-{{ 'success-subtle text-success' if harmonogram.podpis_zopz else 'light text-muted' }}">
+                        <i class="bi {{ 'bi-check-circle-fill' if harmonogram.podpis_zopz else 'bi-hourglass' }} fs-4 d-block mb-1"></i>
+                        <span class="fw-semibold d-block">Opiekun Zakładowy (ZOPZ)</span>
+                        <span class="small">{{ 'Podpisano' if harmonogram.podpis_zopz else 'Oczekuje na podpis' }}</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3 rounded bg-{{ 'success-subtle text-success' if harmonogram.podpis_uopz else 'light text-muted' }}">
+                        <i class="bi {{ 'bi-check-circle-fill' if harmonogram.podpis_uopz else 'bi-hourglass' }} fs-4 d-block mb-1"></i>
+                        <span class="fw-semibold d-block">Opiekun Uczelniany (UOPZ)</span>
+                        <span class="small">{{ 'Podpisano' if harmonogram.podpis_uopz else 'Oczekuje na podpis' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Akcje podpisywania -->
+            <div class="mt-4 d-flex justify-content-center gap-2">
+                {% if current_user.rola == 'student' and not harmonogram.podpis_student %}
+                <button class="btn btn-success" 
+                        hx-patch="/api/v1/harmonogramy/{{ harmonogram.id }}/signature"
+                        hx-vals='{"rola": "student"}'
+                        hx-headers='{"Content-Type": "application/json"}'
+                        hx-swap="none"
+                        onclick="setTimeout(() => window.location.reload(), 500)">
+                    <i class="bi bi-pen me-2"></i> Podpisz jako Student
+                </button>
+                {% endif %}
+
+                {% if current_user.rola == 'zopz' and not harmonogram.podpis_zopz %}
+                <button class="btn btn-success" 
+                        hx-patch="/api/v1/harmonogramy/{{ harmonogram.id }}/signature"
+                        hx-vals='{"rola": "zopz"}'
+                        hx-headers='{"Content-Type": "application/json"}'
+                        hx-swap="none"
+                        onclick="setTimeout(() => window.location.reload(), 500)">
+                    <i class="bi bi-pen me-2"></i> Podpisz jako Opiekun Zakładowy (ZOPZ)
+                </button>
+                {% endif %}
+
+                {% if current_user.rola == 'uopz' and not harmonogram.podpis_uopz %}
+                <button class="btn btn-success" 
+                        hx-patch="/api/v1/harmonogramy/{{ harmonogram.id }}/signature"
+                        hx-vals='{"rola": "uopz"}'
+                        hx-headers='{"Content-Type": "application/json"}'
+                        hx-swap="none"
+                        onclick="setTimeout(() => window.location.reload(), 500)">
+                    <i class="bi bi-pen me-2"></i> Podpisz jako Opiekun Uczelniany (UOPZ)
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Harmonogram Tabela -->
+        <div class="card card-custom">
+            <h3 class="fw-bold mb-3"><i class="bi bi-calendar-event text-primary me-2"></i>Harmonogram Praktyki (P1)</h3>
+            <p class="text-muted mb-4">Podziel 120 dni praktyk na poszczególne działy/obszary tematyczne w firmie.</p>
+
+            {% if harmonogram.status != 'Draft' and current_user.rola == 'student' %}
+            <!-- Tryb tylko do odczytu -->
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nazwa działu / obszaru</th>
+                            <th style="width: 150px;">Liczba dni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dzial in harmonogram.dzialy %}
+                        <tr>
+                            <td>{{ dzial.nazwa_dzialu }}</td>
+                            <td>{{ dzial.planowane_dni }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <!-- Tryb edycji (Student gdy Draft) -->
+            <form id="harmonogram-form" data-harmonogram-id="{{ harmonogram.id }}">
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Nazwa działu / obszaru</th>
+                                <th style="width: 180px;">Liczba dni</th>
+                                <th style="width: 80px;" class="text-center">Usuń</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dzialy-table-body">
+                            {% if harmonogram.dzialy %}
+                                {% for dzial in harmonogram.dzialy %}
+                                <tr>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm dzial-nazwa-input" value="{{ dzial.nazwa_dzialu }}" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm planowane-dni-input" value="{{ dzial.planowane_dni }}" min="1" required>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-dzial-btn"><i class="bi bi-trash"></i></button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm dzial-nazwa-input" placeholder="np. Dział Programowania" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm planowane-dni-input" value="40" min="1" required>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-dzial-btn"><i class="bi bi-trash"></i></button>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="add-dzial-btn">
+                        <i class="bi bi-plus-circle me-1"></i> Dodaj obszar
+                    </button>
+                    <div>
+                        Suma dni: <span id="total-days-span" class="fw-bold fs-5">0</span> / 120 dni
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 rounded bg-light" id="days-status-message"></div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Powrót</a>
+                    <button type="submit" class="btn btn-primary btn-primary-custom" id="save-harmonogram-btn" disabled>Zapisz Harmonogram</button>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/harmonogram.js') }}"></script>
+{% endblock %}

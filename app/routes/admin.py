@@ -31,3 +31,11 @@ def update_user_role(user_id):
     db.session.commit()
     flash(f"Przypisano rolę {new_role} użytkownikowi {user.email}.", "success")
     return redirect(url_for('admin.users_list'))
+
+@admin_bp.route('/praktyki', methods=['GET'])
+@login_required
+@admin_required
+def praktyki_list():
+    from app.models import Praktyka
+    praktyki = Praktyka.query.all()
+    return render_template('admin/praktyki.html', praktyki=praktyki)

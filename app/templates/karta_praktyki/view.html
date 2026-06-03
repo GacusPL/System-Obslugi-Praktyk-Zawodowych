@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Karta Praktyki (P6) - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Karta Praktyki (P6)</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Zestawienie Ocen -->
+        <div class="card card-custom">
+            <h3 class="fw-bold mb-3"><i class="bi bi-award-fill text-primary me-2"></i>Karta Praktyki Zawodowej (P6)</h3>
+            <p class="text-muted mb-4">Podsumowanie ocen i opinii uzyskanych w trakcie odbywania praktyki zawodowej.</p>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded">
+                        <span class="text-muted small fw-semibold uppercase">Ocena Opiekuna Zakładowego (ZOPZ)</span>
+                        <h4 class="fw-bold mt-1 text-primary">{{ karta.ocena_param_zopz or 'Brak' }}</h4>
+                        <p class="small text-muted mb-0">Opinia: {{ karta.ocena_opisowa_zopz or 'Oczekuje na wystawienie' }}</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded">
+                        <span class="text-muted small fw-semibold uppercase">Ocena Opiekuna Uczelnianego (UOPZ)</span>
+                        <h4 class="fw-bold mt-1 text-primary">{{ karta.ocena_param_uopz or 'Brak' }}</h4>
+                        <p class="small text-muted mb-0">Opinia: {{ karta.ocena_opisowa_uopz or 'Oczekuje na wystawienie' }}</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded">
+                        <span class="text-muted small fw-semibold uppercase">Ocena ze Sprawozdania</span>
+                        <h4 class="fw-bold mt-1 text-primary">{{ karta.ocena_sprawozdania or 'Brak' }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-primary text-white rounded">
+                        <span class="opacity-75 small fw-semibold uppercase">Ocena Końcowa Praktyki</span>
+                        <h4 class="fw-bold mt-1">{{ praktyka.ocena_koncowa or 'Brak' }}</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload skanów podpisanych dokumentów -->
+            {% if current_user.rola == 'student' %}
+            <div class="p-3 bg-light rounded mb-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-upload text-primary me-2"></i>Prześlij podpisany skan Karty Praktyki i Sprawozdania</h5>
+                <p class="text-muted small">Przed zaliczeniem końcowym musisz wydrukować, podpisać i wgrać skan kompletnej dokumentacji (karta praktyk, opinie opiekunów).</p>
+                
+                <form action="/api/v1/wniosek/upload" method="POST" enctype="multipart/form-data" id="skan-upload-form">
+                    <input type="hidden" name="praktyka_id" value="{{ praktyka.id }}">
+                    <div class="mb-3">
+                        <input type="file" name="skan_pdf" class="form-control" accept=".pdf,.png,.jpg,.jpeg" required>
+                    </div>
+                    
+                    <script>
+                        document.getElementById('skan-upload-form').addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            const formData = new FormData(this);
+                            
+                            // Przesyłamy plik na endpoint uploadu plików
+                            fetch('/api/v1/files/upload', {
+                                method: 'POST',
+                                body: formData
+                            }).then(res => {
+                                if (res.ok) {
+                                    alert("Skan został pomyślnie przesłany!");
+                                    window.location.reload();
+                                } else {
+                                    alert("Błąd przy przesyłaniu pliku.");
+                                }
+                            });
+                        });
+                    </script>
+                    <button type="submit" class="btn btn-sm btn-primary">Prześlij plik</button>
+                </form>
+            </div>
+
+            <!-- Przycisk złożenia wniosku o zaliczenie -->
+            {% if praktyka.status == 'Draft' %}
+            <div class="d-grid mt-4">
+                <button class="btn btn-success py-2"
+                        hx-patch="/api/v1/praktyki/{{ praktyka.id }}/status"
+                        hx-vals='{"status": "Submitted"}'
+                        hx-headers='{"Content-Type": "application/json"}'
+                        hx-swap="none"
+                        onclick="setTimeout(() => window.location.reload(), 500)">
+                    <i class="bi bi-send-check-fill me-2"></i> Złóż dokumentację do weryfikacji UOPZ
+                </button>
+            </div>
+            {% endif %}
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Powrót</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

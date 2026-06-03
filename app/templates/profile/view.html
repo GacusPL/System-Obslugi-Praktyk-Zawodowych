@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Profil Użytkownika - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active" aria-current="page">Mój Profil</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-custom">
+            <h3 class="fw-bold mb-4"><i class="bi bi-person-circle text-primary me-2"></i>Mój Profil Użytkownika</h3>
+            
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label text-muted small fw-semibold">Imię</label>
+                    <input type="text" class="form-control bg-light" value="{{ current_user.imie }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-muted small fw-semibold">Nazwisko</label>
+                    <input type="text" class="form-control bg-light" value="{{ current_user.nazwisko }}" readonly>
+                </div>
+                <div class="col-12">
+                    <label class="form-label text-muted small fw-semibold">Adres e-mail (Microsoft)</label>
+                    <input type="email" class="form-control bg-light" value="{{ current_user.email }}" readonly>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-muted small fw-semibold">Rola w systemie</label>
+                    <input type="text" class="form-control bg-light text-uppercase fw-bold" value="{{ current_user.rola or 'Brak' }}" readonly>
+                </div>
+            </div>
+
+            <!-- Dodatkowe dane studenta -->
+            {% if current_user.rola == 'student' %}
+            <hr class="my-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-mortarboard text-secondary me-2"></i>Dane Akademickie Studenta</h5>
+            
+            <form id="student-profile-form">
+                <input type="hidden" name="uzytkownik_id" value="{{ current_user.id }}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Numer Albumu</label>
+                        <input type="text" name="nr_albumu" class="form-control" value="{{ student.nr_albumu if student else '' }}" required {% if student %}readonly{% endif %}>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Kierunek studiów</label>
+                        <input type="text" name="kierunek" class="form-control" value="{{ student.kierunek if student else '' }}" required {% if student %}readonly{% endif %}>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Specjalność</label>
+                        <input type="text" name="specjalnosc" class="form-control" value="{{ student.specjalnosc if student else '' }}" {% if student %}readonly{% endif %}>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Semestr</label>
+                        <select name="semestr" class="form-select" required {% if student %}disabled{% endif %}>
+                            <option value="6" {% if student and student.semestr == 6 %}selected{% endif %}>Semestr 6</option>
+                            <option value="7" {% if student and student.semestr == 7 %}selected{% endif %}>Semestr 7</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Forma studiów</label>
+                        <select name="forma_studiow" class="form-select" required {% if student %}disabled{% endif %}>
+                            <option value="stacjonarne" {% if student and student.forma_studiow == 'stacjonarne' %}selected{% endif %}>Stacjonarne</option>
+                            <option value="niestacjonarne" {% if student and student.forma_studiow == 'niestacjonarne' %}selected{% endif %}>Niestacjonarne</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Rok Akademicki</label>
+                        <input type="text" name="rok_akademicki" class="form-control" value="{{ student.rok_akademicki if student else '' }}" placeholder="np. 2025/2026" required {% if student %}readonly{% endif %}>
+                    </div>
+                </div>
+
+                {% if not student %}
+                <script>
+                    document.getElementById('student-profile-form').addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const formData = new FormData(this);
+                        
+                        const payload = {
+                            uzytkownik_id: parseInt(formData.get('uzytkownik_id')),
+                            nr_albumu: formData.get('nr_albumu'),
+                            kierunek: formData.get('kierunek'),
+                            specjalnosc: formData.get('specjalnosc') || null,
+                            semestr: parseInt(formData.get('semestr')),
+                            forma_studiow: formData.get('forma_studiow'),
+                            rok_akademicki: formData.get('rok_akademicki')
+                        };
+                        
+                        fetch('/api/v1/control/students', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        }).then(res => {
+                            if (res.status === 201) {
+                                alert("Dane akademickie zostały pomyślnie zapisane!");
+                                window.location.reload();
+                            } else {
+                                alert("Wystąpił błąd podczas zapisywania danych. Upewnij się, że numer albumu jest unikalny.");
+                            }
+                        });
+                    });
+                </script>
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary btn-primary-custom">Zapisz dane akademickie</button>
+                </div>
+                {% endif %}
+            </form>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Powrót do Dashboardu</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

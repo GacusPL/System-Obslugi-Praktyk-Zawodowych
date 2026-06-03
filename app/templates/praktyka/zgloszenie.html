@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Zgłoszenie Praktyki Zawodowej (P1) - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Zgłoszenie Praktyki</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-custom">
+            <h3 class="fw-bold mb-3"><i class="bi bi-file-earmark-plus text-primary me-2"></i>Zgłoszenie Praktyki Zawodowej (P1)</h3>
+            <p class="text-muted mb-4">Wypełnij poniższy formularz, aby zgłosić chęć odbycia praktyki zawodowej w wybranym zakładzie pracy.</p>
+
+            <form hx-post="/api/v1/praktyki" 
+                  hx-headers='{"Content-Type": "application/json"}'
+                  hx-swap="none"
+                  id="zgloszenie-form">
+                
+                <!-- Wybór zakładu pracy -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Zakład Pracy</label>
+                    <select class="form-select mb-3" id="zaklad_select" name="zaklad_id" required>
+                        <option value="">Wybierz istniejący zakład pracy...</option>
+                        {% for z in zaklady %}
+                        <option value="{{ z.id }}">{{ z.nazwa }} (NIP: {{ z.nip }})</option>
+                        {% endfor %}
+                        <option value="new">-- Dodaj nowy zakład pracy --</option>
+                    </select>
+                </div>
+
+                <!-- Nowy zakład pracy (domyślnie ukryty) -->
+                <div id="new_zaklad_fields" class="p-3 bg-light rounded-3 mb-4 d-none">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-building-add text-secondary me-2"></i>Dane Nowego Zakładu Pracy</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nazwa firmy</label>
+                            <input type="text" name="new_zaklad_nazwa" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">NIP</label>
+                            <input type="text" name="new_zaklad_nip" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Adres siedziby</label>
+                            <input type="text" name="new_zaklad_adres" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Imię Opiekuna (ZOPZ)</label>
+                            <input type="text" name="new_zopz_imie" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Nazwisko Opiekuna (ZOPZ)</label>
+                            <input type="text" name="new_zopz_nazwisko" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Stanowisko Opiekuna</label>
+                            <input type="text" name="new_zopz_stanowisko" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Wykształcenie Opiekuna</label>
+                            <input type="text" name="new_zopz_wyksztalcenie" class="form-control form-control-sm">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dane praktyki -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Uczelniany Opiekun (UOPZ)</label>
+                        <select class="form-select" name="uopz_id" required>
+                            <option value="">Wybierz opiekuna uczelnianego...</option>
+                            {% for u in uopz_list %}
+                            <option value="{{ u.id }}">{{ u.imie }} {{ u.nazwisko }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Rok Akademicki</label>
+                        <input type="text" class="form-control" name="rok_akademicki" placeholder="np. 2025/2026" required>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Termin od</label>
+                        <input type="date" class="form-control" id="termin_od" name="termin_od" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Termin do</label>
+                        <input type="date" class="form-control" id="termin_do" name="termin_do" required>
+                    </div>
+                </div>
+
+                <!-- Dynamiczny JSON parser dla HTMX form submission -->
+                <script>
+                    document.getElementById('zaklad_select').addEventListener('change', function() {
+                        const newFields = document.getElementById('new_zaklad_fields');
+                        const inputs = newFields.querySelectorAll('input');
+                        if (this.value === 'new') {
+                            newFields.classList.remove('d-none');
+                            inputs.forEach(input => input.setAttribute('required', ''));
+                        } else {
+                            newFields.classList.add('d-none');
+                            inputs.forEach(input => input.removeAttribute('required'));
+                        }
+                    });
+
+                    document.getElementById('zgloszenie-form').addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const formData = new FormData(this);
+                        
+                        // Konstruujemy payload zgodnie z API /api/v1/praktyki
+                        let payload = {
+                            uopz_id: parseInt(formData.get('uopz_id')),
+                            termin_od: formData.get('termin_od'),
+                            termin_do: formData.get('termin_do'),
+                            rok_akademicki: formData.get('rok_akademicki')
+                        };
+
+                        if (formData.get('zaklad_id') === 'new') {
+                            payload.new_zaklad = {
+                                nazwa: formData.get('new_zaklad_nazwa'),
+                                adres: formData.get('new_zaklad_adres'),
+                                nip: formData.get('new_zaklad_nip'),
+                                zopz_imie: formData.get('new_zopz_imie'),
+                                zopz_nazwisko: formData.get('new_zopz_nazwisko'),
+                                zopz_stanowisko: formData.get('new_zopz_stanowisko'),
+                                zopz_wyksztalcenie: formData.get('new_zopz_wyksztalcenie')
+                            };
+                        } else {
+                            payload.zaklad_id = parseInt(formData.get('zaklad_id'));
+                        }
+
+                        fetch('/api/v1/praktyki', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        }).then(res => {
+                            if (res.status === 201) {
+                                window.location.href = '/dashboard';
+                            } else {
+                                res.json().then(data => {
+                                    alert("Błąd: " + (data.error?.message || "Nieznany błąd serwera. Sprawdź format danych (np. NIP)."));
+                                });
+                            }
+                        });
+                    });
+                </script>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Anuluj</a>
+                    <button type="submit" class="btn btn-primary btn-primary-custom">Złóż Zgłoszenie</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/forms.js') }}"></script>
+{% endblock %}

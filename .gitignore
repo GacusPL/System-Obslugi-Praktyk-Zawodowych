@@ -59,3 +59,4 @@ junit/
 # Uploads and temporary/generated files
 app/static/uploads/
 app/static/generated/
+IMPLEMENTATION_PLAN.md

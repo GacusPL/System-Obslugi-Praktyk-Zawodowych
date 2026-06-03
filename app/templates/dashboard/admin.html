@@ -1,12 +1,133 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Dashboard Admina</title>
-</head>
-<body>
-    <h1>Dashboard Admina</h1>
-    <p>Witaj {{ current_user.imie }} {{ current_user.nazwisko }}!</p>
-    <a href="{{ url_for('admin.users_list') }}">Zarządzaj użytkownikami</a><br>
-    <a href="{{ url_for('auth.logout') }}">Wyloguj</a>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Dashboard Administratora - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item active" aria-current="page">Dashboard Administratora</li>
+{% endblock %}
+
+{% block content %}
+<!-- Statystyki globalne -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card card-custom border-start border-primary border-4 py-3 mb-3 mb-md-0">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-uppercase text-muted fw-semibold small">Wszyscy Użytkownicy</span>
+                    <h2 class="fw-bold m-0 mt-1">{{ stats.users }}</h2>
+                </div>
+                <div class="fs-1 text-primary"><i class="bi bi-people"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom border-start border-success border-4 py-3 mb-3 mb-md-0">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-uppercase text-muted fw-semibold small">Zgłoszone Praktyki</span>
+                    <h2 class="fw-bold m-0 mt-1">{{ stats.praktyki }}</h2>
+                </div>
+                <div class="fs-1 text-success"><i class="bi bi-journal-text"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-custom border-start border-info border-4 py-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-uppercase text-muted fw-semibold small">Zakłady Pracy</span>
+                    <h2 class="fw-bold m-0 mt-1">{{ stats.zaklady }}</h2>
+                </div>
+                <div class="fs-1 text-info"><i class="bi bi-building"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Użytkownicy oczekujący na przypisanie roli -->
+    <div class="col-lg-8">
+        <div class="card card-custom">
+            <h5 class="fw-bold mb-4"><i class="bi bi-person-plus text-warning me-2"></i>Nowi użytkownicy bez przypisanej roli</h5>
+            
+            {% if not bez_roli %}
+            <div class="text-center py-4">
+                <i class="bi bi-emoji-smile text-success fs-1"></i>
+                <p class="text-muted mt-2 mb-0">Wszyscy zarejestrowani użytkownicy posiadają przypisaną rolę.</p>
+            </div>
+            {% else %}
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Imię i Nazwisko</th>
+                            <th>E-mail</th>
+                            <th>Data Rejestracji</th>
+                            <th>Przypisz Rolę</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in bez_roli %}
+                        <tr id="user-row-{{ u.id }}">
+                            <td class="fw-semibold">{{ u.imie }} {{ u.nazwisko }}</td>
+                            <td>{{ u.email }}</td>
+                            <td>{{ u.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                            <td>
+                                <div class="input-group input-group-sm" style="max-width: 250px;">
+                                    <select class="form-select" id="role-select-{{ u.id }}">
+                                        <option value="student">Student</option>
+                                        <option value="zopz">Opiekun Zakładowy (ZOPZ)</option>
+                                        <option value="uopz">Opiekun Uczelniany (UOPZ)</option>
+                                        <option value="dyrektor">Dyrektor</option>
+                                        <option value="administrator">Administrator</option>
+                                    </select>
+                                    <button class="btn btn-primary" 
+                                            hx-put="/api/v1/admin/users/{{ u.id }}/role"
+                                            hx-vals='js:{"rola": document.getElementById("role-select-{{ u.id }}").value}'
+                                            hx-headers='{"Content-Type": "application/json"}'
+                                            hx-target="#user-row-{{ u.id }}"
+                                            hx-swap="outerHTML">
+                                        Zapisz
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Skróty i Eksporty administracyjne -->
+    <div class="col-lg-4">
+        <div class="card card-custom">
+            <h5 class="fw-bold mb-3"><i class="bi bi-file-earmark-arrow-down text-primary me-2"></i>Raporty i Eksport</h5>
+            <p class="text-muted small">Pobierz protokoły egzaminacyjne lub raporty zbiorcze praktyk zawodowych w wybranym formacie.</p>
+            <div class="d-grid gap-2">
+                <a href="/api/v1/egzamin/export?format=xlsx" class="btn btn-outline-success text-start">
+                    <i class="bi bi-file-earmark-excel me-2"></i> Eksportuj protokół (XLSX)
+                </a>
+                <a href="/api/v1/egzamin/export?format=csv" class="btn btn-outline-secondary text-start">
+                    <i class="bi bi-filetype-csv me-2"></i> Eksportuj protokół (CSV)
+                </a>
+            </div>
+        </div>
+
+        <div class="card card-custom">
+            <h5 class="fw-bold mb-3"><i class="bi bi-link-45deg text-primary me-2"></i>Szybkie Zarządzanie</h5>
+            <div class="list-group list-group-flush">
+                <a href="{{ url_for('admin.users_list') }}" class="list-group-item list-group-item-action border-0 px-0 d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-people me-2"></i> Lista użytkowników</span>
+                    <i class="bi bi-chevron-right text-muted small"></i>
+                </a>
+                <a href="{{ url_for('admin.praktyki_list') }}" class="list-group-item list-group-item-action border-0 px-0 d-flex justify-content-between align-items-center border-top">
+                    <span><i class="bi bi-journals me-2"></i> Wszystkie Praktyki</span>
+                    <i class="bi bi-chevron-right text-muted small"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

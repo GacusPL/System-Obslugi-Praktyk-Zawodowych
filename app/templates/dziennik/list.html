@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Dziennik Praktyk Zawodowych (P2) - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Dziennik Praktyk</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card card-custom">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <div>
+                    <h3 class="fw-bold m-0"><i class="bi bi-book text-primary me-2"></i>Dziennik Praktyk Zawodowych (P2)</h3>
+                    <p class="text-muted mt-1 mb-0">Rejestr zadań realizowanych każdego dnia praktyki zawodowej. Sumarycznie wymagane jest 120 dni.</p>
+                </div>
+                
+                {% if current_user.rola == 'student' %}
+                <button type="button" class="btn btn-primary btn-primary-custom" data-bs-toggle="modal" data-bs-target="#addWpisModal">
+                    <i class="bi bi-plus-circle me-1"></i> Dodaj Wpis
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Tabela Wpisów -->
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Dzień</th>
+                            <th style="width: 140px;">Data</th>
+                            <th>Opis wykonanych prac i zadań</th>
+                            <th style="width: 180px;">Zweryfikowane Efekty</th>
+                            <th style="width: 150px;">Status</th>
+                            {% if current_user.rola == 'zopz' %}
+                            <th style="width: 180px;">Akcje (ZOPZ)</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody id="dziennik-table-body">
+                        {% if praktyka.wpisy_dziennika %}
+                            {% for wpis in praktyka.wpisy_dziennika|sort(attribute='dzien_nr') %}
+                            <tr id="wpis-row-{{ wpis.id }}">
+                                <td class="fw-bold">Dzień {{ wpis.dzien_nr }}</td>
+                                <td>{{ wpis.data_wpisu.strftime('%d.%m.%Y') }}</td>
+                                <td>
+                                    <div>{{ wpis.opis_prac }}</div>
+                                    {% if wpis.komentarz_zopz %}
+                                    <div class="text-danger small mt-1"><i class="bi bi-chat-left-text me-1"></i>Komentarz ZOPZ: {{ wpis.komentarz_zopz }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% for efekt in wpis.efekty %}
+                                    <span class="badge bg-light text-primary border border-primary-subtle rounded-pill" title="{{ efekt.opis }}">
+                                        EU{{ efekt.nr }}
+                                    </span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'secondary' if wpis.status == 'Draft' else 'primary' if wpis.status == 'Submitted' else 'success' if wpis.status == 'Approved' else 'danger' }}">
+                                        {{ wpis.status }}
+                                    </span>
+                                </td>
+                                {% if current_user.rola == 'zopz' %}
+                                <td>
+                                    {% if wpis.status == 'Submitted' %}
+                                    <div class="d-flex gap-1">
+                                        <button class="btn btn-sm btn-success py-1 px-2"
+                                                hx-patch="/api/v1/dziennik/wpisy/{{ wpis.id }}"
+                                                hx-vals='{"status": "Approved"}'
+                                                hx-headers='{"Content-Type": "application/json"}'
+                                                hx-swap="none"
+                                                onclick="setTimeout(() => window.location.reload(), 500)">
+                                            Zatwierdź
+                                        </button>
+                                        <button class="btn btn-sm btn-danger py-1 px-2"
+                                                hx-patch="/api/v1/dziennik/wpisy/{{ wpis.id }}"
+                                                hx-vals='{"status": "Rejected", "komentarz_zopz": "Do poprawy"}'
+                                                hx-headers='{"Content-Type": "application/json"}'
+                                                hx-swap="none"
+                                                onclick="setTimeout(() => window.location.reload(), 500)">
+                                            Odrzuć
+                                        </button>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted small">Wpis zweryfikowany</span>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">Brak wpisów w dzienniku praktyk.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Dodawania Wpisu (dla Studenta) -->
+{% if current_user.rola == 'student' %}
+<div class="modal fade" id="addWpisModal" tabindex="-1" aria-labelledby="addWpisModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-lg" style="background-color: var(--bg-card); color: var(--text-color);">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="addWpisModalLabel"><i class="bi bi-pencil-square text-primary me-2"></i>Dodaj nowy wpis do Dziennika</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="wpis-form">
+                <div class="modal-body pt-3">
+                    <input type="hidden" name="praktyka_id" value="{{ praktyka.id }}">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Numer dnia (1-120)</label>
+                            {% set next_day = (praktyka.wpisy_dziennika|length + 1) %}
+                            <input type="number" name="dzien_nr" class="form-control" min="1" max="120" value="{{ next_day }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Data wpisu</label>
+                            <input type="date" name="data_wpisu" class="form-control" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Opis zrealizowanych prac i zadań</label>
+                            <textarea name="opis_prac" class="form-control" rows="4" placeholder="Opisz szczegółowo co robiłeś tego dnia w firmie..." required></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Realizowane efekty uczenia się</label>
+                            <div class="row g-2">
+                                {% for efekt in efekty %}
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input efekty-checkbox" type="checkbox" value="{{ efekt.id }}" id="efekt-{{ efekt.id }}">
+                                        <label class="form-check-label small" for="efekt-{{ efekt.id }}" title="{{ efekt.opis }}">
+                                            EU{{ efekt.nr }} - {{ efekt.opis[:35] }}...
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addWpisModal">Anuluj</button>
+                    <button type="submit" class="btn btn-primary btn-primary-custom">Zapisz Wpis</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dziennik.js') }}"></script>
+{% endblock %}

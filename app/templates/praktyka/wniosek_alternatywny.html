@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Wniosek Alternatywny (4b) - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Wniosek Alternatywny</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-custom">
+            <h3 class="fw-bold mb-3"><i class="bi bi-file-earmark-diff text-primary me-2"></i>Wniosek o zaliczenie alternatywnej ścieżki praktyki (Załącznik 4b)</h3>
+            <p class="text-muted mb-4">Użyj tego formularza, jeśli chcesz zaliczyć praktykę zawodową na podstawie zatrudnienia (np. umowa o pracę, zlecenie), stażu lub prowadzonej działalności gospodarczej.</p>
+
+            <form action="/api/v1/wniosek" method="POST" enctype="multipart/form-data" id="wniosek-form">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Typ wnioskowanej ścieżki</label>
+                    <select name="typ" class="form-select" required>
+                        <option value="">Wybierz typ...</option>
+                        <option value="praca_zawodowa">Praca zawodowa (stosunek pracy / cywilnoprawny)</option>
+                        <option value="staz">Staż zawodowy krajowy lub zagraniczny</option>
+                        <option value="dzialalnosc_gospodarcza">Własna działalność gospodarcza</option>
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Szczegółowe uzasadnienie</label>
+                    <textarea name="uzasadnienie" class="form-control" rows="5" placeholder="Opisz zbieżność wykonywanych obowiązków z efektami uczenia się na Twoim kierunku..." required></textarea>
+                </div>
+
+                <!-- Załączniki -->
+                <div class="p-3 bg-light rounded-3 mb-4">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-paperclip text-secondary me-2"></i>Wymagane Załączniki (Skany PDF / Zdjęcia)</h6>
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Kopia Umowy (Pracy / Zlecenia / Stażu) lub wpis CEIDG/KRS</label>
+                        <input type="file" name="umowa_skan" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg" required>
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label small fw-semibold">Potwierdzony zakres obowiązków lub inny dokument potwierdzający efekty</label>
+                        <input type="file" name="zakres_skan" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg" required>
+                    </div>
+                </div>
+
+                <!-- Uproszczony multipart form submission via native fetch -->
+                <script>
+                    document.getElementById('wniosek-form').addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const formData = new FormData(this);
+                        
+                        fetch('/api/v1/wniosek', {
+                            method: 'POST',
+                            body: formData
+                        }).then(res => {
+                            if (res.status === 201) {
+                                window.location.href = '/dashboard';
+                            } else {
+                                res.json().then(data => {
+                                    alert("Błąd: " + (data.error?.message || "Wystąpił problem przy składaniu wniosku. Sprawdź czy pliki są prawidłowe."));
+                                });
+                            }
+                        });
+                    });
+                </script>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Anuluj</a>
+                    <button type="submit" class="btn btn-primary btn-primary-custom">Złóż Wniosek</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

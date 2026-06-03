@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Wszystkie Praktyki - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Praktyki</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card card-custom">
+            <h3 class="fw-bold mb-4"><i class="bi bi-journals text-primary me-2"></i>Wszystkie Praktyki w Systemie</h3>
+
+            {% if not praktyki %}
+            <p class="text-muted text-center py-4">Brak zarejestrowanych praktyk zawodowych w bazie.</p>
+            {% else %}
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Zakład Pracy</th>
+                            <th>Opiekun (UOPZ)</th>
+                            <th>Termin</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in praktyki %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">{{ p.student.uzytkownik.imie }} {{ p.student.uzytkownik.nazwisko }}</div>
+                                <span class="text-muted small">Album: {{ p.student.nr_albumu }}</span>
+                            </td>
+                            <td>{{ p.zaklad_pracy.nazwa }}</td>
+                            <td>{{ p.uopz.imie }} {{ p.uopz.nazwisko }}</td>
+                            <td>{{ p.termin_od.strftime('%d.%m.%Y') }} - {{ p.termin_do.strftime('%d.%m.%Y') }}</td>
+                            <td>
+                                <span class="badge bg-{{ 'secondary' if p.status == 'Draft' else 'primary' if p.status == 'Submitted' else 'warning' if p.status == 'Under_Review' else 'success' if p.status == 'Approved' else 'danger' }}">
+                                    {{ p.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

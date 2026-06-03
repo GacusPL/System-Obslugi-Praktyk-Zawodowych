@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Protokół Egzaminacyjny (P8) - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Protokół Egzaminacyjny</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-custom">
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <h3 class="fw-bold m-0"><i class="bi bi-file-earmark-check text-primary me-2"></i>Protokół Egzaminu Praktycznego (P8)</h3>
+                <a href="/api/v1/egzamin/export?format=xlsx" class="btn btn-sm btn-outline-success">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Pobierz XLSX
+                </a>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-muted">Protokół zaliczenia egzaminu dla studenta: <strong>{{ praktyka.student.uzytkownik.imie }} {{ praktyka.student.uzytkownik.nazwisko }}</strong> (Album: {{ praktyka.student.nr_albumu }}).</p>
+            </div>
+
+            <!-- Oceny Cząstkowe i Końcowe -->
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Rodzaj Oceny</th>
+                            <th style="width: 150px;" class="text-center">Wartość</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Ocena opiekuna zakładowego (ZOPZ)</td>
+                            <td class="text-center fw-semibold text-primary">{{ praktyka.karta_praktyki.ocena_param_zopz or 'Brak' }}</td>
+                        </tr>
+                        <tr>
+                            <td>Ocena opiekuna uczelnianego (UOPZ)</td>
+                            <td class="text-center fw-semibold text-primary">{{ praktyka.karta_praktyki.ocena_param_uopz or 'Brak' }}</td>
+                        </tr>
+                        <tr>
+                            <td>Ocena ze sprawozdania</td>
+                            <td class="text-center fw-semibold text-primary">{{ praktyka.karta_praktyki.ocena_sprawozdania or 'Brak' }}</td>
+                        </tr>
+                        <tr>
+                            <td>Egzamin - ocena ustna</td>
+                            <td class="text-center fw-semibold text-primary">{{ egzamin.ocena_ustna or 'Brak' }}</td>
+                        </tr>
+                        <tr class="table-primary fw-bold">
+                            <td>Ocena Końcowa Egzaminu (wyliczona)</td>
+                            <td class="text-center fs-5">{{ egzamin.ocena_koncowa or 'Oczekuje' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Formularz wystawienia oceny z egzaminu (dla Komisji/Admina) -->
+            {% if current_user.rola in ['uopz', 'administrator'] and egzamin.status == 'Draft' %}
+            <div class="p-3 bg-light rounded-3 mb-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-pencil-square text-success me-2"></i>Wystaw ocenę z egzaminu ustnego</h5>
+                <form id="ocena-egzaminu-form" data-egzamin-id="{{ egzamin.id }}">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Ocena z części ustnej</label>
+                        <select name="ocena_ustna" class="form-select form-select-sm" required>
+                            <option value="">Wybierz ocenę...</option>
+                            <option value="2.0">2.0 (ndst)</option>
+                            <option value="3.0">3.0 (dst)</option>
+                            <option value="3.5">3.5 (dst+)</option>
+                            <option value="4.0">4.0 (db)</option>
+                            <option value="4.5">4.5 (db+)</option>
+                            <option value="5.0">5.0 (bdb)</option>
+                        </select>
+                    </div>
+
+                    <script>
+                        document.getElementById('ocena-egzaminu-form').addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            const egId = this.getAttribute('data-egzamin-id');
+                            const formData = new FormData(this);
+                            
+                            const payload = {
+                                ocena_ustna: parseFloat(formData.get('ocena_ustna')),
+                                status: "Approved"
+                            };
+                            
+                            fetch(`/api/v1/egzamin/${egId}/ocena`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(payload)
+                            }).then(res => {
+                                if (res.ok) {
+                                    alert("Ocena końcowa została wyliczona i zapisana!");
+                                    window.location.reload();
+                                } else {
+                                    alert("Wystąpił błąd przy zapisywaniu oceny.");
+                                }
+                            });
+                        });
+                    </script>
+                    <button type="submit" class="btn btn-sm btn-primary">Zapisz i Zatwierdź Protokół</button>
+                </form>
+            </div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Powrót</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

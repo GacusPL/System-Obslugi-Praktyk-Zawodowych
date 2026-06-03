@@ -13,7 +13,7 @@ def login():
             return redirect(url_for('auth.waiting'))
         return redirect(url_for('main.dashboard'))
     
-    is_dev = current_app.config.get('DEBUG') and not current_app.config.get('TESTING')
+    is_dev = (current_app.config.get('DEBUG') and not current_app.config.get('TESTING')) or current_app.config.get('E2E')
     
     # In testing or debug environment we can bypass Microsoft OAuth redirect by providing a mock login
     if current_app.config.get('TESTING') or is_dev:
@@ -35,13 +35,16 @@ def login():
                 return redirect(url_for('auth.waiting'))
             return redirect(url_for('main.dashboard'))
 
-    # If microsoft param is set or we are not in dev mode, try to redirect to Microsoft OAuth
+    # If microsoft param is set or we are not in dev/testing mode, try to redirect to Microsoft OAuth
     if request.args.get('microsoft') == 'true' or not is_dev:
         try:
             auth_url = get_auth_url()
             return redirect(auth_url)
         except ValueError as e:
             flash("Nie można nawiązać połączenia z usługą Microsoft OAuth. Sprawdź konfigurację MICROSOFT_AUTHORITY / tenant ID lub użyj logowania lokalnego.", "danger")
+            # If we are not in dev mode, redirecting here would cause a loop, so let's render login page instead of looping
+            if not is_dev:
+                return render_template('auth/login.html', is_dev=is_dev, error=str(e))
             return redirect(url_for('auth.login'))
 
     return render_template('auth/login.html', is_dev=is_dev)
