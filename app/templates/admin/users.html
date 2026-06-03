@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Zarządzanie Użytkownikami</title>
+</head>
+<body>
+    <h1>Zarządzanie Użytkownikami</h1>
+    
+    <h2>Oczekujący na aktywację (rola: NULL)</h2>
+    {% if pending_users %}
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Imię</th>
+                <th>Nazwisko</th>
+                <th>E-mail</th>
+                <th>Rola</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in pending_users %}
+            <tr>
+                <td>{{ u.imie }}</td>
+                <td>{{ u.nazwisko }}</td>
+                <td>{{ u.email }}</td>
+                <td>
+                    <form action="{{ url_for('admin.update_user_role', user_id=u.id) }}" method="POST">
+                        <select name="rola">
+                            <option value="student">Student</option>
+                            <option value="zopz">ZOPZ</option>
+                            <option value="uopz">UOPZ</option>
+                            <option value="administrator">Administrator</option>
+                            <option value="dyrektor">Dyrektor</option>
+                        </select>
+                        <button type="submit">Aktywuj</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Brak oczekujących użytkowników.</p>
+    {% endif %}
+
+    <h2>Wszyscy użytkownicy</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Imię</th>
+                <th>Nazwisko</th>
+                <th>E-mail</th>
+                <th>Rola</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in all_users %}
+            <tr>
+                <td>{{ u.imie }}</td>
+                <td>{{ u.nazwisko }}</td>
+                <td>{{ u.email }}</td>
+                <td>{{ u.rola or 'BRAK (Oczekuje)' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <br>
+    <a href="{{ url_for('main.dashboard') }}">Powrót do Dashboardu</a>
+</body>
+</html>

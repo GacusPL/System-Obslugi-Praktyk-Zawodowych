@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Admina</title>
+</head>
+<body>
+    <h1>Dashboard Admina</h1>
+    <p>Witaj {{ current_user.imie }} {{ current_user.nazwisko }}!</p>
+    <a href="{{ url_for('admin.users_list') }}">Zarządzaj użytkownikami</a><br>
+    <a href="{{ url_for('auth.logout') }}">Wyloguj</a>
+</body>
+</html>

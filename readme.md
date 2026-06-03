@@ -1,6 +1,6 @@
 # System Obsługi Praktyk Zawodowych — IIS
 
-System do cyfryzacji i zarządzania obiegiem dokumentacji praktyk zawodowych w Instytucie Informatyki Stosowanej.
+System do cyfryzacji i zarządzania obiegiem dokumentacji praktyk zawodowych ANS ELBLĄG w Instytucie Informatyki Stosowanej.
 
 ## Stos technologiczny
 
@@ -9,7 +9,7 @@ System do cyfryzacji i zarządzania obiegiem dokumentacji praktyk zawodowych w I
 | Backend | Python 3 + Flask |
 | Baza danych (prototyp) | SQLite |
 | Baza danych (produkcja) | MariaDB |
-| Uwierzytelnianie | Microsoft OAuth2 + Flask-Login |
+| Uwierzytelnianie | Microsoft Entra ID + Flask-Login |
 | Frontend | HTML + JavaScript (Vanilla) |
 | Generowanie PDF | reportlab / weasyprint |
 | Diagramy | Mermaid |

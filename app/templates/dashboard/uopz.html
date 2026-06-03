@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard UOPZ</title>
+</head>
+<body>
+    <h1>Dashboard UOPZ</h1>
+    <p>Witaj {{ current_user.imie }} {{ current_user.nazwisko }}!</p>
+    <a href="{{ url_for('auth.logout') }}">Wyloguj</a>
+</body>
+</html>

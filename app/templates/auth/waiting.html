@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Oczekiwanie na aktywację</title>
+</head>
+<body>
+    <h1>Konto utworzone</h1>
+    <p>Konto utworzone, oczekuje na przypisanie roli przez Administratora</p>
+    <p>Adres e-mail: {{ current_user.email }}</p>
+    <a href="{{ url_for('auth.logout') }}">Wyloguj</a>
+</body>
+</html>
