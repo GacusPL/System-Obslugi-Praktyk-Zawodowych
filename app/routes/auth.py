@@ -22,9 +22,21 @@ def login():
         if mock_email:
             user = Uzytkownik.query.filter_by(email=mock_email).first()
             if not user:
+                names_map = {
+                    "admin@ans-elblag.pl": ("Admin", "Test"),
+                    "dyrektor@ans-elblag.pl": ("Jan", "Dyrektor"),
+                    "uopz@ans-elblag.pl": ("Anna", "Nowak"),
+                    "zopz@ans-elblag.pl": ("Adam", "Zopz"),
+                    "zopz2@ans-elblag.pl": ("Marek", "Kowalski"),
+                    "student1@ans-elblag.pl": ("Kacper", "Student"),
+                    "student2@ans-elblag.pl": ("Jan", "Kowalski"),
+                    "student3@ans-elblag.pl": ("Michał", "Wiśniewski"),
+                    "jan.kowalski@ans-elblag.pl": ("Jan", "Kowalski")
+                }
+                imie, nazwisko = names_map.get(mock_email, ("Mock", "User"))
                 user = Uzytkownik(
-                    imie="Mock",
-                    nazwisko="User",
+                    imie=imie,
+                    nazwisko=nazwisko,
                     email=mock_email,
                     rola=request.args.get('mock_rola'),
                     haslo_hash="mock"
@@ -36,19 +48,23 @@ def login():
                 return redirect(url_for('auth.waiting'))
             return redirect(url_for('main.dashboard'))
 
-    # If microsoft param is set or we are not in dev/testing mode, try to redirect to Microsoft OAuth
-    if request.args.get('microsoft') == 'true' or not is_dev:
+    dev_users = []
+    # If microsoft param is set, try to redirect to Microsoft OAuth
+    if request.args.get('microsoft') == 'true':
         try:
             auth_url = get_auth_url()
             return redirect(auth_url)
         except ValueError as e:
             flash("Nie można nawiązać połączenia z usługą Microsoft OAuth. Sprawdź konfigurację MICROSOFT_AUTHORITY / tenant ID lub użyj logowania lokalnego.", "danger")
-            # If we are not in dev mode, redirecting here would cause a loop, so let's render login page instead of looping
-            if not is_dev:
-                return render_template('auth/login.html', is_dev=is_dev, error=str(e))
             return redirect(url_for('auth.login'))
 
-    return render_template('auth/login.html', is_dev=is_dev)
+    if is_dev or current_app.config.get('TESTING'):
+        try:
+            dev_users = Uzytkownik.query.order_by(Uzytkownik.rola, Uzytkownik.nazwisko).all()
+        except Exception:
+            pass
+
+    return render_template('auth/login.html', is_dev=is_dev, dev_users=dev_users)
 
 @auth_bp.route('/callback')
 @limiter.limit("10 per minute")
@@ -103,8 +119,18 @@ def callback():
 @auth_bp.route('/logout')
 @login_required
 def logout():
+    is_oauth = current_user.microsoft_id is not None
     logout_user()
     flash("Zostałeś wylogowany.", "success")
+    
+    if is_oauth:
+        import urllib.parse
+        tenant = current_app.config.get('MICROSOFT_TENANT_ID', 'common')
+        post_logout = url_for('auth.login', _external=True)
+        encoded_redirect = urllib.parse.quote_plus(post_logout)
+        logout_url = f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/logout?post_logout_redirect_uri={encoded_redirect}"
+        return redirect(logout_url)
+        
     return redirect(url_for('auth.login'))
 
 @auth_bp.route('/waiting')

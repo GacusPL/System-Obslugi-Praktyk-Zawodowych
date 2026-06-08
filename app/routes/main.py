@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
-from app.models import Student, Praktyka, ZakladPracy, WpisDziennika, WniosekAlternatywny, Egzamin, Uzytkownik, Sprawozdanie, db
+from app.models import Student, Praktyka, ZakladPracy, WpisDziennika, WniosekAlternatywny, Egzamin, Uzytkownik, Sprawozdanie, EfektUczenia, db
 
 main_bp = Blueprint('main', __name__)
 
@@ -119,10 +119,31 @@ def harmonogram_edit():
 @main_bp.route('/dziennik')
 @login_required
 def dziennik_list():
-    student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
-    praktyka = Praktyka.query.filter_by(student_id=student.id).first() if student else None
+    praktyka_id = request.args.get('praktyka_id', type=int)
+    
+    if praktyka_id:
+        praktyka = Praktyka.query.get_or_404(praktyka_id)
+        # Access check
+        if current_user.rola == 'student':
+            student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+            if not student or praktyka.student_id != student.id:
+                abort(403)
+        elif current_user.rola == 'uopz':
+            if praktyka.uopz_id != current_user.id:
+                abort(403)
+        elif current_user.rola == 'zopz':
+            if praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko:
+                abort(403)
+    else:
+        if current_user.rola == 'student':
+            student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+            praktyka = Praktyka.query.filter_by(student_id=student.id).first() if student else None
+        else:
+            praktyka = None
+
     if not praktyka:
         return redirect(url_for('main.dashboard'))
+
     efekty = EfektUczenia.query.order_by(EfektUczenia.nr).all()
     return render_template('dziennik/list.html', praktyka=praktyka, efekty=efekty)
 

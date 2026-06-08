@@ -185,3 +185,65 @@ def export_raport():
     output.headers["Content-Disposition"] = "attachment; filename=raport_praktyk.csv"
     output.headers["Content-type"] = "text/csv; charset=utf-8"
     return output
+
+@administracja_api_bp.route('/control/students', methods=['POST'])
+@login_required
+@role_required('student')
+def create_student_profile():
+    data = request.get_json() or {}
+    uzytkownik_id = data.get('uzytkownik_id')
+    nr_albumu = data.get('nr_albumu')
+    kierunek = data.get('kierunek')
+    specjalnosc = data.get('specjalnosc')
+    semestr = data.get('semestr')
+    forma_studiow = data.get('forma_studiow')
+    rok_akademicki = data.get('rok_akademicki')
+
+    # Ensure all required fields are present
+    if not all([uzytkownik_id, nr_albumu, kierunek, semestr, forma_studiow, rok_akademicki]):
+        return api_error("MISSING_FIELDS", "Brakujące wymagane pola", status=400)
+
+    # Security check: User can only create profile for themselves
+    if current_user.id != uzytkownik_id:
+        abort(403)
+
+    # Check if student profile already exists for this user
+    existing_user_student = Student.query.filter_by(uzytkownik_id=uzytkownik_id).first()
+    if existing_user_student:
+        return api_error("STUDENT_ALREADY_EXISTS", "Profil studenta dla tego użytkownika już istnieje", status=400)
+
+    # Check if student with this nr_albumu already exists
+    existing_album_student = Student.query.filter_by(nr_albumu=nr_albumu).first()
+    if existing_album_student:
+        return api_error("ALBUM_NOT_UNIQUE", "Student o podanym numerze albumu już istnieje", status=400)
+
+    # Validate semestr and forma_studiow
+    if semestr not in [6, 7]:
+        return api_error("INVALID_SEMESTER", "Semestr musi mieć wartość 6 lub 7", status=422)
+
+    if forma_studiow not in ['stacjonarne', 'niestacjonarne']:
+        return api_error("INVALID_FORMA_STUDIOW", "Forma studiów musi być 'stacjonarne' lub 'niestacjonarne'", status=422)
+
+    student = Student(
+        uzytkownik_id=uzytkownik_id,
+        nr_albumu=nr_albumu,
+        kierunek=kierunek,
+        specjalnosc=specjalnosc,
+        semestr=semestr,
+        forma_studiow=forma_studiow,
+        rok_akademicki=rok_akademicki
+    )
+    db.session.add(student)
+    db.session.commit()
+
+    return api_success({
+        "id": student.id,
+        "uzytkownik_id": student.uzytkownik_id,
+        "nr_albumu": student.nr_albumu,
+        "kierunek": student.kierunek,
+        "specjalnosc": student.specjalnosc,
+        "semestr": student.semestr,
+        "forma_studiow": student.forma_studiow,
+        "rok_akademicki": student.rok_akademicki
+    }, status=201)
+

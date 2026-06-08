@@ -196,24 +196,56 @@
             <div class="dev-title">
                 <i class="bi bi-bug-fill"></i> Panel Deweloperski (Mock Login)
             </div>
-            <p class="text-muted mb-3" style="font-size: 0.75rem;">Użyj poniższych kont testowych, aby zalogować się lokalnie bez MSAL OAuth:</p>
-            <div class="dev-buttons">
-                <a href="{{ url_for('auth.login', mock_email='admin@ans-elblag.pl', mock_rola='administrator') }}" class="btn btn-dev">
-                    <i class="bi bi-shield-lock-fill"></i> Admin
-                </a>
-                <a href="{{ url_for('auth.login', mock_email='dyrektor@ans-elblag.pl', mock_rola='dyrektor') }}" class="btn btn-dev">
-                    <i class="bi bi-person-badge-fill"></i> Dyrektor
-                </a>
-                <a href="{{ url_for('auth.login', mock_email='uopz@ans-elblag.pl', mock_rola='uopz') }}" class="btn btn-dev">
-                    <i class="bi bi-briefcase-fill"></i> UOPZ
-                </a>
-                <a href="{{ url_for('auth.login', mock_email='zopz@ans-elblag.pl', mock_rola='zopz') }}" class="btn btn-dev">
-                    <i class="bi bi-award-fill"></i> ZOPZ
-                </a>
-                <a href="{{ url_for('auth.login', mock_email='jan.kowalski@ans-elblag.pl', mock_rola='student') }}" class="btn btn-dev" style="grid-column: span 2;">
-                    <i class="bi bi-person-fill-gear"></i> Student (Jan Kowalski)
-                </a>
+            <p class="text-muted mb-3" style="font-size: 0.75rem;">Wybierz użytkownika z bazy, aby zalogować się lokalnie bez MSAL OAuth:</p>
+            
+            <input type="text" id="dev-user-search" class="form-control form-control-sm mb-3" placeholder="Szukaj użytkownika..." style="font-size: 0.8rem; background-color: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff;">
+            
+            <div class="dev-user-list" style="max-height: 200px; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 4px; background-color: rgba(15, 23, 42, 0.3);">
+                {% if dev_users %}
+                    {% for u in dev_users %}
+                    <a href="{{ url_for('auth.login', mock_email=u.email, mock_rola=u.rola) }}" class="btn btn-dev w-100 mb-1 d-flex justify-content-between align-items-center" style="padding: 8px 12px; font-size: 0.8rem;">
+                        <div class="text-start text-truncate" style="max-width: 250px;">
+                            <strong class="d-block">
+                                {% if u.rola == 'student' and u.imie == 'Jan' and u.nazwisko == 'Kowalski' %}
+                                    Student (Jan Kowalski)
+                                {% elif u.rola == 'administrator' and u.imie == 'Admin' %}
+                                    Admin
+                                {% elif u.rola == 'dyrektor' and u.imie == 'Dyrektor' %}
+                                    Dyrektor
+                                {% elif u.rola == 'uopz' and u.imie == 'Anna' and u.nazwisko == 'Nowak' %}
+                                    UOPZ
+                                {% elif u.rola == 'zopz' and u.imie == 'Adam' and u.nazwisko == 'Zopz' %}
+                                    ZOPZ
+                                {% else %}
+                                    {{ u.imie }} {{ u.nazwisko }}
+                                {% endif %}
+                            </strong>
+                            <span class="text-muted" style="font-size: 0.7rem;">{{ u.email }}</span>
+                        </div>
+                        <span class="badge rounded-pill" style="font-size: 0.65rem; background-color: {% if u.rola == 'administrator' %}#ef4444{% elif u.rola == 'dyrektor' %}#f59e0b{% elif u.rola == 'uopz' %}#10b981{% elif u.rola == 'zopz' %}#3b82f6{% else %}#64748b{% endif %}; text-transform: uppercase;">
+                            {{ u.rola or 'brak' }}
+                        </span>
+                    </a>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted p-3" style="font-size: 0.8rem;">Brak zarejestrowanych użytkowników.</div>
+                {% endif %}
             </div>
+
+            <script>
+                document.getElementById('dev-user-search').addEventListener('input', function() {
+                    const query = this.value.toLowerCase();
+                    const buttons = document.querySelectorAll('.dev-user-list .btn-dev');
+                    buttons.forEach(btn => {
+                        const text = btn.innerText.toLowerCase();
+                        if (text.includes(query)) {
+                            btn.style.setProperty('display', 'flex', 'important');
+                        } else {
+                            btn.style.setProperty('display', 'none', 'important');
+                        }
+                    });
+                });
+            </script>
         </div>
         {% endif %}
     </div>

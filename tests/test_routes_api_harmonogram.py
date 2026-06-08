@@ -115,3 +115,51 @@ def test_harmonogram_crud_and_signatures(client, db_session, sample_student, sam
 
     # Verify that the practice status is also updated to Approved
     assert Praktyka.query.get(praktyka.id).status == "Approved"
+
+    # 8. Test PUT save and PATCH /signature routes (using student login)
+    client.get('/auth/logout')
+    client.get(f'/auth/login?mock_email={sample_student.uzytkownik.email}&mock_rola=student')
+
+    # Create a fresh practice and harmonogram in draft for student to edit and sign
+    praktyka3 = Praktyka(
+        student_id=sample_student.id,
+        zaklad_id=sample_zaklad.id,
+        uopz_id=sample_uopz.id,
+        termin_od=praktyka.termin_od,
+        termin_do=praktyka.termin_do,
+        rok_akademicki="2025/2026",
+        status="Draft"
+    )
+    db_session.add(praktyka3)
+    db_session.commit()
+
+    h3 = Harmonogram(praktyka_id=praktyka3.id, status="Draft")
+    db_session.add(h3)
+    db_session.commit()
+
+    # Save divisions via PUT (sum = 120)
+    put_data = {
+        "dzialy": [
+            {"nazwa_dzialu": "A", "planowane_dni": 50},
+            {"nazwa_dzialu": "B", "planowane_dni": 70}
+        ]
+    }
+    response = client.put(f'/api/v1/harmonogramy/{h3.id}', json=put_data)
+    assert response.status_code == 200
+    assert len(response.get_json()["data"]["dzialy"]) == 2
+
+    # Save divisions via PUT (invalid sum != 120) -> 400
+    invalid_put_data = {
+        "dzialy": [
+            {"nazwa_dzialu": "A", "planowane_dni": 50},
+            {"nazwa_dzialu": "B", "planowane_dni": 60}
+        ]
+    }
+    response = client.put(f'/api/v1/harmonogramy/{h3.id}', json=invalid_put_data)
+    assert response.status_code == 400
+
+    # Sign via PATCH .../signature
+    response = client.patch(f'/api/v1/harmonogramy/{h3.id}/signature', json={"rola": "student"})
+    assert response.status_code == 200
+    assert response.get_json()["data"]["podpis_student"] == 1
+

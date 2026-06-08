@@ -136,6 +136,7 @@ def get_praktyka(praktyka_id):
     return api_success(serialize_praktyka(praktyka))
 
 @praktyki_api_bp.route('/praktyki/<int:praktyka_id>', methods=['PATCH'])
+@praktyki_api_bp.route('/praktyki/<int:praktyka_id>/status', methods=['PATCH'])
 @login_required
 def update_praktyka_status(praktyka_id):
     praktyka = Praktyka.query.get_or_404(praktyka_id)

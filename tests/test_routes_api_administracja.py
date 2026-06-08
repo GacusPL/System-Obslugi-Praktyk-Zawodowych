@@ -116,3 +116,35 @@ def test_administracja_endpoints(client, db_session, sample_student, sample_zakl
     assert response.status_code == 200
     assert "text/csv" in response.headers["Content-Type"]
     assert b"Draft" in response.data
+
+    # 8. POST control/students (Student creates academic profile)
+    client.get('/auth/logout')
+    new_student_user = Uzytkownik(
+        imie="Michał",
+        nazwisko="Kowalski",
+        email="michal.kowalski@ans-elblag.pl",
+        rola="student"
+    )
+    new_student_user.set_password("student123")
+    db_session.add(new_student_user)
+    db_session.commit()
+
+    client.get(f'/auth/login?mock_email={new_student_user.email}&mock_rola=student')
+    
+    student_data = {
+        "uzytkownik_id": new_student_user.id,
+        "nr_albumu": "88776",
+        "kierunek": "Informatyka",
+        "specjalnosc": "Cyberbezpieczeństwo",
+        "semestr": 6,
+        "forma_studiow": "stacjonarne",
+        "rok_akademicki": "2025/2026"
+    }
+    response = client.post('/api/v1/control/students', json=student_data)
+    assert response.status_code == 201
+    assert response.get_json()["data"]["nr_albumu"] == "88776"
+
+    # Double save -> error (400)
+    response = client.post('/api/v1/control/students', json=student_data)
+    assert response.status_code == 400
+

@@ -4,11 +4,17 @@ from app import db
 from app.models import Uzytkownik
 
 def test_login_redirect_to_microsoft(client):
+    # Default access renders the login page (200)
+    response = client.get('/auth/login', follow_redirects=False)
+    assert response.status_code == 200
+
+    # Access with microsoft=true redirects to Microsoft OAuth (302)
     with patch('app.routes.auth.get_auth_url') as mock_get_url:
         mock_get_url.return_value = "https://login.microsoftonline.com/mock-tenant/oauth2/v2.0/authorize"
-        response = client.get('/auth/login', follow_redirects=False)
+        response = client.get('/auth/login?microsoft=true', follow_redirects=False)
         assert response.status_code == 302
         assert "login.microsoftonline.com" in response.location
+
 
 def test_mock_login_testing(client, db_session):
     # Testing mock login feature

@@ -156,3 +156,109 @@ def update_harmonogram(harmonogram_id):
 
     db.session.commit()
     return api_success(serialize_harmonogram(harmonogram))
+
+@harmonogramy_api_bp.route('/harmonogramy/<int:harmonogram_id>', methods=['PUT'])
+@login_required
+def save_harmonogram_divisions(harmonogram_id):
+    harmonogram = Harmonogram.query.get_or_404(harmonogram_id)
+    praktyka = harmonogram.praktyka
+    
+    # Access checks
+    if current_user.rola == 'student':
+        student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+        if not student or praktyka.student_id != student.id:
+            abort(403)
+        # Student cannot update if already signed or approved
+        if harmonogram.status not in ['Draft', 'Rejected'] or harmonogram.podpis_student:
+            return api_error("NOT_EDITABLE", "Nie można edytować podpisanego lub zatwierdzonego harmonogramu", status=400)
+    elif current_user.rola not in ['uopz', 'administrator']:
+        abort(403)
+
+    data = request.get_json() or {}
+    dzialy_data = data.get('dzialy', [])
+    if not dzialy_data:
+        return api_error("MISSING_FIELDS", "Brakujące działy harmonogramu", status=400)
+
+    # Calculate total days
+    total_days = sum(int(d.get('planowane_dni', 0)) for d in dzialy_data)
+    if total_days != 120:
+        return api_error("INVALID_TOTAL_DAYS", f"Suma dni w harmonogramie wynosi {total_days} (wymagane 120)", status=400)
+
+    # Delete existing divisions
+    HarmonogramDzial.query.filter_by(harmonogram_id=harmonogram.id).delete()
+
+    # Add new divisions
+    for d in dzialy_data:
+        nazwa = d.get('nazwa_dzialu')
+        dni = int(d.get('planowane_dni', 0))
+        if not nazwa or dni <= 0:
+            db.session.rollback()
+            return api_error("INVALID_DIVISION", "Nieprawidłowe dane działu (nazwa i dni > 0 są wymagane)", status=400)
+        
+        dzial = HarmonogramDzial(
+            harmonogram_id=harmonogram.id,
+            nazwa_dzialu=nazwa,
+            planowane_dni=dni
+        )
+        db.session.add(dzial)
+
+    db.session.commit()
+    return api_success(serialize_harmonogram(harmonogram))
+
+@harmonogramy_api_bp.route('/harmonogramy/<int:harmonogram_id>/signature', methods=['PATCH'])
+@login_required
+def sign_harmonogram(harmonogram_id):
+    harmonogram = Harmonogram.query.get_or_404(harmonogram_id)
+    praktyka = harmonogram.praktyka
+
+    # Read role from request (can be in json, form, or args)
+    req_role = None
+    if request.is_json:
+        req_role = request.get_json().get('rola')
+    if not req_role:
+        req_role = request.form.get('rola') or request.args.get('rola')
+
+    if not req_role:
+        return api_error("MISSING_ROLE", "Brak podanej roli do podpisu", status=400)
+
+    # Permission checks and signing
+    if req_role == 'student':
+        if current_user.rola != 'student':
+            abort(403)
+        student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+        if not student or praktyka.student_id != student.id:
+            abort(403)
+        
+        # Verify that sum of days is 120 before signing
+        total_days = sum(d.planowane_dni for d in harmonogram.dzialy)
+        if total_days != 120:
+            return api_error("INVALID_TOTAL_DAYS", "Nie można podpisać harmonogramu z sumą dni inną niż 120", status=400)
+
+        harmonogram.podpis_student = 1
+
+    elif req_role == 'zopz':
+        if current_user.rola != 'zopz':
+            abort(403)
+        if praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko:
+            abort(403)
+        harmonogram.podpis_zopz = 1
+
+    elif req_role == 'uopz':
+        if current_user.rola != 'uopz':
+            abort(403)
+        if praktyka.uopz_id != current_user.id:
+            abort(403)
+        harmonogram.podpis_uopz = 1
+
+    else:
+        return api_error("INVALID_ROLE", "Nieprawidłowa rola do podpisu", status=400)
+
+    # Auto-approval check: if 3 signatures present, change status to Approved
+    if harmonogram.podpis_student == 1 and harmonogram.podpis_zopz == 1 and harmonogram.podpis_uopz == 1:
+        harmonogram.status = 'Approved'
+        # Move praktyka status to Approved as well if it is not Closed
+        if praktyka.status not in ['Closed', 'Rejected']:
+            praktyka.status = 'Approved'
+
+    db.session.commit()
+    return api_success(serialize_harmonogram(harmonogram))
