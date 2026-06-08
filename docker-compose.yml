@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  db:
+    image: mariadb:10.11
+    container_name: sopz_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-sopz}
+      MYSQL_USER: ${MYSQL_USER:-sopz_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-sopz_password}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: sopz_web
+    restart: always
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=mysql+pymysql://${MYSQL_USER:-sopz_user}:${MYSQL_PASSWORD:-sopz_password}@db:3306/${MYSQL_DATABASE:-sopz}
+      - SECRET_KEY=${SECRET_KEY:-default_secret_key_prod}
+      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID}
+      - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET}
+      - MICROSOFT_TENANT_ID=${MICROSOFT_TENANT_ID}
+      - MICROSOFT_REDIRECT_URI=${MICROSOFT_REDIRECT_URI}
+      - MICROSOFT_AUTHORITY=${MICROSOFT_AUTHORITY}
+    volumes:
+      - static_files:/app/app/static
+      - generated_docs:/app/app/storage/generated
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  nginx:
+    build: ./nginx
+    container_name: sopz_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - static_files:/app/static:ro
+    depends_on:
+      web:
+        condition: service_healthy
+    networks:
+      - backend
+
+volumes:
+  db_data:
+  static_files:
+  generated_docs:
+
+networks:
+  backend:
+    driver: bridge
