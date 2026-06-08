@@ -35,25 +35,13 @@
 
             <!-- Panel Ocen i Zaliczenia -->
             <div class="card p-4 border-primary border-start border-4 bg-light">
-                <h5 class="fw-bold mb-3"><i class="bi bi-check2-circle text-success me-2"></i>Końcowe Zaliczenie Praktyki Zawodowej</h5>
+                <h5 class="fw-bold mb-3"><i class="bi bi-check2-circle text-success me-2"></i>Zatwierdzenie Dokumentacji Praktyki</h5>
                 <form id="zaliczenie-form" data-praktyka-id="{{ praktyka.id }}">
                     <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Ocena końcowa praktyki</label>
-                            <select name="ocena_koncowa" class="form-select" required>
-                                <option value="">Wybierz ocenę...</option>
-                                <option value="2.0">2.0 (ndst)</option>
-                                <option value="3.0">3.0 (dst)</option>
-                                <option value="3.5">3.5 (dst+)</option>
-                                <option value="4.0">4.0 (db)</option>
-                                <option value="4.5">4.5 (db+)</option>
-                                <option value="5.0">5.0 (bdb)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Decyzja końcowa</label>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Decyzja weryfikacyjna</label>
                             <select name="status" class="form-select" required>
-                                <option value="Closed">Zatwierdź i Zakończ Praktykę (Closed)</option>
+                                <option value="Approved">Zatwierdź Dokumentację (Approved)</option>
                                 <option value="Rejected">Odrzuć i zwróć do poprawy (Rejected)</option>
                             </select>
                         </div>
@@ -66,11 +54,10 @@
                             const formData = new FormData(this);
                             
                             const payload = {
-                                ocena_koncowa: parseFloat(formData.get('ocena_koncowa')),
                                 status: formData.get('status')
                             };
                             
-                            fetch(`/api/v1/praktyki/${pId}/zaliczenie`, {
+                            fetch(`/api/v1/dokumentacja/${pId}`, {
                                 method: 'PATCH',
                                 headers: {
                                     'Content-Type': 'application/json'
@@ -78,17 +65,17 @@
                                 body: JSON.stringify(payload)
                             }).then(res => {
                                 if (res.ok) {
-                                    alert("Zaliczenie końcowe zostało zapisane!");
+                                    alert("Decyzja weryfikacyjna została zapisana!");
                                     window.location.href = '/dashboard';
                                 } else {
-                                    alert("Błąd zapisu oceny końcowej.");
+                                    alert("Błąd zapisu decyzji weryfikacyjnej.");
                                 }
                             });
                         });
                     </script>
 
                     <button type="submit" class="btn btn-primary btn-primary-custom w-100">
-                        Zapisz Zaliczenie Końcowe
+                        Zapisz Decyzję Weryfikacyjną
                     </button>
                 </form>
             </div>

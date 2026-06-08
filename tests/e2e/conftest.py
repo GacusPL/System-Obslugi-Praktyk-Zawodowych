@@ -13,6 +13,8 @@ def run_server(app):
 def server():
     # Force loading 'testing' config with debug=True so mock login works!
     app = create_app('testing')
+    from config import BASE_DIR
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{BASE_DIR}/test_e2e.db'
     app.config['DEBUG'] = True  # crucial to allow is_dev check for mock login
     app.config['E2E'] = True
     

@@ -1,12 +1,13 @@
 from flask import Blueprint, redirect, request, url_for, render_template, flash, current_app
 from flask_login import login_user, logout_user, login_required, current_user
-from app import db
+from app import db, limiter
 from app.models import Uzytkownik
 from app.auth import get_auth_url, get_token_from_code, get_user_info
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @auth_bp.route('/login')
+@limiter.limit("10 per minute")
 def login():
     if current_user.is_authenticated:
         if current_user.rola is None:
@@ -50,6 +51,7 @@ def login():
     return render_template('auth/login.html', is_dev=is_dev)
 
 @auth_bp.route('/callback')
+@limiter.limit("10 per minute")
 def callback():
     code = request.args.get('code')
     if not code:

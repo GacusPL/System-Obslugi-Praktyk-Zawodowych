@@ -3,6 +3,9 @@ from flask import Flask, redirect, url_for, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager, current_user
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,6 +13,12 @@ load_dotenv()
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
+csrf = CSRFProtect()
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["1000 per hour", "100 per minute"],
+    storage_uri="memory://"
+)
 
 def create_app(config_name=None):
     app = Flask(__name__)
@@ -20,9 +29,15 @@ def create_app(config_name=None):
     from config import config_by_name
     app.config.from_object(config_by_name[config_name])
     
+    # Setup logging
+    from app.logging_config import setup_logging
+    setup_logging(app)
+    
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    csrf.init_app(app)
+    limiter.init_app(app)
     
     login_manager.login_view = 'auth.login'
     

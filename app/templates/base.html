@@ -21,6 +21,7 @@
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -174,7 +175,29 @@
                 updateToggleIcon(newTheme);
             });
         }
+
+        // Global Fetch CSRF Interceptor
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method.toUpperCase())) {
+                options.headers = options.headers || {};
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                if (token) {
+                    options.headers['X-CSRFToken'] = token;
+                }
+            }
+            return originalFetch(url, options);
+        };
+
+        // Global HTMX CSRF Interceptor
+        document.addEventListener('htmx:configRequest', (event) => {
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (token) {
+                event.detail.headers['X-CSRFToken'] = token;
+            }
+        });
     </script>
+    <script src="{{ url_for('static', filename='js/validation.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

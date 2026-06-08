@@ -16,6 +16,7 @@ from app.routes.api.wniosek import wniosek_api_bp
 from app.routes.api.egzamin import egzamin_api_bp
 from app.routes.api.administracja import administracja_api_bp
 from app.routes.api.files import files_api_bp
+from app.routes.api.documents import documents_api_bp
 api_bp.register_blueprint(praktyki_api_bp)
 api_bp.register_blueprint(harmonogramy_api_bp)
 api_bp.register_blueprint(dziennik_api_bp)
@@ -28,10 +29,16 @@ api_bp.register_blueprint(wniosek_api_bp)
 api_bp.register_blueprint(egzamin_api_bp)
 api_bp.register_blueprint(administracja_api_bp)
 api_bp.register_blueprint(files_api_bp)
+api_bp.register_blueprint(documents_api_bp)
 
 @api_bp.route('/health')
 def health():
-    return api_success({"status": "ok"})
+    from app import db
+    try:
+        db.session.execute(db.text('SELECT 1'))
+        return api_success({"status": "ok"})
+    except Exception:
+        return api_error("DATABASE_UNAVAILABLE", "Baza danych jest niedostępna", status=503)
 
 # Global API error handlers
 @api_bp.app_errorhandler(400)

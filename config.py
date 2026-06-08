@@ -21,10 +21,15 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     TESTING = True
     DEBUG = True
-    # Use SQLite in-memory or a temporary file for tests
-    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL', 'sqlite://')
-    # WTF_CSRF_ENABLED = False is usually helpful in tests
+    # Use a temporary file for tests to prevent multi-threaded in-memory corruption
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL', f'sqlite:///{BASE_DIR}/test.db')
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'connect_args': {
+            'check_same_thread': False
+        }
+    }
     WTF_CSRF_ENABLED = False
+    RATELIMIT_ENABLED = False
 
 class ProductionConfig(Config):
     DEBUG = False

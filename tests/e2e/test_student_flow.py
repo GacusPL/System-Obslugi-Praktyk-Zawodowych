@@ -11,20 +11,21 @@ def test_full_student_flow(page, server):
     assert "Dashboard" in page.title()
     assert page.locator(".badge-student").is_visible()
 
-    # 2. Register practice (P1)
-    page.click("a[href='/praktyka/zgloszenie']")
-    page.wait_for_url(f"{server}/praktyka/zgloszenie")
-    
-    # Fill out the form
-    page.select_option("select[name='zaklad_id']", index=1)
-    page.select_option("select[name='uopz_id']", index=1)
-    page.fill("input[name='rok_akademicki']", "2025/2026")
-    page.fill("input[name='termin_od']", "2026-07-01")
-    page.fill("input[name='termin_do']", "2026-09-30")
-    page.click("button[type='submit']")
-    
-    # Verify redirected back to dashboard
-    page.wait_for_url(f"{server}/dashboard")
+    # 2. Register practice (P1) - skip if already registered by another test
+    if page.locator("a[href='/praktyka/zgloszenie']").is_visible():
+        page.click("a[href='/praktyka/zgloszenie']")
+        page.wait_for_url(f"{server}/praktyka/zgloszenie")
+        
+        # Fill out the form
+        page.select_option("select[name='zaklad_id']", index=1)
+        page.select_option("select[name='uopz_id']", index=1)
+        page.fill("input[name='rok_akademicki']", "2025/2026")
+        page.fill("input[name='termin_od']", "2026-07-01")
+        page.fill("input[name='termin_do']", "2026-09-30")
+        page.click("button[type='submit']")
+        
+        # Verify redirected back to dashboard
+        page.wait_for_url(f"{server}/dashboard")
     
     # Logout
     page.click("#userMenuButton")

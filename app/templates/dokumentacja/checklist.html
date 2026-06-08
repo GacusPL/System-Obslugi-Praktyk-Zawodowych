@@ -55,14 +55,50 @@
                 {% endfor %}
             </ul>
 
+            {% if praktyka.dokumenty %}
+            <div class="mt-4 p-4 border rounded bg-light">
+                <h5 class="fw-bold mb-3 text-danger"><i class="bi bi-file-earmark-pdf-fill me-2"></i>Wygenerowane Dokumenty Oficjalne</h5>
+                <p class="text-muted small">Pobierz wygenerowane pliki PDF w celu wydrukowania i podpisania:</p>
+                <div class="list-group list-group-flush">
+                    {% for doc in praktyka.dokumenty %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-0 bg-transparent">
+                        <div>
+                            <span class="fw-semibold">{{ doc.typ }}</span>
+                            <span class="text-muted small ms-2">(Załącznik PDF)</span>
+                        </div>
+                        <a href="{{ doc.get_download_url() }}" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-download me-1"></i> Pobierz PDF
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             <div class="d-grid mt-4">
                 <button class="btn btn-success py-2" 
-                        {% if not all_approved.value %}disabled{% endif %}
-                        hx-patch="/api/v1/dokumentacja/{{ praktyka.id }}/submit"
-                        hx-swap="none"
-                        onclick="alert('Dokumentacja została pomyślnie złożona!'); window.location.href='/dashboard';">
+                        id="submit-dokumentacja-btn"
+                        {% if not all_approved.value %}disabled{% endif %}>
                     <i class="bi bi-check-all me-2"></i> Złóż kompletną dokumentację praktyki
                 </button>
+                <script>
+                    document.getElementById('submit-dokumentacja-btn')?.addEventListener('click', function() {
+                        fetch('/api/v1/dokumentacja/zloz', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ praktyka_id: {{ praktyka.id }} })
+                        }).then(res => {
+                            if (res.ok) {
+                                alert('Dokumentacja została pomyślnie złożona!');
+                                window.location.href = '/dashboard';
+                            } else {
+                                alert('Błąd składania dokumentacji.');
+                            }
+                        });
+                    });
+                </script>
                 {% if not all_approved.value %}
                 <div class="form-text text-center text-danger mt-2">
                     <i class="bi bi-info-circle me-1"></i> Przycisk będzie aktywny dopiero po zatwierdzeniu wszystkich 6 dokumentów.
