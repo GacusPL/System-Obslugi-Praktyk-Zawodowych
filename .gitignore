@@ -55,6 +55,7 @@ logs/
 htmlcov/
 .playwright/
 junit/
+local_docs/
 
 # Uploads and temporary/generated files
 app/static/uploads/
