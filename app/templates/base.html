@@ -30,8 +30,9 @@
     <nav class="navbar navbar-expand-lg navbar-light">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('main.dashboard') }}">
-                <img src="{{ url_for('static', filename='img/logo-ans-poziom.png') }}" alt="Logo ANS Elbląg" class="me-2 d-none d-sm-inline-block">
-                <span class="fw-bold text-primary fs-5 ms-1">SOPZ</span>
+                <img src="{{ url_for('static', filename='img/logo-ans-poziom.png') }}" alt="Logo ANS Elbląg" class="me-2" style="max-height: 38px;">
+                <span class="fw-bold text-primary fs-5 ms-1 d-none d-md-inline-block">SOPZ | ANS w Elblągu</span>
+                <span class="fw-bold text-primary fs-5 ms-1 d-inline-block d-md-none">SOPZ</span>
             </a>
             
             {% if current_user.is_authenticated %}
@@ -42,22 +43,28 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
+                        <a class="nav-link {% if request.endpoint == 'main.dashboard' and not request.args.get('praktyka_id') %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
                             <i class="bi bi-speedometer2 me-1"></i> Dashboard
                         </a>
                     </li>
                     
                     {% if current_user.rola == 'student' %}
                     <li class="nav-item">
-                        <a class="nav-link {% if 'praktyka' in request.path %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
+                        {% if active_praktyka %}
+                        <a class="nav-link {% if 'praktyka' in request.path or 'checklist' in request.path or 'karta' in request.path or 'sprawozdanie' in request.path or 'dziennik' in request.path or 'harmonogram' in request.path or 'ankieta' in request.path %}active{% endif %}" href="{{ url_for('main.dokumentacja_checklist', praktyka_id=active_praktyka.id) }}">
                             <i class="bi bi-file-earmark-text me-1"></i> Moja Praktyka
                         </a>
+                        {% else %}
+                        <a class="nav-link {% if 'praktyka' in request.path or 'wniosek' in request.path %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
+                            <i class="bi bi-file-earmark-text me-1"></i> Moja Praktyka
+                        </a>
+                        {% endif %}
                     </li>
                     {% endif %}
 
                     {% if current_user.rola == 'zopz' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                        <a class="nav-link {% if 'dziennik' in request.path or 'karta' in request.path %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
                             <i class="bi bi-clipboard-check me-1"></i> Weryfikacja Dzienników
                         </a>
                     </li>
@@ -65,7 +72,7 @@
 
                     {% if current_user.rola == 'uopz' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('main.dashboard') }}">
+                        <a class="nav-link {% if 'dziennik' in request.path or 'karta' in request.path or 'dokumentacja' in request.path %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
                             <i class="bi bi-briefcase me-1"></i> Nadzór Praktyk
                         </a>
                     </li>
@@ -141,9 +148,17 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer">
-        <div class="container text-center">
-            <span class="logo-subtitle">SOPZ</span> &copy; 2026 Akademia Nauk Stosowanych w Elblągu. Wszelkie prawa zastrzeżone.
+    <footer class="footer py-3 mt-auto" style="background-color: var(--bg-card); border-top: 1px solid var(--border-color); font-size: 0.85rem; color: var(--text-muted);">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 text-center text-md-start">
+                <div class="d-flex align-items-center justify-content-center">
+                    <img src="{{ url_for('static', filename='img/logo-ans-poziom.png') }}" alt="Logo ANS Elbląg" class="me-2" style="max-height: 24px; filter: grayscale(1) brightness(0.8) contrast(1.2);">
+                    <span class="fw-bold text-primary fs-6 ms-1">SOPZ</span>
+                </div>
+                <div>
+                    &copy; 2026 Akademia Nauk Stosowanych w Elblągu. Wszelkie prawa zastrzeżone.
+                </div>
+            </div>
         </div>
     </footer>
 

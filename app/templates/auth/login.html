@@ -6,248 +6,365 @@
     <title>Logowanie - System Obsługi Praktyk Zawodowych ANS Elbląg</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Fonts: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Outfit (Display) & Plus Jakarta Sans (Body) -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #0d6efd;
-            --primary-hover: #0b5ed7;
-            --bg-gradient-start: #0f172a;
-            --bg-gradient-end: #1e293b;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --primary: #074b88;
+            --primary-hover: #053b6c;
+            --primary-light: rgba(7, 75, 136, 0.08);
+            --bg-main: #f8fafc;
+            --text-color: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --danger: #e11d48;
+            --danger-light: rgba(225, 29, 72, 0.08);
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-color);
+            margin: 0;
             min-height: 100vh;
+            display: flex;
+        }
+
+        .split-container {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        /* Left Side: Brand Showcase */
+        .brand-section {
+            width: 55%;
+            background: linear-gradient(135deg, #052c52 0%, #074b88 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 60px;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-section::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .brand-logo img {
+            max-height: 52px;
+            filter: brightness(0) invert(1);
+        }
+
+        .brand-content {
+            max-width: 500px;
+            z-index: 10;
+        }
+
+        .brand-title {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 2.8rem;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #ffffff, #cfebff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-features {
+            list-style: none;
+            padding: 0;
+            margin: 30px 0 0 0;
+        }
+
+        .brand-features li {
+            margin-bottom: 15px;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            opacity: 0.9;
+        }
+
+        .brand-features li i {
+            color: #38bdf8;
+            font-size: 1.2rem;
+        }
+
+        .brand-footer {
+            font-size: 0.85rem;
+            opacity: 0.6;
+            z-index: 10;
+        }
+
+        /* Right Side: Form Container */
+        .form-section {
+            width: 45%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--text-main);
-            margin: 0;
-            padding: 20px;
-        }
-
-        .login-container {
-            width: 100%;
-            max-width: 480px;
+            padding: 40px;
+            background-color: #ffffff;
         }
 
         .login-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            width: 100%;
+            max-width: 420px;
         }
 
-        .login-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
-        }
-
-        .logo-container {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .logo-placeholder {
-            font-size: 2.5rem;
-            font-weight: 800;
-            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 5px;
-        }
-
-        .logo-subtitle {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-muted);
-            font-weight: 600;
+        .login-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            color: var(--primary);
         }
 
         .btn-microsoft {
             background-color: #2f2f2f;
             color: #ffffff;
             border: 1px solid rgba(255, 255, 255, 0.15);
-            font-weight: 500;
-            padding: 12px 24px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            font-weight: 600;
+            padding: 14px 24px;
+            border-radius: 12px;
+            transition: all 0.25s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
             width: 100%;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            text-decoration: none;
         }
 
         .btn-microsoft:hover {
             background-color: #404040;
             border-color: rgba(255, 255, 255, 0.25);
             color: #ffffff;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.15);
         }
 
+        /* Dev Panel Styling */
         .dev-panel {
-            margin-top: 30px;
+            margin-top: 35px;
             padding-top: 25px;
-            border-top: 1px dashed rgba(255, 255, 255, 0.1);
+            border-top: 1px dashed var(--border-color);
         }
 
         .dev-title {
             font-size: 0.85rem;
-            color: #fb7185;
-            font-weight: 600;
+            color: var(--danger);
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             gap: 6px;
         }
 
-        .dev-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+        .dev-user-list {
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 6px;
+            background-color: var(--bg-main);
         }
 
         .btn-dev {
             font-size: 0.8rem;
-            padding: 8px 12px;
-            background-color: rgba(30, 41, 59, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            color: var(--text-main);
-            border-radius: 6px;
+            padding: 10px 14px;
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 8px;
             text-align: left;
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 6px;
+            text-decoration: none;
         }
 
         .btn-dev:hover {
-            background-color: rgba(59, 130, 246, 0.15);
-            border-color: rgba(59, 130, 246, 0.3);
-            color: #60a5fa;
+            background-color: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
         }
 
-        .btn-dev i {
-            font-size: 0.95rem;
+        .btn-dev strong {
+            color: var(--text-color);
         }
 
         .alert-custom {
-            background-color: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.25);
-            color: #fca5a5;
-            border-radius: 8px;
+            background-color: var(--danger-light);
+            border: 1px solid rgba(225, 29, 72, 0.2);
+            color: var(--danger);
+            border-radius: 12px;
             font-size: 0.9rem;
-            padding: 12px;
-            margin-bottom: 20px;
+            padding: 14px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 992px) {
+            .brand-section {
+                display: none;
+            }
+            .form-section {
+                width: 100%;
+                background-color: var(--bg-main);
+            }
+            .login-card {
+                background-color: #ffffff;
+                padding: 40px;
+                border-radius: 20px;
+                border: 1px solid var(--border-color);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="login-container">
-    <div class="login-card">
-        <div class="logo-container">
-            <div class="logo-placeholder">SOPZ</div>
-            <div class="logo-subtitle">ANS w Elblągu</div>
-            <p class="text-muted mt-3 mb-0" style="font-size: 0.9rem;">System Obsługi Praktyk Zawodowych</p>
+<div class="split-container">
+    <!-- Left Side: Brand Showcase -->
+    <div class="brand-section">
+        <div class="brand-logo">
+            <img src="{{ url_for('static', filename='img/logo-ans-poziom.png') }}" alt="Logo ANS Elbląg">
         </div>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-custom d-flex align-items-center" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        <div>{{ message }}</div>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <div class="mb-4 text-center">
-            <a href="{{ url_for('auth.login', microsoft='true') }}" class="btn btn-microsoft">
-                <svg width="20" height="20" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="0" y="0" width="11" height="11" fill="#f25022"/>
-                    <rect x="12" y="0" width="11" height="11" fill="#7fba00"/>
-                    <rect x="0" y="12" width="11" height="11" fill="#00a4ef"/>
-                    <rect x="12" y="12" width="11" height="11" fill="#ffb900"/>
-                </svg>
-                Zaloguj przez konto Microsoft
-            </a>
+        
+        <div class="brand-content">
+            <h1 class="brand-title">SOPZ</h1>
+            <p class="lead opacity-75">System Obsługi Praktyk Zawodowych dla studentów i opiekunów Akademii Nauk Stosowanych w Elblągu.</p>
+            
+            <ul class="brand-features">
+                <li><i class="bi bi-patch-check-fill"></i> Szybka rejestracja i weryfikacja wniosków</li>
+                <li><i class="bi bi-book-fill"></i> Elektroniczny dziennik praktyk (120 dni)</li>
+                <li><i class="bi bi-file-earmark-pdf-fill"></i> Automatyczne generowanie dokumentacji PDF</li>
+                <li><i class="bi bi-shield-fill-check"></i> Pełna kontrola efektów uczenia się</li>
+            </ul>
         </div>
+        
+        <div class="brand-footer">
+            &copy; 2026 Akademia Nauk Stosowanych w Elblągu. Wszelkie prawa zastrzeżone.
+        </div>
+    </div>
 
-        {% if is_dev %}
-        <div class="dev-panel">
-            <div class="dev-title">
-                <i class="bi bi-bug-fill"></i> Panel Deweloperski (Mock Login)
+    <!-- Right Side: Form Section -->
+    <div class="form-section">
+        <div class="login-card">
+            <!-- Mobile Brand Header -->
+            <div class="d-lg-none text-center mb-4">
+                <img src="{{ url_for('static', filename='img/logo-ans-poziom.png') }}" alt="Logo ANS Elbląg" class="mb-3" style="max-height: 40px;">
+                <h3 class="fw-bold mb-1" style="color: var(--primary);">SOPZ</h3>
+                <p class="text-muted small">System Obsługi Praktyk Zawodowych</p>
             </div>
-            <p class="text-muted mb-3" style="font-size: 0.75rem;">Wybierz użytkownika z bazy, aby zalogować się lokalnie bez MSAL OAuth:</p>
-            
-            <input type="text" id="dev-user-search" class="form-control form-control-sm mb-3" placeholder="Szukaj użytkownika..." style="font-size: 0.8rem; background-color: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff;">
-            
-            <div class="dev-user-list" style="max-height: 200px; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 4px; background-color: rgba(15, 23, 42, 0.3);">
-                {% if dev_users %}
-                    {% for u in dev_users %}
-                    <a href="{{ url_for('auth.login', mock_email=u.email, mock_rola=u.rola) }}" class="btn btn-dev w-100 mb-1 d-flex justify-content-between align-items-center" style="padding: 8px 12px; font-size: 0.8rem;">
-                        <div class="text-start text-truncate" style="max-width: 250px;">
-                            <strong class="d-block">
-                                {% if u.rola == 'student' and u.imie == 'Jan' and u.nazwisko == 'Kowalski' %}
-                                    Student (Jan Kowalski)
-                                {% elif u.rola == 'administrator' and u.imie == 'Admin' %}
-                                    Admin
-                                {% elif u.rola == 'dyrektor' and u.imie == 'Dyrektor' %}
-                                    Dyrektor
-                                {% elif u.rola == 'uopz' and u.imie == 'Anna' and u.nazwisko == 'Nowak' %}
-                                    UOPZ
-                                {% elif u.rola == 'zopz' and u.imie == 'Adam' and u.nazwisko == 'Zopz' %}
-                                    ZOPZ
-                                {% else %}
-                                    {{ u.imie }} {{ u.nazwisko }}
-                                {% endif %}
-                            </strong>
-                            <span class="text-muted" style="font-size: 0.7rem;">{{ u.email }}</span>
+
+            <!-- Desktop Header -->
+            <div class="d-none d-lg-block login-header mb-4">
+                <h2>Zaloguj się</h2>
+                <p class="text-muted small">Witaj w portalu SOPZ. Zaloguj się za pomocą konta uczelnianego.</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-custom" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <div>{{ message }}</div>
                         </div>
-                        <span class="badge rounded-pill" style="font-size: 0.65rem; background-color: {% if u.rola == 'administrator' %}#ef4444{% elif u.rola == 'dyrektor' %}#f59e0b{% elif u.rola == 'uopz' %}#10b981{% elif u.rola == 'zopz' %}#3b82f6{% else %}#64748b{% endif %}; text-transform: uppercase;">
-                            {{ u.rola or 'brak' }}
-                        </span>
-                    </a>
                     {% endfor %}
-                {% else %}
-                    <div class="text-center text-muted p-3" style="font-size: 0.8rem;">Brak zarejestrowanych użytkowników.</div>
                 {% endif %}
+            {% endwith %}
+
+            <div class="mb-4">
+                <a href="{{ url_for('auth.login', microsoft='true') }}" class="btn btn-microsoft">
+                    <svg width="20" height="20" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="0" y="0" width="11" height="11" fill="#f25022"/>
+                        <rect x="12" y="0" width="11" height="11" fill="#7fba00"/>
+                        <rect x="0" y="12" width="11" height="11" fill="#00a4ef"/>
+                        <rect x="12" y="12" width="11" height="11" fill="#ffb900"/>
+                    </svg>
+                    Zaloguj przez konto Microsoft
+                </a>
             </div>
 
-            <script>
-                document.getElementById('dev-user-search').addEventListener('input', function() {
-                    const query = this.value.toLowerCase();
-                    const buttons = document.querySelectorAll('.dev-user-list .btn-dev');
-                    buttons.forEach(btn => {
-                        const text = btn.innerText.toLowerCase();
-                        if (text.includes(query)) {
-                            btn.style.setProperty('display', 'flex', 'important');
-                        } else {
-                            btn.style.setProperty('display', 'none', 'important');
-                        }
+            {% if is_dev %}
+            <div class="dev-panel">
+                <div class="dev-title">
+                    <i class="bi bi-bug-fill"></i> Panel Deweloperski
+                </div>
+                <p class="text-muted mb-3" style="font-size: 0.75rem;">Wybierz użytkownika, aby zalogować się lokalnie bez MSAL OAuth:</p>
+                
+                <input type="text" id="dev-user-search" class="form-control form-control-sm mb-3" placeholder="Szukaj użytkownika..." style="font-size: 0.8rem; background-color: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-color);">
+                
+                <div class="dev-user-list">
+                    {% if dev_users %}
+                        {% for u in dev_users %}
+                        <a href="{{ url_for('auth.login', mock_email=u.email, mock_rola=u.rola) }}" class="btn-dev w-100 mb-1 d-flex justify-content-between align-items-center">
+                            <div class="text-start text-truncate" style="max-width: 250px;">
+                                <strong class="d-block">
+                                    {% if u.rola == 'student' and u.imie == 'Jan' and u.nazwisko == 'Kowalski' %}
+                                        Student (Jan Kowalski)
+                                    {% elif u.rola == 'administrator' and u.imie == 'Admin' %}
+                                        Admin
+                                    {% elif u.rola == 'dyrektor' and u.imie == 'Dyrektor' %}
+                                        Dyrektor
+                                    {% elif u.rola == 'uopz' and u.imie == 'Anna' and u.nazwisko == 'Nowak' %}
+                                        UOPZ
+                                    {% elif u.rola == 'zopz' and u.imie == 'Adam' and u.nazwisko == 'Zopz' %}
+                                        ZOPZ
+                                    {% else %}
+                                        {{ u.imie }} {{ u.nazwisko }}
+                                    {% endif %}
+                                </strong>
+                                <span class="text-muted" style="font-size: 0.7rem;">{{ u.email }}</span>
+                            </div>
+                            <span class="badge rounded-pill" style="font-size: 0.65rem; background-color: {% if u.rola == 'administrator' %}var(--danger){% elif u.rola == 'dyrektor' %}#f59e0b{% elif u.rola == 'uopz' %}#10b981{% elif u.rola == 'zopz' %}#3b82f6{% else %}#64748b{% endif %}; text-transform: uppercase;">
+                                {{ u.rola or 'brak' }}
+                            </span>
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted p-3" style="font-size: 0.8rem;">Brak zarejestrowanych użytkowników.</div>
+                    {% endif %}
+                </div>
+
+                <script>
+                    document.getElementById('dev-user-search').addEventListener('input', function() {
+                        const query = this.value.toLowerCase();
+                        const buttons = document.querySelectorAll('.dev-user-list .btn-dev');
+                        buttons.forEach(btn => {
+                            const text = btn.innerText.toLowerCase();
+                            if (text.includes(query)) {
+                                btn.style.setProperty('display', 'flex', 'important');
+                            } else {
+                                btn.style.setProperty('display', 'none', 'important');
+                            }
+                        });
                     });
-                });
-            </script>
+                </script>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 </div>
 

@@ -71,6 +71,16 @@ def create_app(config_name=None):
     def load_user(user_id):
         return Uzytkownik.query.get(int(user_id))
         
+    @app.context_processor
+    def inject_active_praktyka():
+        if current_user.is_authenticated and current_user.rola == 'student':
+            from app.models import Student, Praktyka
+            student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+            if student:
+                praktyka = Praktyka.query.filter_by(student_id=student.id).first()
+                return {'active_praktyka': praktyka}
+        return {'active_praktyka': None}
+        
     @login_manager.unauthorized_handler
     def unauthorized():
         if request.path.startswith('/api/'):
@@ -90,6 +100,30 @@ def create_app(config_name=None):
             allowed_endpoints = ['auth.waiting', 'auth.logout', 'static']
             if current_user.rola is None and request.endpoint not in allowed_endpoints:
                 return redirect(url_for('auth.waiting'))
+                
+    @app.template_filter('translate_status')
+    def translate_status(status):
+        translations = {
+            'Draft': 'Szkic',
+            'Submitted': 'Przesłany',
+            'Under_Review': 'W weryfikacji',
+            'Approved': 'Zatwierdzony',
+            'Rejected': 'Odrzucony',
+            'Closed': 'Zakończony'
+        }
+        return translations.get(status, status)
+
+    @app.template_filter('status_icon')
+    def status_icon(status):
+        icons = {
+            'Draft': 'bi-pencil-square',
+            'Submitted': 'bi-send-fill',
+            'Under_Review': 'bi-hourglass-split',
+            'Approved': 'bi-check-circle-fill',
+            'Rejected': 'bi-exclamation-triangle-fill',
+            'Closed': 'bi-folder-check'
+        }
+        return icons.get(status, 'bi-question-circle')
                 
     # Security headers middleware
     @app.after_request

@@ -29,12 +29,12 @@
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
                 <div>
                     <span class="text-uppercase text-muted fw-semibold small" style="letter-spacing: 1px;">Aktywna Praktyka</span>
-                    <h3 class="fw-bold m-0 mt-1">{{ praktyka.zaklad_pracy.nazwa }}</h3>
+                    <h3 class="fw-bold m-0 mt-1" style="color: var(--primary);">{{ praktyka.zaklad_pracy.nazwa }}</h3>
                     <p class="text-muted mt-1 mb-0"><i class="bi bi-calendar3 me-2"></i>{{ praktyka.termin_od.strftime('%d.%m.%Y') }} - {{ praktyka.termin_do.strftime('%d.%m.%Y') }} (Rok: {{ praktyka.rok_akademicki }})</p>
                 </div>
                 <div>
-                    <span class="badge bg-{{ 'secondary' if praktyka.status == 'Draft' else 'primary' if praktyka.status == 'Submitted' else 'warning' if praktyka.status == 'Under_Review' else 'success' if praktyka.status == 'Approved' else 'danger' }} px-3 py-2 fs-7">
-                        {{ praktyka.status }}
+                    <span class="badge-custom badge-custom-{{ praktyka.status|lower }} px-3 py-2 fs-7">
+                        <i class="bi {{ praktyka.status|status_icon }} me-1"></i> {{ praktyka.status|translate_status }}
                     </span>
                 </div>
             </div>
@@ -42,7 +42,7 @@
             <!-- Postęp Dziennika -->
             <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="fw-semibold">Postęp Dziennika Praktyk</span>
+                    <span class="fw-semibold">Postęp Dziennika Praktyk (Wymagane 120 dni)</span>
                     <span class="fw-bold text-primary">{{ wpisy_zatwierdzone }}/120 dni</span>
                 </div>
                 <div class="progress progress-custom">
@@ -50,7 +50,7 @@
                     <div class="progress-bar progress-bar-custom" role="progressbar" style="width: {{ percent }}%" aria-valuenow="{{ wpisy_zatwierdzone }}" aria-valuemin="0" aria-valuemax="120"></div>
                 </div>
                 <div class="d-flex justify-content-between mt-2 text-muted small">
-                    <span>Zatwierdzone wpisy</span>
+                    <span>Zatwierdzone wpisy przez ZOPZ</span>
                     <span>{{ percent }}% ukończenia</span>
                 </div>
             </div>
@@ -98,8 +98,8 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <span class="badge bg-{{ 'warning' if w.status == 'Submitted' else 'info' if w.status == 'Under_Review' else 'success' if w.status == 'Approved' else 'danger' }}">
-                                    {{ w.status }}
+                                <span class="badge-custom badge-custom-{{ w.status|lower }}">
+                                    <i class="bi {{ w.status|status_icon }} me-1"></i> {{ w.status|translate_status }}
                                 </span>
                             </td>
                         </tr>
@@ -130,8 +130,9 @@
                             U: <i class="bi {{ 'bi-check-circle-fill text-success' if praktyka.harmonogram and praktyka.harmonogram.podpis_uopz else 'bi-dash-circle text-muted' }}"></i>
                         </span>
                     </div>
-                    <span class="badge rounded-pill bg-{{ 'success' if praktyka.harmonogram and praktyka.harmonogram.status == 'Approved' else 'warning' if praktyka.harmonogram else 'secondary' }}">
-                        {{ praktyka.harmonogram.status if praktyka.harmonogram else 'Brak' }}
+                    <span class="badge-custom badge-custom-{{ (praktyka.harmonogram.status if praktyka.harmonogram else 'Draft')|lower }}">
+                        <i class="bi {{ (praktyka.harmonogram.status if praktyka.harmonogram else 'Draft')|status_icon }}"></i>
+                        {{ (praktyka.harmonogram.status if praktyka.harmonogram else 'Brak')|translate_status }}
                     </span>
                 </a>
 
@@ -141,8 +142,9 @@
                         <div class="fw-semibold small">Dziennik Praktyk (P2)</div>
                         <span class="text-muted small">Status weryfikacji ZOPZ</span>
                     </div>
-                    <span class="badge rounded-pill bg-{{ 'success' if praktyka.dziennik_status == 'Closed' else 'warning' if praktyka.dziennik_status == 'Under_Review' else 'secondary' }}">
-                        {{ praktyka.dziennik_status }}
+                    <span class="badge-custom badge-custom-{{ (praktyka.dziennik_status or 'Draft')|lower }}">
+                        <i class="bi {{ (praktyka.dziennik_status or 'Draft')|status_icon }}"></i>
+                        {{ (praktyka.dziennik_status or 'Draft')|translate_status }}
                     </span>
                 </a>
 
@@ -152,8 +154,9 @@
                         <div class="fw-semibold small">Sprawozdanie (P4)</div>
                         <span class="text-muted small">Opis przebiegu praktyki</span>
                     </div>
-                    <span class="badge rounded-pill bg-{{ 'success' if praktyka.sprawozdania and praktyka.sprawozdania[-1].status == 'Approved' else 'warning' if praktyka.sprawozdania else 'secondary' }}">
-                        {{ praktyka.sprawozdania[-1].status if praktyka.sprawozdania else 'Brak' }}
+                    <span class="badge-custom badge-custom-{{ (praktyka.sprawozdania[-1].status if praktyka.sprawozdania else 'Draft')|lower }}">
+                        <i class="bi {{ (praktyka.sprawozdania[-1].status if praktyka.sprawozdania else 'Draft')|status_icon }}"></i>
+                        {{ (praktyka.sprawozdania[-1].status if praktyka.sprawozdania else 'Brak')|translate_status }}
                     </span>
                 </a>
 
@@ -163,7 +166,8 @@
                         <div class="fw-semibold small">Ankieta Ewaluacyjna (P5)</div>
                         <span class="text-muted small">Kwestionariusz anonimowy</span>
                     </div>
-                    <span class="badge rounded-pill bg-{{ 'success' if praktyka.ankieta_wypelniona else 'secondary' }}">
+                    <span class="badge-custom badge-custom-{{ 'approved' if praktyka.ankieta_wypelniona else 'draft' }}">
+                        <i class="bi {{ 'bi-check-circle-fill' if praktyka.ankieta_wypelniona else 'bi-pencil-square' }}"></i>
                         {{ 'Wypełniona' if praktyka.ankieta_wypelniona else 'Brak' }}
                     </span>
                 </a>
@@ -174,8 +178,9 @@
                         <div class="fw-semibold small">Karta Praktyki (P6) & Egzamin</div>
                         <span class="text-muted small">Podgląd ocen i upload skanów</span>
                     </div>
-                    <span class="badge rounded-pill bg-{{ 'success' if praktyka.status == 'Closed' else 'warning' if praktyka.status == 'Under_Review' else 'secondary' }}">
-                        {{ praktyka.status }}
+                    <span class="badge-custom badge-custom-{{ praktyka.status|lower }}">
+                        <i class="bi {{ praktyka.status|status_icon }}"></i>
+                        {{ praktyka.status|translate_status }}
                     </span>
                 </a>
             </ul>

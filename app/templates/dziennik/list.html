@@ -13,7 +13,7 @@
         <div class="card card-custom">
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
                 <div>
-                    <h3 class="fw-bold m-0"><i class="bi bi-book text-primary me-2"></i>Dziennik Praktyk Zawodowych (P2)</h3>
+                    <h3 class="fw-bold m-0" style="color: var(--primary);"><i class="bi bi-book text-primary me-2"></i>Dziennik Praktyk Zawodowych (P2)</h3>
                     <p class="text-muted mt-1 mb-0">Rejestr zadań realizowanych każdego dnia praktyki zawodowej. Sumarycznie wymagane jest 120 dni.</p>
                 </div>
                 
@@ -24,16 +24,42 @@
                 {% endif %}
             </div>
 
+            <!-- Filtry wyszukiwania i statusów (Instantly filter in DOM) -->
+            <div class="row g-3 mb-4 p-3 bg-light-subtle border rounded-3 align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="search-opis" class="form-control border-start-0 ps-0" placeholder="Filtruj po opisie prac...">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex gap-2 justify-content-md-end">
+                        <select id="filter-status" class="form-select" style="max-width: 200px;">
+                            <option value="">Wszystkie statusy</option>
+                            <option value="Draft">Szkic (Draft)</option>
+                            <option value="Submitted">Przesłany (Submitted)</option>
+                            <option value="Approved">Zatwierdzony (Approved)</option>
+                            <option value="Rejected">Odrzucony (Rejected)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <!-- Tabela Wpisów -->
             <div class="table-responsive">
-                <table class="table align-middle">
+                <table class="table align-middle" id="wpisy-table">
                     <thead>
                         <tr>
-                            <th style="width: 80px;">Dzień</th>
-                            <th style="width: 140px;">Data</th>
+                            {% if current_user.rola == 'zopz' %}
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="select-all-wpisy" class="form-check-input">
+                            </th>
+                            {% endif %}
+                            <th style="width: 100px;">Dzień</th>
+                            <th style="width: 130px;">Data</th>
                             <th>Opis wykonanych prac i zadań</th>
                             <th style="width: 180px;">Zweryfikowane Efekty</th>
-                            <th style="width: 150px;">Status</th>
+                            <th style="width: 160px;">Status</th>
                             {% if current_user.rola == 'zopz' %}
                             <th style="width: 180px;">Akcje (ZOPZ)</th>
                             {% endif %}
@@ -42,58 +68,63 @@
                     <tbody id="dziennik-table-body">
                         {% if praktyka.wpisy_dziennika %}
                             {% for wpis in praktyka.wpisy_dziennika|sort(attribute='dzien_nr') %}
-                            <tr id="wpis-row-{{ wpis.id }}">
-                                <td class="fw-bold">Dzień {{ wpis.dzien_nr }}</td>
-                                <td>{{ wpis.data_wpisu.strftime('%d.%m.%Y') }}</td>
+                            <tr id="wpis-row-{{ wpis.id }}" data-status="{{ wpis.status }}">
+                                {% if current_user.rola == 'zopz' %}
                                 <td>
-                                    <div>{{ wpis.opis_prac }}</div>
+                                    {% if wpis.status == 'Submitted' %}
+                                    <input type="checkbox" class="form-check-input wpis-select" data-id="{{ wpis.id }}">
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                                <td class="fw-bold text-nowrap">Dzień {{ wpis.dzien_nr }}</td>
+                                <td class="text-nowrap">{{ wpis.data_wpisu.strftime('%d.%m.%Y') }}</td>
+                                <td class="opis-cell">
+                                    <div class="opis-text">{{ wpis.opis_prac }}</div>
                                     {% if wpis.komentarz_zopz %}
-                                    <div class="text-danger small mt-1"><i class="bi bi-chat-left-text me-1"></i>Komentarz ZOPZ: {{ wpis.komentarz_zopz }}</div>
+                                    <div class="text-danger small mt-1 py-1 px-2 bg-danger-subtle rounded-2 d-inline-block">
+                                        <i class="bi bi-chat-left-text-fill me-1"></i>Komentarz ZOPZ: {{ wpis.komentarz_zopz }}
+                                    </div>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% for efekt in wpis.efekty %}
-                                    <span class="badge bg-light text-primary border border-primary-subtle rounded-pill" title="{{ efekt.opis }}">
+                                    <span class="badge bg-light text-primary border border-primary-subtle rounded-pill py-1 px-2 mb-1 d-inline-block" title="{{ efekt.opis }}" style="cursor: help;">
                                         EU{{ efekt.nr }}
                                     </span>
                                     {% endfor %}
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ 'secondary' if wpis.status == 'Draft' else 'primary' if wpis.status == 'Submitted' else 'success' if wpis.status == 'Approved' else 'danger' }}">
-                                        {{ wpis.status }}
+                                    <span class="badge-custom badge-custom-{{ wpis.status|lower }}">
+                                        <i class="bi {{ wpis.status|status_icon }} me-1"></i> {{ wpis.status|translate_status }}
                                     </span>
                                 </td>
                                 {% if current_user.rola == 'zopz' %}
                                 <td>
                                     {% if wpis.status == 'Submitted' %}
                                     <div class="d-flex gap-1">
-                                        <button class="btn btn-sm btn-success py-1 px-2"
-                                                hx-patch="/api/v1/dziennik/wpisy/{{ wpis.id }}"
-                                                hx-vals='{"status": "Approved"}'
-                                                hx-headers='{"Content-Type": "application/json"}'
-                                                hx-swap="none"
-                                                onclick="setTimeout(() => window.location.reload(), 500)">
-                                            Zatwierdź
+                                        <button class="btn btn-sm btn-success py-1 px-2 btn-action-approve" data-id="{{ wpis.id }}" title="Zatwierdź">
+                                            <i class="bi bi-check-lg"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-danger py-1 px-2"
-                                                hx-patch="/api/v1/dziennik/wpisy/{{ wpis.id }}"
-                                                hx-vals='{"status": "Rejected", "komentarz_zopz": "Do poprawy"}'
-                                                hx-headers='{"Content-Type": "application/json"}'
-                                                hx-swap="none"
-                                                onclick="setTimeout(() => window.location.reload(), 500)">
-                                            Odrzuć
+                                        <button class="btn btn-sm btn-danger py-1 px-2 btn-action-reject" data-id="{{ wpis.id }}" title="Odrzuć">
+                                            <i class="bi bi-x-lg"></i>
                                         </button>
                                     </div>
                                     {% else %}
-                                    <span class="text-muted small">Wpis zweryfikowany</span>
+                                    <span class="text-muted small"><i class="bi bi-patch-check-fill text-success me-1"></i>Zweryfikowany</span>
                                     {% endif %}
                                 </td>
                                 {% endif %}
                             </tr>
                             {% endfor %}
                         {% else %}
-                            <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">Brak wpisów w dzienniku praktyk.</td>
+                            <tr id="empty-row">
+                                <td colspan="{{ '7' if current_user.rola == 'zopz' else '6' }}" class="text-center py-5">
+                                    <div class="empty-state">
+                                        <i class="bi bi-journal-x"></i>
+                                        <h5 class="fw-bold">Brak wpisów w Dzienniku</h5>
+                                        <p class="text-muted mb-0">Student nie dodał jeszcze żadnych wpisów do dziennika praktyk.</p>
+                                    </div>
+                                </td>
                             </tr>
                         {% endif %}
                     </tbody>
@@ -102,6 +133,45 @@
         </div>
     </div>
 </div>
+
+<!-- Sticky Batch actions for ZOPZ -->
+{% if current_user.rola == 'zopz' %}
+<div id="batch-verify-bar" class="batch-verify-panel d-none">
+    <div>
+        <span class="fw-bold text-primary" id="selected-count"><i class="bi bi-check2-all me-1"></i>Wybrano: 0 wpisów</span>
+    </div>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+        <input type="text" id="batch-comment" class="form-control form-control-sm" placeholder="Komentarz dla wybranych (opcjonalny)..." style="min-width: 280px; max-width: 400px;">
+        <button class="btn btn-sm btn-success" id="btn-batch-approve"><i class="bi bi-check-circle-fill me-1"></i>Zatwierdź zaznaczone</button>
+        <button class="btn btn-sm btn-danger" id="btn-batch-reject"><i class="bi bi-x-circle-fill me-1"></i>Odrzuć zaznaczone</button>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal Odrzucenia Wpisu (dla ZOPZ) -->
+{% if current_user.rola == 'zopz' %}
+<div class="modal fade" id="rejectWpisModal" tabindex="-1" aria-labelledby="rejectWpisModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-lg" style="background-color: var(--bg-card); color: var(--text-color);">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold" id="rejectWpisModalLabel"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Odrzuć Wpis</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <input type="hidden" id="reject-wpis-id">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Powód odrzucenia wpisu</label>
+                    <textarea id="reject-komentarz" class="form-control" rows="3" placeholder="Wpisz komentarz dla studenta..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" id="btn-submit-reject" class="btn btn-danger">Odrzuć Wpis</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Modal Dodawania Wpisu (dla Studenta) -->
 {% if current_user.rola == 'student' %}
@@ -132,23 +202,25 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Realizowane efekty uczenia się</label>
-                            <div class="row g-2">
-                                {% for efekt in efekty %}
-                                <div class="col-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input efekty-checkbox" type="checkbox" value="{{ efekt.id }}" id="efekt-{{ efekt.id }}">
-                                        <label class="form-check-label small" for="efekt-{{ efekt.id }}" title="{{ efekt.opis }}">
-                                            EU{{ efekt.nr }} - {{ efekt.opis[:35] }}...
-                                        </label>
+                            <div class="p-3 border rounded-3 bg-light-subtle" style="max-height: 220px; overflow-y: auto;">
+                                <div class="row g-2">
+                                    {% for efekt in efekty %}
+                                    <div class="col-12">
+                                        <div class="form-check p-2 border-bottom border-light-subtle">
+                                            <input class="form-check-input efekty-checkbox" type="checkbox" value="{{ efekt.id }}" id="efekt-{{ efekt.id }}">
+                                            <label class="form-check-label small" for="efekt-{{ efekt.id }}" title="{{ efekt.opis }}">
+                                                <strong>EU{{ efekt.nr }}</strong> - {{ efekt.opis }}
+                                            </label>
+                                        </div>
                                     </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addWpisModal">Anuluj</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Anuluj</button>
                     <button type="submit" class="btn btn-primary btn-primary-custom">Zapisz Wpis</button>
                 </div>
             </form>
