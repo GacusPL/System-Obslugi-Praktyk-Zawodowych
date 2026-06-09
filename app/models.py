@@ -1,4 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
+
+def utcnow():
+    return datetime.now(timezone.utc)
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
@@ -30,8 +33,8 @@ class Uzytkownik(UserMixin, db.Model):
     haslo_hash = db.Column(db.String(255), nullable=False)
     rola = db.Column(db.String(50), nullable=True) # Set nullable=True for first OAuth login
     microsoft_id = db.Column(db.String(255), nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
         db.CheckConstraint(
@@ -75,7 +78,17 @@ class ZakladPracy(db.Model):
     zopz_stanowisko = db.Column(db.String(100), nullable=False)
     zopz_wyksztalcenie = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(50), nullable=False, default='Approved')
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    zopz_uzytkownik_id = db.Column(db.Integer, db.ForeignKey('uzytkownik.id'), nullable=True)
+    
+    zopz_uzytkownik = db.relationship('Uzytkownik', foreign_keys=[zopz_uzytkownik_id], backref='zaklady_opiekun')
+
+    def is_opiekun(self, user):
+        if not user or user.rola != 'zopz':
+            return False
+        if self.zopz_uzytkownik_id is not None:
+            return self.zopz_uzytkownik_id == user.id
+        return self.zopz_imie == user.imie and self.zopz_nazwisko == user.nazwisko
 
     __table_args__ = (
         db.CheckConstraint("status IN ('Approved', 'Rejected')", name='check_zaklad_pracy_status'),
@@ -94,8 +107,8 @@ class Praktyka(db.Model):
     ocena_koncowa = db.Column(db.Float, nullable=True)
     ankieta_wypelniona = db.Column(db.Integer, nullable=False, default=0)
     dziennik_status = db.Column(db.String(50), nullable=False, default='Draft')
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
     student = db.relationship('Student', backref='praktyki')
     zaklad_pracy = db.relationship('ZakladPracy', backref='praktyki')
@@ -116,8 +129,8 @@ class Harmonogram(db.Model):
     podpis_zopz = db.Column(db.Integer, nullable=False, default=0)
     podpis_uopz = db.Column(db.Integer, nullable=False, default=0)
     status = db.Column(db.String(50), nullable=False, default='Draft')
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
     praktyka = db.relationship('Praktyka', backref=db.backref('harmonogram', uselist=False))
 
@@ -155,8 +168,8 @@ class WpisDziennika(db.Model):
     status = db.Column(db.String(50), nullable=False, default='Draft')
     komentarz_zopz = db.Column(db.Text, nullable=True)
     podpis_zopz = db.Column(db.Integer, nullable=False, default=0)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
     praktyka = db.relationship('Praktyka', backref='wpisy_dziennika')
     efekty = db.relationship('EfektUczenia', secondary=wpis_efekt, backref='wpisy_dziennika')
@@ -175,8 +188,8 @@ class PotwierdzenieEfektow(db.Model):
     godziny_zrealizowane = db.Column(db.Integer, nullable=False)
     opinia_uopz = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(50), nullable=False, default='Draft')
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
     praktyka = db.relationship('Praktyka', backref=db.backref('potwierdzenie_efektow', uselist=False))
 
@@ -210,8 +223,8 @@ class Sprawozdanie(db.Model):
     wersja = db.Column(db.Integer, nullable=False, default=1)
     ocena = db.Column(db.Float, nullable=True)
     status = db.Column(db.String(50), nullable=False, default='Draft')
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
     praktyka = db.relationship('Praktyka', backref='sprawozdania')
 
@@ -233,8 +246,8 @@ class KartaPraktyki(db.Model):
     ocena_opisowa_uopz = db.Column(db.Text, nullable=True)
     ocena_sprawozdania = db.Column(db.Float, nullable=True)
     status = db.Column(db.String(50), nullable=False, default='Draft')
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
     praktyka = db.relationship('Praktyka', backref=db.backref('karta_praktyki', uselist=False))
 
@@ -254,7 +267,7 @@ class Ankieta(db.Model):
     semestr = db.Column(db.Integer, nullable=False)
     godziny = db.Column(db.Integer, nullable=False)
     uwagi = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
 class AnkietaOdpowiedz(db.Model):
     __tablename__ = 'ankieta_odpowiedz'
@@ -280,8 +293,8 @@ class WniosekAlternatywny(db.Model):
     opinia_komisji = db.Column(db.Text, nullable=True)
     decyzja = db.Column(db.String(50), nullable=True)
     status = db.Column(db.String(50), nullable=False, default='Submitted')
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
     student = db.relationship('Student', backref='wnioski_alternatywne')
 
@@ -298,7 +311,7 @@ class ZalacznikSkan(db.Model):
     nazwa_pliku = db.Column(db.String(255), nullable=False)
     sciezka_pliku = db.Column(db.String(255), nullable=False)
     typ_dokumentu = db.Column(db.String(50), nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     wniosek = db.relationship('WniosekAlternatywny', backref=db.backref('skany', cascade='all, delete-orphan'))
 
@@ -317,7 +330,7 @@ class Egzamin(db.Model):
     ocena_ustna = db.Column(db.Float, nullable=True)
     ocena_koncowa = db.Column(db.Float, nullable=True)
     status = db.Column(db.String(50), nullable=False, default='Draft')
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     praktyka = db.relationship('Praktyka', backref='egzaminy')
 
@@ -349,7 +362,7 @@ class Dokument(db.Model):
     typ = db.Column(db.String(50), nullable=False)
     sciezka_pliku = db.Column(db.String(255), nullable=False)
     status = db.Column(db.String(50), nullable=False, default='Closed')
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
 
     praktyka = db.relationship('Praktyka', backref='dokumenty')
 

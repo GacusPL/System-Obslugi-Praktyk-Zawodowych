@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import Sprawozdanie, Praktyka, Student, Uzytkownik
 from app.decorators import role_required
-from app.routes.api.helpers import api_success, api_error
+from app.routes.api.helpers import api_success, api_error, validate_payload
 
 sprawozdanie_api_bp = Blueprint('sprawozdanie_api', __name__)
 
@@ -50,14 +50,22 @@ def create_sprawozdanie():
         return api_error("STUDENT_PROFILE_NOT_FOUND", "Brak profilu studenta", status=400)
 
     data = request.get_json() or {}
-    praktyka_id = data.get('praktyka_id')
-    sekcja_I = data.get('sekcja_I', '')
-    sekcja_II = data.get('sekcja_II', '')
-    sekcja_III = data.get('sekcja_III', '')
-    status = data.get('status', 'Submitted')
+    schema = {
+        'praktyka_id': {'required': True, 'type': int},
+        'sekcja_I': {'required': False, 'type': str},
+        'sekcja_II': {'required': False, 'type': str},
+        'sekcja_III': {'required': False, 'type': str},
+        'status': {'required': False, 'type': str},
+    }
+    sanitized, errors = validate_payload(data, schema)
+    if errors:
+        return api_error("MISSING_PRAKTYKA_ID", "Brakujące ID praktyki", details=errors, status=400)
 
-    if not praktyka_id:
-        return api_error("MISSING_PRAKTYKA_ID", "Brakujące ID praktyki", status=400)
+    praktyka_id = sanitized['praktyka_id']
+    sekcja_I = sanitized.get('sekcja_I') or ''
+    sekcja_II = sanitized.get('sekcja_II') or ''
+    sekcja_III = sanitized.get('sekcja_III') or ''
+    status = sanitized.get('status') or 'Submitted'
 
     praktyka = Praktyka.query.get(praktyka_id)
     if not praktyka or praktyka.student_id != student.id:
@@ -140,10 +148,20 @@ def update_sprawozdanie(sprawozdanie_id):
         return api_error("INVALID_STATUS_FOR_EDIT", "Można edytować tylko sprawozdania o statusie Draft lub Rejected", status=400)
 
     data = request.get_json() or {}
-    sekcja_I = data.get('sekcja_I', s.sekcja_I)
-    sekcja_II = data.get('sekcja_II', s.sekcja_II)
-    sekcja_III = data.get('sekcja_III', s.sekcja_III)
-    status = data.get('status', 'Submitted')
+    schema = {
+        'sekcja_I': {'required': False, 'type': str},
+        'sekcja_II': {'required': False, 'type': str},
+        'sekcja_III': {'required': False, 'type': str},
+        'status': {'required': False, 'type': str},
+    }
+    sanitized, errors = validate_payload(data, schema)
+    if errors:
+        return api_error("VALIDATION_ERROR", "Błędy walidacji danych", details=errors, status=400)
+
+    sekcja_I = sanitized.get('sekcja_I') or s.sekcja_I
+    sekcja_II = sanitized.get('sekcja_II') or s.sekcja_II
+    sekcja_III = sanitized.get('sekcja_III') or s.sekcja_III
+    status = sanitized.get('status') or 'Submitted'
 
     if len(sekcja_I) < 100 or len(sekcja_II) < 100 or len(sekcja_III) < 100:
         return api_error("SECTION_TOO_SHORT", "Każda sekcja sprawozdania musi mieć minimum 100 znaków", status=400)
@@ -168,8 +186,15 @@ def patch_sprawozdanie(sprawozdanie_id):
         abort(403)
 
     data = request.get_json() or {}
-    status = data.get('status')
-    ocena = data.get('ocena')
+    schema = {
+        'status': {'required': False, 'type': str},
+        'ocena': {'required': False, 'type': float},
+    }
+    sanitized, errors = validate_payload(data, schema)
+    if errors:
+        return api_error("VALIDATION_ERROR", "Błędy walidacji danych", details=errors, status=400)
+    status = sanitized.get('status')
+    ocena = sanitized.get('ocena')
 
     if status:
         if status not in ['Draft', 'Submitted', 'Under_Review', 'Approved', 'Rejected']:

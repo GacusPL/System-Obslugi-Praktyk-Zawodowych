@@ -142,7 +142,7 @@
                                 status: formData.get('status')
                             };
                             
-                            fetch(`/api/v1/sprawozdanie/${sId}/eval`, {
+                            fetch(`/api/v1/sprawozdanie/${sId}`, {
                                 method: 'PATCH',
                                 headers: {
                                     'Content-Type': 'application/json'

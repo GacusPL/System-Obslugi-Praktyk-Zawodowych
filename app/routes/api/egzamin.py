@@ -6,7 +6,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import Egzamin, KomisjaCzlonek, Praktyka, Student, Uzytkownik, KartaPraktyki
 from app.decorators import role_required
-from app.routes.api.helpers import api_success, api_error
+from app.routes.api.helpers import api_success, api_error, validate_payload
 import openpyxl
 
 egzamin_api_bp = Blueprint('egzamin_api', __name__)
@@ -34,12 +34,17 @@ def serialize_egzamin(e):
 @role_required('administrator', 'uopz')
 def create_egzamin():
     data = request.get_json() or {}
-    praktyka_id = data.get('praktyka_id')
-    termin_str = data.get('termin')
-    komisja_sklad = data.get('komisja_sklad', [])
+    schema = {
+        'praktyka_id': {'required': True, 'type': int},
+        'termin': {'required': True, 'type': str},
+    }
+    sanitized, errors = validate_payload(data, schema)
+    if errors or 'komisja_sklad' not in data or not data['komisja_sklad']:
+        return api_error("MISSING_FIELDS", "Brakujące wymagane pola", details=errors, status=400)
 
-    if not praktyka_id or not termin_str or not komisja_sklad:
-        return api_error("MISSING_FIELDS", "Brakujące wymagane pola", status=400)
+    praktyka_id = sanitized['praktyka_id']
+    termin_str = sanitized['termin']
+    komisja_sklad = data['komisja_sklad']
 
     praktyka = Praktyka.query.get(praktyka_id)
     if not praktyka:
@@ -154,17 +159,15 @@ def submit_egzamin_wynik(egzamin_id):
         abort(403)
 
     data = request.get_json() or {}
-    ocena_ustna = data.get('ocena_ustna')
-    ocena_koncowa = data.get('ocena_koncowa')
-
-    if ocena_ustna is None or ocena_koncowa is None:
-        return api_error("MISSING_GRADES", "Brak oceny ustnej lub oceny końcowej", status=400)
-
-    try:
-        ou = float(ocena_ustna)
-        ok = float(ocena_koncowa)
-    except ValueError:
-        return api_error("INVALID_GRADE_FORMAT", "Oceny muszą być liczbami", status=400)
+    schema = {
+        'ocena_ustna': {'required': True, 'type': float},
+        'ocena_koncowa': {'required': True, 'type': float},
+    }
+    sanitized, errors = validate_payload(data, schema)
+    if errors:
+        return api_error("MISSING_GRADES", "Brak oceny ustnej lub oceny końcowej", details=errors, status=400)
+    ou = sanitized['ocena_ustna']
+    ok = sanitized['ocena_koncowa']
 
     for g in [ou, ok]:
         if not (2.0 <= g <= 5.0):

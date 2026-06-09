@@ -1,7 +1,7 @@
 import pytest
 from datetime import date, datetime
 from app import db
-from app.models import WpisDziennika, HarmonogramDzial, PotwierdzenieEfektow, PotwierdzenieEfektOcena, Ankieta, AnkietaOdpowiedz, Harmonogram
+from app.models import WpisDziennika, HarmonogramDzial, PotwierdzenieEfektow, PotwierdzenieEfektOcena, Ankieta, AnkietaOdpowiedz, Harmonogram, EfektUczenia
 from app.validators import (
     validate_dziennik_completeness,
     validate_harmonogram_sum,
@@ -67,6 +67,11 @@ def test_validate_harmonogram_sum(db_session, sample_praktyka):
     assert "120" in msg
 
 def test_validate_all_effects_rated(db_session, sample_praktyka):
+    for i in range(1, 14):
+        efekt = EfektUczenia(id=i, nr=i, opis=f"Efekt {i}")
+        db_session.add(efekt)
+    db_session.commit()
+
     potwierdzenie = PotwierdzenieEfektow(praktyka_id=sample_praktyka.id, godziny_zrealizowane=120, status='Draft')
     db_session.add(potwierdzenie)
     db_session.commit()

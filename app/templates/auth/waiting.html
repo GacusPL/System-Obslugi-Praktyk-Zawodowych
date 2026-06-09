@@ -1,12 +1,103 @@
 <!DOCTYPE html>
-<html>
+<html lang="pl" data-theme="light">
 <head>
-    <title>Oczekiwanie na aktywację</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oczekiwanie na aktywację - SOPZ</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: rgba(79, 70, 229, 0.08);
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-color: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.03) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(13, 148, 136, 0.03) 0%, transparent 40%);
+            padding: 20px;
+        }
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+        }
+        .card-custom {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-custom::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary) 0%, #0d9488 100%);
+        }
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.25);
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        .btn-primary-custom:hover {
+            background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary) 100%);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+        }
+    </style>
 </head>
 <body>
-    <h1>Konto utworzone</h1>
-    <p>Konto utworzone, oczekuje na przypisanie roli przez Administratora</p>
-    <p>Adres e-mail: {{ current_user.email }}</p>
-    <a href="{{ url_for('auth.logout') }}">Wyloguj</a>
+<div class="card-custom">
+    <div class="mb-4">
+        <i class="bi bi-person-clock text-warning" style="font-size: 4rem;"></i>
+    </div>
+    <h1 class="mb-3">Konto utworzone</h1>
+    <p class="lead mb-4">Twoje konto zostało utworzone pomyślnie, ale oczekuje na przypisanie odpowiedniej roli przez Administratora.</p>
+    <div class="p-3 rounded-3 mb-4 text-start" style="background-color: var(--primary-light);">
+        <div class="row">
+            <div class="col-sm-4 fw-semibold text-muted">Adres e-mail:</div>
+            <div class="col-sm-8" style="color: var(--text-color);">{{ current_user.email }}</div>
+        </div>
+    </div>
+    <div class="d-flex justify-content-center gap-3">
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+            <i class="bi bi-arrow-clockwise"></i> Odśwież status
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-danger d-inline-flex align-items-center gap-2 px-4" style="border-radius: 12px; text-decoration: none; font-weight: 600;">
+            <i class="bi bi-box-arrow-right"></i> Wyloguj
+        </a>
+    </div>
+</div>
 </body>
 </html>

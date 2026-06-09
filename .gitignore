@@ -33,6 +33,7 @@ ENV/
 
 # Databases
 *.db
+test.db
 *.sqlite
 *.sqlite3
 

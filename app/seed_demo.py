@@ -94,7 +94,8 @@ def seed_demo_db():
             zopz_nazwisko="Zopz",
             zopz_stanowisko="Senior Tech Lead",
             zopz_wyksztalcenie="Wyższe magisterskie",
-            status="Approved"
+            status="Approved",
+            zopz_uzytkownik_id=users["zopz@ans-elblag.pl"].id
         )
         db.session.add(zp1)
 
@@ -108,7 +109,8 @@ def seed_demo_db():
             zopz_nazwisko="Kowalski",
             zopz_stanowisko="Dyrektor HR",
             zopz_wyksztalcenie="Wyższe",
-            status="Approved"
+            status="Approved",
+            zopz_uzytkownik_id=users["zopz2@ans-elblag.pl"].id
         )
         db.session.add(zp2)
     db.session.commit()

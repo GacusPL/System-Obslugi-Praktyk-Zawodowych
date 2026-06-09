@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request, abort
 from flask_login import login_required, current_user
 from app.models import Student, Praktyka, ZakladPracy, WpisDziennika, WniosekAlternatywny, Egzamin, Uzytkownik, Sprawozdanie, EfektUczenia, db
 
@@ -44,7 +44,7 @@ def dashboard():
         })
         
     elif current_user.rola == 'zopz':
-        zaklady = ZakladPracy.query.filter_by(zopz_imie=current_user.imie, zopz_nazwisko=current_user.nazwisko).all()
+        zaklady = ZakladPracy.query.filter((ZakladPracy.zopz_uzytkownik_id == current_user.id) | ((ZakladPracy.zopz_uzytkownik_id.is_(None)) & (ZakladPracy.zopz_imie == current_user.imie) & (ZakladPracy.zopz_nazwisko == current_user.nazwisko))).all()
         zaklad_ids = [z.id for z in zaklady]
         praktyki = Praktyka.query.filter(Praktyka.zaklad_id.in_(zaklad_ids)).all() if zaklad_ids else []
         oczekujace_wpisy = WpisDziennika.query.join(Praktyka).filter(Praktyka.zaklad_id.in_(zaklad_ids), WpisDziennika.status == 'Submitted').all() if zaklad_ids else []
@@ -101,9 +101,26 @@ def zgloszenie_alternatywne():
         return redirect(url_for('main.dashboard'))
     return render_template('praktyka/wniosek_alternatywny.html')
 
+def check_praktyka_ownership(praktyka):
+    if current_user.rola == 'administrator':
+        return
+    if current_user.rola == 'student':
+        student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+        if student and praktyka.student_id == student.id:
+            return
+    elif current_user.rola == 'uopz':
+        if praktyka.uopz_id == current_user.id:
+            return
+    elif current_user.rola == 'zopz':
+        if praktyka.zaklad_pracy.is_opiekun(current_user):
+            return
+    abort(403)
+
 @main_bp.route('/harmonogram/edycja')
 @login_required
 def harmonogram_edit():
+    if current_user.rola != 'student':
+        abort(403)
     student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
     praktyka = Praktyka.query.filter_by(student_id=student.id).first() if student else None
     if not praktyka:
@@ -132,7 +149,7 @@ def dziennik_list():
             if praktyka.uopz_id != current_user.id:
                 abort(403)
         elif current_user.rola == 'zopz':
-            if praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko:
+            if not praktyka.zaklad_pracy.is_opiekun(current_user):
                 abort(403)
     else:
         if current_user.rola == 'student':
@@ -150,6 +167,8 @@ def dziennik_list():
 @main_bp.route('/ankieta/formularz')
 @login_required
 def ankieta_form():
+    if current_user.rola != 'student':
+        abort(403)
     student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
     praktyka = Praktyka.query.filter_by(student_id=student.id).first() if student else None
     if not praktyka:
@@ -160,6 +179,7 @@ def ankieta_form():
 @login_required
 def efekty_potwierdzenie(praktyka_id):
     praktyka = Praktyka.query.get_or_404(praktyka_id)
+    check_praktyka_ownership(praktyka)
     efekty = EfektUczenia.query.order_by(EfektUczenia.nr).all()
     potwierdzenie = praktyka.potwierdzenie_efektow
     if not potwierdzenie:
@@ -173,6 +193,7 @@ def efekty_potwierdzenie(praktyka_id):
 @login_required
 def sprawozdanie_form(praktyka_id):
     praktyka = Praktyka.query.get_or_404(praktyka_id)
+    check_praktyka_ownership(praktyka)
     sprawozdanie = Sprawozdanie.query.filter_by(praktyka_id=praktyka.id).order_by(Sprawozdanie.wersja.desc()).first()
     return render_template('sprawozdanie/form.html', praktyka=praktyka, sprawozdanie=sprawozdanie)
 
@@ -180,6 +201,7 @@ def sprawozdanie_form(praktyka_id):
 @login_required
 def karta_praktyki_view(praktyka_id):
     praktyka = Praktyka.query.get_or_404(praktyka_id)
+    check_praktyka_ownership(praktyka)
     karta = praktyka.karta_praktyki
     if not karta:
         from app.models import KartaPraktyki
@@ -192,12 +214,14 @@ def karta_praktyki_view(praktyka_id):
 @login_required
 def dokumentacja_checklist(praktyka_id):
     praktyka = Praktyka.query.get_or_404(praktyka_id)
+    check_praktyka_ownership(praktyka)
     return render_template('dokumentacja/checklist.html', praktyka=praktyka)
 
 @main_bp.route('/praktyka/<int:praktyka_id>/dokumentacja/weryfikacja')
 @login_required
 def dokumentacja_weryfikacja(praktyka_id):
     praktyka = Praktyka.query.get_or_404(praktyka_id)
+    check_praktyka_ownership(praktyka)
     return render_template('dokumentacja/review.html', praktyka=praktyka)
 
 @main_bp.route('/profile')

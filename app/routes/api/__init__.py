@@ -41,28 +41,28 @@ def health():
         return api_error("DATABASE_UNAVAILABLE", "Baza danych jest niedostępna", status=503)
 
 # Global API error handlers
-@api_bp.app_errorhandler(400)
+@api_bp.errorhandler(400)
 def bad_request(error):
     return api_error("BAD_REQUEST", str(error.description) if hasattr(error, 'description') else "Błędne zapytanie", status=400)
 
-@api_bp.app_errorhandler(401)
+@api_bp.errorhandler(401)
 def unauthorized(error):
     return api_error("UNAUTHORIZED", "Brak uwierzytelnienia", status=401)
 
-@api_bp.app_errorhandler(403)
+@api_bp.errorhandler(403)
 def forbidden(error):
     return api_error("FORBIDDEN", "Brak uprawnień do tego zasobu", status=403)
 
-@api_bp.app_errorhandler(404)
+@api_bp.errorhandler(404)
 def not_found(error):
     return api_error("NOT_FOUND", "Zasób nie istnieje", status=404)
 
-@api_bp.app_errorhandler(422)
+@api_bp.errorhandler(422)
 def unprocessable_entity(error):
     # Support for validation errors
     details = getattr(error, "data", {}).get("messages", None)
     return api_error("UNPROCESSABLE_ENTITY", "Błąd walidacji danych", details=details, status=422)
 
-@api_bp.app_errorhandler(500)
+@api_bp.errorhandler(500)
 def internal_server_error(error):
     return api_error("INTERNAL_SERVER_ERROR", "Wystąpił wewnętrzny błąd serwera", status=500)

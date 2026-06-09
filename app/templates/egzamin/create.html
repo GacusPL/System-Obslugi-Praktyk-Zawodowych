@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Zaplanuj Egzamin Praktyczny - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('admin.praktyki_list') }}">Wszystkie Praktyki</a></li>
+<li class="breadcrumb-item active" aria-current="page">Zaplanuj Egzamin</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card card-custom">
+            <h3 class="fw-bold mb-3"><i class="bi bi-calendar-event text-primary me-2"></i>Zaplanuj Egzamin Praktyczny (P8)</h3>
+            <p class="text-muted mb-4">Wypełnij poniższy formularz, aby zaplanować egzamin dla studenta <strong>{{ praktyka.student.uzytkownik.imie }} {{ praktyka.student.uzytkownik.nazwisko }}</strong>.</p>
+
+            <form id="egzamin-form">
+                <input type="hidden" name="praktyka_id" value="{{ praktyka.id }}">
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Termin Egzaminu</label>
+                    <input type="datetime-local" name="termin" class="form-control" required>
+                    <div class="form-text">Wybierz datę i godzinę egzaminu ustnego.</div>
+                </div>
+
+                <!-- Komisja Egzaminacyjna -->
+                <div class="p-3 bg-light rounded-3 mb-4">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-people text-secondary me-2"></i>Skład Komisji Egzaminacyjnej</h6>
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Przewodniczący Komisji</label>
+                        <select name="przewodniczacy" class="form-select form-select-sm" required>
+                            <option value="">Wybierz przewodniczącego...</option>
+                            {% for u in commission_candidates %}
+                            <option value="{{ u.id }}">{{ u.imie }} {{ u.nazwisko }} ({{ u.rola }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-0">
+                        <label class="form-label small fw-semibold">Członek Komisji</label>
+                        <select name="czlonek" class="form-select form-select-sm" required>
+                            <option value="">Wybierz członka komisji...</option>
+                            {% for u in commission_candidates %}
+                            <option value="{{ u.id }}">{{ u.imie }} {{ u.nazwisko }} ({{ u.rola }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <script>
+                    document.getElementById('egzamin-form').addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const formData = new FormData(this);
+                        
+                        // Parse datetime-local from YYYY-MM-DDTHH:MM to YYYY-MM-DD HH:MM:SS
+                        const rawTermin = formData.get('termin');
+                        const formattedTermin = rawTermin.replace('T', ' ') + ':00';
+
+                        const przewodniczacyId = parseInt(formData.get('przewodniczacy'));
+                        const czlonekId = parseInt(formData.get('czlonek'));
+
+                        if (przewodniczacyId === czlonekId) {
+                            alert("Błąd: Przewodniczący i członek komisji nie mogą być tą samą osobą.");
+                            return;
+                        }
+
+                        const payload = {
+                            praktyka_id: parseInt(formData.get('praktyka_id')),
+                            termin: formattedTermin,
+                            komisja_sklad: [
+                                { uzytkownik_id: przewodniczacyId, rola_w_komisji: "przewodniczacy" },
+                                { uzytkownik_id: czlonekId, rola_w_komisji: "czlonek" }
+                            ]
+                        };
+
+                        fetch('/api/v1/egzamin', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        }).then(res => {
+                            if (res.status === 201) {
+                                alert("Egzamin został zaplanowany pomyślnie!");
+                                window.location.href = '/admin/praktyki';
+                            } else {
+                                res.json().then(data => {
+                                    alert("Błąd: " + (data.error?.message || "Nie udało się zaplanować egzaminu."));
+                                });
+                            }
+                        });
+                    });
+                </script>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a href="{{ url_for('admin.praktyki_list') }}" class="btn btn-outline-secondary">Anuluj</a>
+                    <button type="submit" class="btn btn-primary btn-primary-custom">Zapisz i Zaplanuj</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

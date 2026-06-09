@@ -51,6 +51,10 @@ def create_zaklad():
     if existing:
         return api_error("ZAKLAD_ALREADY_EXISTS", "Zakład pracy o podanym NIP już istnieje", status=400)
 
+    # Look up ZOPZ user to associate by name/surname
+    zopz_user = Uzytkownik.query.filter_by(rola='zopz', imie=zopz_imie, nazwisko=zopz_nazwisko).first()
+    zopz_uzytkownik_id = zopz_user.id if zopz_user else None
+
     zaklad = ZakladPracy(
         nazwa=nazwa,
         adres=adres,
@@ -59,7 +63,8 @@ def create_zaklad():
         zopz_nazwisko=zopz_nazwisko,
         zopz_stanowisko=zopz_stanowisko,
         zopz_wyksztalcenie=zopz_wyksztalcenie,
-        status='Approved'
+        status='Approved',
+        zopz_uzytkownik_id=zopz_uzytkownik_id
     )
     db.session.add(zaklad)
     db.session.commit()

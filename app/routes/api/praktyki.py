@@ -5,7 +5,7 @@ from app import db
 from app.models import Praktyka, Student, ZakladPracy, Uzytkownik
 from app.decorators import role_required
 from app.validators import validate_dates_range
-from app.routes.api.helpers import api_success, api_error, paginate_query
+from app.routes.api.helpers import api_success, api_error, paginate_query, validate_payload
 
 praktyki_api_bp = Blueprint('praktyki_api', __name__)
 
@@ -39,14 +39,22 @@ def create_praktyka():
         return api_error("INVALID_SEMESTER", "Praktykę można zarejestrować tylko na 6 lub 7 semestrze", status=403)
 
     data = request.get_json() or {}
-    zaklad_id = data.get('zaklad_id')
-    uopz_id = data.get('uopz_id')
-    termin_od_str = data.get('termin_od')
-    termin_do_str = data.get('termin_do')
-    rok_akademicki = data.get('rok_akademicki')
+    schema = {
+        'zaklad_id': {'required': True, 'type': int},
+        'uopz_id': {'required': True, 'type': int},
+        'termin_od': {'required': True, 'type': str},
+        'termin_do': {'required': True, 'type': str},
+        'rok_akademicki': {'required': True, 'type': str},
+    }
+    sanitized, errors = validate_payload(data, schema)
+    if errors:
+        return api_error("MISSING_FIELDS", "Brakujące wymagane pola lub nieprawidłowe typy", details=errors, status=400)
 
-    if not all([zaklad_id, uopz_id, termin_od_str, termin_do_str, rok_akademicki]):
-        return api_error("MISSING_FIELDS", "Brakujące wymagane pola", status=400)
+    zaklad_id = sanitized['zaklad_id']
+    uopz_id = sanitized['uopz_id']
+    termin_od_str = sanitized['termin_od']
+    termin_do_str = sanitized['termin_do']
+    rok_akademicki = sanitized['rok_akademicki']
 
     # Validate dates
     is_valid_dates, msg = validate_dates_range(termin_od_str, termin_do_str)
@@ -138,13 +146,17 @@ def get_praktyka(praktyka_id):
 @praktyki_api_bp.route('/praktyki/<int:praktyka_id>', methods=['PATCH'])
 @praktyki_api_bp.route('/praktyki/<int:praktyka_id>/status', methods=['PATCH'])
 @login_required
+@role_required('student', 'uopz', 'administrator')
 def update_praktyka_status(praktyka_id):
     praktyka = Praktyka.query.get_or_404(praktyka_id)
     data = request.get_json() or {}
-    new_status = data.get('status')
-    
-    if not new_status:
-        return api_error("MISSING_STATUS", "Brak statusu w żądaniu", status=400)
+    schema = {
+        'status': {'required': True, 'type': str}
+    }
+    sanitized, errors = validate_payload(data, schema)
+    if errors:
+        return api_error("MISSING_STATUS", "Brak statusu w żądaniu", details=errors, status=400)
+    new_status = sanitized['status']
         
     valid_transitions = {
         'Draft': ['Submitted'],

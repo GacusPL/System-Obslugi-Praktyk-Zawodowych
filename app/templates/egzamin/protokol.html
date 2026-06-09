@@ -13,7 +13,7 @@
         <div class="card card-custom">
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                 <h3 class="fw-bold m-0"><i class="bi bi-file-earmark-check text-primary me-2"></i>Protokół Egzaminu Praktycznego (P8)</h3>
-                <a href="/api/v1/egzamin/export?format=xlsx" class="btn btn-sm btn-outline-success">
+                <a href="/api/v1/eksport/oceny?format=xlsx" class="btn btn-sm btn-outline-success">
                     <i class="bi bi-file-earmark-excel me-1"></i> Pobierz XLSX
                 </a>
             </div>
@@ -79,14 +79,43 @@
                             e.preventDefault();
                             const egId = this.getAttribute('data-egzamin-id');
                             const formData = new FormData(this);
+                            const ocena_ustna = parseFloat(formData.get('ocena_ustna'));
+                            
+                            const zopz = {{ praktyka.karta_praktyki.ocena_param_zopz or 0.0 }};
+                            const uopz = {{ praktyka.karta_praktyki.ocena_param_uopz or 0.0 }};
+                            const sprawozdanie = {{ praktyka.karta_praktyki.ocena_sprawozdania or 0.0 }};
+                            
+                            let sum = ocena_ustna;
+                            let count = 1;
+                            if (zopz > 0) { sum += zopz; count++; }
+                            if (uopz > 0) { sum += uopz; count++; }
+                            if (sprawozdanie > 0) { sum += sprawozdanie; count++; }
+                            
+                            const avg = sum / count;
+                            let ocena_koncowa = 2.0;
+                            if (ocena_ustna === 2.0) {
+                                ocena_koncowa = 2.0;
+                            } else if (avg >= 4.75) {
+                                ocena_koncowa = 5.0;
+                            } else if (avg >= 4.25) {
+                                ocena_koncowa = 4.5;
+                            } else if (avg >= 3.75) {
+                                ocena_koncowa = 4.0;
+                            } else if (avg >= 3.25) {
+                                ocena_koncowa = 3.5;
+                            } else if (avg >= 2.75) {
+                                ocena_koncowa = 3.0;
+                            } else {
+                                ocena_koncowa = 2.0;
+                            }
                             
                             const payload = {
-                                ocena_ustna: parseFloat(formData.get('ocena_ustna')),
-                                status: "Approved"
+                                ocena_ustna: ocena_ustna,
+                                ocena_koncowa: ocena_koncowa
                             };
                             
-                            fetch(`/api/v1/egzamin/${egId}/ocena`, {
-                                method: 'PATCH',
+                            fetch(`/api/v1/egzamin/${egId}/wynik`, {
+                                method: 'POST',
                                 headers: {
                                     'Content-Type': 'application/json'
                                 },

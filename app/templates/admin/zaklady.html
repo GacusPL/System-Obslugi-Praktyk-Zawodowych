@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Zarządzanie Zakładami Pracy - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Zakłady Pracy</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Lista Zakładów -->
+    <div class="col-lg-8">
+        <div class="card card-custom">
+            <h5 class="fw-bold mb-4"><i class="bi bi-building text-primary me-2"></i>Zatwierdzone Zakłady Pracy</h5>
+            
+            {% if not zaklady %}
+            <div class="text-center py-4">
+                <i class="bi bi-exclamation-circle text-warning fs-1"></i>
+                <p class="text-muted mt-2 mb-0">Brak zarejestrowanych zakładów pracy.</p>
+            </div>
+            {% else %}
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Nazwa i adres</th>
+                            <th>NIP</th>
+                            <th>Opiekun (ZOPZ)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for z in zaklady %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">{{ z.nazwa }}</div>
+                                <span class="text-muted small">{{ z.adres }}</span>
+                            </td>
+                            <td><code>{{ z.nip }}</code></td>
+                            <td>
+                                <div>{{ z.zopz_imie }} {{ z.zopz_nazwisko }}</div>
+                                <span class="text-muted small">{{ z.zopz_stanowisko }} ({{ z.zopz_wyksztalcenie }})</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if z.status == 'Approved' else 'danger' }}">
+                                    {{ z.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Formularz Dodawania Nowego Zakładu -->
+    <div class="col-lg-4">
+        <div class="card card-custom">
+            <h5 class="fw-bold mb-3"><i class="bi bi-plus-circle text-primary me-2"></i>Dodaj Zakład Pracy</h5>
+            
+            <form id="zaklad-form">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Nazwa Zakładu</label>
+                    <input type="text" name="nazwa" class="form-control form-control-sm" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Adres</label>
+                    <input type="text" name="adres" class="form-control form-control-sm" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">NIP</label>
+                    <input type="text" name="nip" class="form-control form-control-sm" required>
+                </div>
+
+                <hr>
+                <h6 class="fw-bold text-muted small mb-3">Dane Opiekuna (ZOPZ)</h6>
+
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">Imię</label>
+                    <input type="text" name="zopz_imie" class="form-control form-control-sm" required>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">Nazwisko</label>
+                    <input type="text" name="zopz_nazwisko" class="form-control form-control-sm" required>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label small fw-semibold">Stanowisko</label>
+                    <input type="text" name="zopz_stanowisko" class="form-control form-control-sm" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Wykształcenie (wymagane wyższe/inż.)</label>
+                    <input type="text" name="zopz_wyksztalcenie" class="form-control form-control-sm" placeholder="np. Wyższe magisterskie" required>
+                </div>
+
+                <script>
+                    document.getElementById('zaklad-form').addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const formData = new FormData(this);
+                        const payload = {};
+                        formData.forEach((val, key) => payload[key] = val);
+
+                        fetch('/api/v1/zaklady', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        }).then(res => {
+                            if (res.status === 201) {
+                                alert("Zakład pracy dodany pomyślnie!");
+                                window.location.reload();
+                            } else {
+                                res.json().then(data => {
+                                    alert("Błąd: " + (data.error?.message || "Nie udało się dodać zakładu. Upewnij się, że NIP jest unikalny a opiekun ma wykształcenie wyższe."));
+                                });
+                            }
+                        });
+                    });
+                </script>
+
+                <button type="submit" class="btn btn-sm btn-primary w-100 mt-2">Zapisz Zakład</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

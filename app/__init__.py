@@ -29,6 +29,9 @@ def create_app(config_name=None):
     from config import config_by_name
     app.config.from_object(config_by_name[config_name])
     
+    if config_name == 'production' and app.config.get('SECRET_KEY') == 'default-key-for-development':
+        raise ValueError("SECRET_KEY must be set in production config")
+    
     # Setup logging
     from app.logging_config import setup_logging
     setup_logging(app)
@@ -52,6 +55,9 @@ def create_app(config_name=None):
     app.register_blueprint(admin_bp)
     app.register_blueprint(api_bp)
     
+    # Exempt API from CSRF protection
+    csrf.exempt(api_bp)
+    
     # Register CLI commands
     from app.cli import register_cli_commands
     register_cli_commands(app)
@@ -64,6 +70,13 @@ def create_app(config_name=None):
     @login_manager.user_loader
     def load_user(user_id):
         return Uzytkownik.query.get(int(user_id))
+        
+    @login_manager.unauthorized_handler
+    def unauthorized():
+        if request.path.startswith('/api/'):
+            from app.routes.api.helpers import api_error
+            return api_error("UNAUTHORIZED", "Wymagane zalogowanie", status=401)
+        return redirect(url_for('auth.login'))
         
     # Global redirect check for users without role
     @app.before_request

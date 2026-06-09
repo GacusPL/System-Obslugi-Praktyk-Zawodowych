@@ -164,7 +164,7 @@ def download_document(doc_id):
         if praktyka and praktyka.uopz_id != current_user.id:
             abort(403)
     elif current_user.rola == 'zopz':
-        if praktyka and (praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko):
+        if praktyka and not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
 
     if not os.path.exists(doc.sciezka_pliku):
@@ -174,6 +174,7 @@ def download_document(doc_id):
 
 @documents_api_bp.route('/documents/generate', methods=['POST'])
 @login_required
+@role_required('student', 'uopz', 'zopz', 'administrator')
 def generate_document_api():
     data_json = request.get_json() or {}
     praktyka_id = data_json.get('praktyka_id')

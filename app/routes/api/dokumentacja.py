@@ -72,9 +72,8 @@ def zloz_dokumentacje():
             status=422
         )
 
-    # Transition practice status to Under_Review
-    # Under_Review represents that UOPZ is reviewing the whole compiled documentation
-    praktyka.status = 'Under_Review'
+    # Transition practice status to Submitted
+    praktyka.status = 'Submitted'
     db.session.commit()
 
     return api_success({
@@ -130,6 +129,7 @@ def patch_dokumentacja(praktyka_id):
 
     # Validate state transitions
     valid_transitions = {
+        'Submitted': ['Under_Review', 'Approved', 'Rejected'],
         'Under_Review': ['Approved', 'Rejected'],
         'Approved': ['Closed', 'Under_Review'],
         'Rejected': ['Draft']

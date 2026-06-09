@@ -86,7 +86,7 @@ def get_harmonogram(praktyka_id):
         if praktyka.uopz_id != current_user.id:
             abort(403)
     elif current_user.rola == 'zopz':
-        if praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko:
+        if not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
 
     harmonogram = Harmonogram.query.filter_by(praktyka_id=praktyka_id).first()
@@ -97,6 +97,7 @@ def get_harmonogram(praktyka_id):
 
 @harmonogramy_api_bp.route('/harmonogramy/<int:harmonogram_id>', methods=['PATCH'])
 @login_required
+@role_required('student', 'uopz', 'zopz', 'administrator')
 def update_harmonogram(harmonogram_id):
     harmonogram = Harmonogram.query.get_or_404(harmonogram_id)
     praktyka = harmonogram.praktyka
@@ -114,7 +115,7 @@ def update_harmonogram(harmonogram_id):
             harmonogram.podpis_student = int(data['podpis_student'])
 
     elif current_user.rola == 'zopz':
-        if praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko:
+        if not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
         # ZOPZ can only update their own signature
         if any(k in data for k in ['podpis_student', 'podpis_uopz', 'status']):
@@ -152,13 +153,17 @@ def update_harmonogram(harmonogram_id):
         harmonogram.status = 'Approved'
         # Move praktyka status to Approved as well if it is not Closed
         if praktyka.status not in ['Closed', 'Rejected']:
-            praktyka.status = 'Approved'
+            if praktyka.status == 'Draft':
+                praktyka.status = 'Under_Review'
+            else:
+                praktyka.status = 'Approved'
 
     db.session.commit()
     return api_success(serialize_harmonogram(harmonogram))
 
 @harmonogramy_api_bp.route('/harmonogramy/<int:harmonogram_id>', methods=['PUT'])
 @login_required
+@role_required('student', 'uopz', 'administrator')
 def save_harmonogram_divisions(harmonogram_id):
     harmonogram = Harmonogram.query.get_or_404(harmonogram_id)
     praktyka = harmonogram.praktyka
@@ -207,6 +212,7 @@ def save_harmonogram_divisions(harmonogram_id):
 
 @harmonogramy_api_bp.route('/harmonogramy/<int:harmonogram_id>/signature', methods=['PATCH'])
 @login_required
+@role_required('student', 'uopz', 'zopz', 'administrator')
 def sign_harmonogram(harmonogram_id):
     harmonogram = Harmonogram.query.get_or_404(harmonogram_id)
     praktyka = harmonogram.praktyka
@@ -239,7 +245,7 @@ def sign_harmonogram(harmonogram_id):
     elif req_role == 'zopz':
         if current_user.rola != 'zopz':
             abort(403)
-        if praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko:
+        if not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
         harmonogram.podpis_zopz = 1
 
@@ -258,7 +264,10 @@ def sign_harmonogram(harmonogram_id):
         harmonogram.status = 'Approved'
         # Move praktyka status to Approved as well if it is not Closed
         if praktyka.status not in ['Closed', 'Rejected']:
-            praktyka.status = 'Approved'
+            if praktyka.status == 'Draft':
+                praktyka.status = 'Under_Review'
+            else:
+                praktyka.status = 'Approved'
 
     db.session.commit()
     return api_success(serialize_harmonogram(harmonogram))

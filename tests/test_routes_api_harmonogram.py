@@ -113,8 +113,8 @@ def test_harmonogram_crud_and_signatures(client, db_session, sample_student, sam
     assert response.get_json()["data"]["podpis_uopz"] == 1
     assert response.get_json()["data"]["status"] == "Approved"
 
-    # Verify that the practice status is also updated to Approved
-    assert Praktyka.query.get(praktyka.id).status == "Approved"
+    # Verify that the practice status is also updated to Under_Review
+    assert Praktyka.query.get(praktyka.id).status == "Under_Review"
 
     # 8. Test PUT save and PATCH /signature routes (using student login)
     client.get('/auth/logout')

@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import WpisDziennika, Praktyka, Student, EfektUczenia, Uzytkownik
 from app.decorators import role_required
-from app.routes.api.helpers import api_success, api_error, paginate_query
+from app.routes.api.helpers import api_success, api_error, paginate_query, validate_payload
 
 dziennik_api_bp = Blueprint('dziennik_api', __name__)
 
@@ -32,15 +32,24 @@ def create_wpis():
         return api_error("STUDENT_PROFILE_NOT_FOUND", "Brak profilu studenta", status=400)
 
     data = request.get_json() or {}
-    praktyka_id = data.get('praktyka_id')
-    dzien_nr = data.get('dzien_nr')
-    data_wpisu_str = data.get('data_wpisu')
-    opis_prac = data.get('opis_prac')
+    
+    schema = {
+        'praktyka_id': {'required': True, 'type': int},
+        'dzien_nr': {'required': True, 'type': int},
+        'data_wpisu': {'required': True, 'type': str},
+        'opis_prac': {'required': True, 'type': str},
+    }
+    
+    sanitized, errors = validate_payload(data, schema)
+    if errors:
+        return api_error("MISSING_FIELDS", "Brakujące wymagane pola lub nieprawidłowe typy", details=errors, status=400)
+
+    praktyka_id = sanitized['praktyka_id']
+    dzien_nr = sanitized['dzien_nr']
+    data_wpisu_str = sanitized['data_wpisu']
+    opis_prac = sanitized['opis_prac']
     efekty_nrs = data.get('efekty', [])
     entry_status = data.get('status', 'Submitted')
-
-    if not all([praktyka_id, dzien_nr, data_wpisu_str, opis_prac]):
-        return api_error("MISSING_FIELDS", "Brakujące wymagane pola", status=400)
 
     praktyka = Praktyka.query.get(praktyka_id)
     if not praktyka or praktyka.student_id != student.id:
@@ -98,7 +107,7 @@ def list_wpisy(praktyka_id):
         if praktyka.uopz_id != current_user.id:
             abort(403)
     elif current_user.rola == 'zopz':
-        if praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko:
+        if not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
 
     query = WpisDziennika.query.filter_by(praktyka_id=praktyka_id)
@@ -157,10 +166,14 @@ def update_wpis(wpis_id):
 
 @dziennik_api_bp.route('/dziennik/wpisy/<int:wpis_id>', methods=['PATCH'])
 @login_required
+@role_required('student', 'uopz', 'zopz', 'administrator')
 def patch_wpis(wpis_id):
     wpis = WpisDziennika.query.get_or_404(wpis_id)
     praktyka = wpis.praktyka
     data = request.get_json() or {}
+
+    if 'status' in data and data['status'] not in ('Draft', 'Submitted', 'Approved', 'Rejected'):
+        return api_error("INVALID_STATUS", "Nieprawidłowy status wpisu", status=400)
 
     if current_user.rola == 'student':
         student = Student.query.filter_by(uzytkownik_id=current_user.id).first()

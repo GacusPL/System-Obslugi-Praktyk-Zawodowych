@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import abort, redirect, url_for
+from flask import abort, redirect, url_for, request
 from flask_login import current_user
 
 def role_required(*roles):
@@ -9,6 +9,8 @@ def role_required(*roles):
             if not current_user.is_authenticated:
                 abort(401)
             if current_user.rola is None:
+                if request.path.startswith('/api/'):
+                    abort(403)
                 return redirect(url_for('auth.waiting'))
             if current_user.rola not in roles:
                 abort(403)

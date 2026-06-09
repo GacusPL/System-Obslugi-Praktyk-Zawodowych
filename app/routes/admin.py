@@ -20,15 +20,26 @@ def users_list():
 @admin_required
 def update_user_role(user_id):
     user = Uzytkownik.query.get_or_404(user_id)
-    new_role = request.form.get('rola')
+    
+    if request.is_json:
+        data = request.get_json() or {}
+        new_role = data.get('rola')
+    else:
+        new_role = request.form.get('rola')
     
     valid_roles = ['student', 'zopz', 'uopz', 'administrator', 'dyrektor']
     if new_role not in valid_roles:
+        if request.headers.get('HX-Request') or request.is_json:
+            return {"error": "INVALID_ROLE", "message": "Nieprawidłowa rola"}, 400
         flash("Nieprawidłowa rola.", "danger")
         return redirect(url_for('admin.users_list')), 400
         
     user.rola = new_role
     db.session.commit()
+    
+    if request.headers.get('HX-Request'):
+        return ""
+        
     flash(f"Przypisano rolę {new_role} użytkownikowi {user.email}.", "success")
     return redirect(url_for('admin.users_list'))
 
@@ -39,3 +50,59 @@ def praktyki_list():
     from app.models import Praktyka
     praktyki = Praktyka.query.all()
     return render_template('admin/praktyki.html', praktyki=praktyki)
+
+@admin_bp.route('/egzamin/<int:egzamin_id>/protokol', methods=['GET'])
+@login_required
+def view_egzamin_protokol(egzamin_id):
+    from app.models import Egzamin
+    egzamin = Egzamin.query.get_or_404(egzamin_id)
+    praktyka = egzamin.praktyka
+    
+    # Access checks
+    if current_user.rola == 'student':
+        from app.models import Student
+        student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+        if not student or praktyka.student_id != student.id:
+            abort(403)
+    elif current_user.rola == 'uopz':
+        if praktyka.uopz_id != current_user.id:
+            abort(403)
+    elif current_user.rola == 'zopz':
+        abort(403)
+
+    return render_template('egzamin/protokol.html', egzamin=egzamin, praktyka=praktyka)
+
+@admin_bp.route('/egzamin/create/<int:praktyka_id>', methods=['GET'])
+@login_required
+@admin_required
+def schedule_egzamin_form(praktyka_id):
+    from app.models import Praktyka, Uzytkownik
+    praktyka = Praktyka.query.get_or_404(praktyka_id)
+    
+    # Allowed commission members: uopz, dyrektor, administrator
+    commission_candidates = Uzytkownik.query.filter(Uzytkownik.rola.in_(['uopz', 'dyrektor', 'administrator'])).all()
+    
+    return render_template('egzamin/create.html', praktyka=praktyka, commission_candidates=commission_candidates)
+
+@admin_bp.route('/zaklady', methods=['GET'])
+@login_required
+@admin_required
+def zaklady_manage():
+    from app.models import ZakladPracy
+    zaklady = ZakladPracy.query.all()
+    return render_template('admin/zaklady.html', zaklady=zaklady)
+
+@admin_bp.route('/raporty', methods=['GET'])
+@login_required
+@admin_required
+def raporty_view():
+    from app.models import Praktyka
+    from sqlalchemy import func
+    
+    stats = db.session.query(Praktyka.status, func.count(Praktyka.id)).group_by(Praktyka.status).all()
+    stats_dict = {status: count for status, count in stats}
+    
+    years = db.session.query(Praktyka.rok_akademicki).distinct().all()
+    years = [y[0] for y in years if y[0]]
+    
+    return render_template('admin/raporty.html', stats=stats_dict, years=years)

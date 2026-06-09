@@ -39,7 +39,7 @@ def evaluate_zopz():
 
     # Access checks
     if current_user.rola == 'zopz':
-        if praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko:
+        if not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
 
     try:
@@ -81,7 +81,7 @@ def get_karta(praktyka_id):
         if praktyka.uopz_id != current_user.id:
             abort(403)
     elif current_user.rola == 'zopz':
-        if praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko:
+        if not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
 
     karta = KartaPraktyki.query.filter_by(praktyka_id=praktyka_id).first()

@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from app import db
 from app.models import PotwierdzenieEfektow, PotwierdzenieEfektOcena, Praktyka, Student, EfektUczenia, Uzytkownik
 from app.decorators import role_required
-from app.routes.api.helpers import api_success, api_error
+from app.routes.api.helpers import api_success, api_error, validate_payload
 
 efekty_api_bp = Blueprint('efekty_api', __name__)
 
@@ -54,12 +54,17 @@ def get_efekty_szablon(praktyka_id):
 @role_required('zopz', 'administrator')
 def create_potwierdzenie():
     data = request.get_json() or {}
-    praktyka_id = data.get('praktyka_id')
-    godziny = data.get('godziny_zrealizowane')
-    oceny_data = data.get('oceny', [])
+    schema = {
+        'praktyka_id': {'required': True, 'type': int},
+        'godziny_zrealizowane': {'required': True, 'type': int},
+    }
+    sanitized, errors = validate_payload(data, schema)
+    if errors or 'oceny' not in data or not data['oceny']:
+        return api_error("MISSING_FIELDS", "Brakujące wymagane pola", details=errors, status=400)
 
-    if not praktyka_id or godziny is None or not oceny_data:
-        return api_error("MISSING_FIELDS", "Brakujące wymagane pola", status=400)
+    praktyka_id = sanitized['praktyka_id']
+    godziny = sanitized['godziny_zrealizowane']
+    oceny_data = data['oceny']
 
     praktyka = Praktyka.query.get(praktyka_id)
     if not praktyka:
@@ -143,8 +148,15 @@ def patch_potwierdzenie(potwierdzenie_id):
         abort(403)
 
     data = request.get_json() or {}
-    status = data.get('status')
-    opinia_uopz = data.get('opinia_uopz')
+    schema = {
+        'status': {'required': False, 'type': str},
+        'opinia_uopz': {'required': False, 'type': str},
+    }
+    sanitized, errors = validate_payload(data, schema)
+    if errors:
+        return api_error("VALIDATION_ERROR", "Błędy walidacji danych", details=errors, status=400)
+    status = sanitized.get('status')
+    opinia_uopz = sanitized.get('opinia_uopz')
 
     if status:
         if status not in ['Draft', 'Submitted', 'Under_Review', 'Approved', 'Rejected']:
