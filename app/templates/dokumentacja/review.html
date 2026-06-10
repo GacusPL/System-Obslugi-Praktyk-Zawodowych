@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Weryfikacja Dokumentacji (UOPZ) - SOPZ{% endblock %}
+{% block title %}{% if all_approved %}Weryfikacja Końcowa Dokumentacji{% else %}Weryfikacja Zgłoszenia Praktyki{% endif %} (UOPZ) - SOPZ{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
@@ -13,8 +13,8 @@
         <div class="card-sopz">
             <div class="card-sopz-header">
                 <h2 class="h2 mb-0 d-flex align-items-center gap-2">
-                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">shield_heart</span>
-                    Weryfikacja Dokumentacji Praktyki
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">{% if all_approved %}shield_heart{% else %}assignment_ind{% endif %}</span>
+                    {% if all_approved %}Weryfikacja Końcowa Dokumentacji{% else %}Weryfikacja Zgłoszenia Praktyki{% endif %}
                 </h2>
             </div>
             
@@ -47,7 +47,7 @@
             <div class="p-4 border rounded bg-light mb-4">
                 <h3 class="h3 mb-3 d-flex align-items-center gap-2 text-success">
                     <span class="material-symbols-outlined text-success" style="font-size: 22px;">task_alt</span>
-                    Zatwierdzenie Dokumentacji Praktyki
+                    {% if all_approved %}Zatwierdzenie Końcowej Dokumentacji Praktyki{% else %}Akceptacja Zgłoszenia Praktyki{% endif %}
                 </h3>
                 
                 <form id="zaliczenie-form" data-praktyka-id="{{ praktyka.id }}">
@@ -55,8 +55,13 @@
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Decyzja weryfikacyjna</label>
                             <select name="status" class="form-select" required>
+                                {% if all_approved %}
                                 <option value="Approved">Zatwierdź Dokumentację (Approved)</option>
                                 <option value="Rejected">Odrzuć i zwróć do poprawy (Rejected)</option>
+                                {% else %}
+                                <option value="Approved">Zaakceptuj wniosek o praktykę (Approved)</option>
+                                <option value="Rejected">Odrzuć wniosek o praktykę (Rejected)</option>
+                                {% endif %}
                             </select>
                         </div>
                     </div>

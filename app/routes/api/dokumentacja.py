@@ -142,25 +142,28 @@ def patch_dokumentacja(praktyka_id):
     praktyka.status = new_status
     
     if new_status == 'Approved':
-        from app.routes.api.documents import compile_pdf_data
-        from app.pdf import generate_pdf
-        from app.models import Dokument
-        
-        types_to_generate = ['zal_nr2a', 'zal_nr3', 'zal_nr4', 'zal_nr6', 'zal_nr7']
-        for t in types_to_generate:
-            try:
-                pdf_data = compile_pdf_data(praktyka, t)
-                filepath = generate_pdf(t, pdf_data)
-                
-                doc = Dokument.query.filter_by(praktyka_id=praktyka.id, typ=t).first()
-                if not doc:
-                    doc = Dokument(praktyka_id=praktyka.id, typ=t, sciezka_pliku=filepath, status='Closed')
-                    db.session.add(doc)
-                else:
-                    doc.sciezka_pliku = filepath
-            except Exception as e:
-                # Log error and continue or fail gracefully
-                print(f"Error generating automatic PDF {t}: {e}")
+        checklist = check_checklist(praktyka)
+        all_approved = all(checklist.values())
+        if all_approved:
+            from app.routes.api.documents import compile_pdf_data
+            from app.pdf import generate_pdf
+            from app.models import Dokument
+            
+            types_to_generate = ['zal_nr2a', 'zal_nr3', 'zal_nr4', 'zal_nr6', 'zal_nr7']
+            for t in types_to_generate:
+                try:
+                    pdf_data = compile_pdf_data(praktyka, t)
+                    filepath = generate_pdf(t, pdf_data)
+                    
+                    doc = Dokument.query.filter_by(praktyka_id=praktyka.id, typ=t).first()
+                    if not doc:
+                        doc = Dokument(praktyka_id=praktyka.id, typ=t, sciezka_pliku=filepath, status='Closed')
+                        db.session.add(doc)
+                    else:
+                        doc.sciezka_pliku = filepath
+                except Exception as e:
+                    # Log error and continue or fail gracefully
+                    print(f"Error generating automatic PDF {t}: {e}")
                 
     db.session.commit()
 

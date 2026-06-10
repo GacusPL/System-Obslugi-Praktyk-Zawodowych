@@ -128,3 +128,22 @@ def przedluzenie_view(praktyka_id):
         abort(403)
     max_data_do = praktyka.termin_do + timedelta(days=31)
     return render_template('admin/przedluzenie.html', praktyka=praktyka, max_data_do=max_data_do)
+
+@admin_bp.route('/egzaminy', methods=['GET'])
+@login_required
+@admin_required
+def egzaminy_list():
+    from app.models import Egzamin
+    egzaminy = Egzamin.query.all()
+    return render_template('admin/egzaminy.html', egzaminy=egzaminy)
+
+@admin_bp.route('/eksport', methods=['GET'])
+@login_required
+@admin_required
+def eksport_view():
+    from app.models import Praktyka
+    from app import db
+    years = db.session.query(Praktyka.rok_akademicki).distinct().all()
+    years = [y[0] for y in years if y[0]]
+    return render_template('admin/eksport.html', years=years)
+

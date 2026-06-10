@@ -10,11 +10,107 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card-sopz">
-            <h3 class="mb-2"><span class="material-symbols-outlined align-middle me-2" style="color: var(--primary);">assignment</span>Zgłoszenie Praktyki Zawodowej (P1)</h3>
-            <p class="text-secondary mb-4">Wypełnij poniższy formularz, aby zgłosić chęć odbycia praktyki zawodowej w wybranym zakładzie pracy.</p>
+        {% if praktyka %}
+            <div class="card-sopz p-4">
+                <h3 class="mb-3 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">assignment</span>
+                    Status Zgłoszenia Praktyki
+                </h3>
+                
+                <div class="alert alert-{% if praktyka.status in ['Approved', 'Closed'] %}success{% elif praktyka.status == 'Rejected' %}danger{% else %}warning{% endif %} d-flex align-items-center gap-2 mb-4">
+                    <span class="material-symbols-outlined">
+                        {% if praktyka.status in ['Approved', 'Closed'] %}check_circle{% elif praktyka.status == 'Rejected' %}cancel{% else %}hourglass_empty{% endif %}
+                    </span>
+                    <div>
+                        <strong>Status zgłoszenia:</strong> {{ praktyka.status|translate_status }}
+                    </div>
+                </div>
 
-            <form id="zgloszenie-form">
+                <div class="p-3 bg-light rounded-3 mb-4">
+                    <h6 class="fw-bold mb-3"><span class="material-symbols-outlined align-middle me-1" style="font-size: 18px;">info</span>Szczegóły zgłoszenia:</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <strong>Zakład Pracy:</strong> {{ praktyka.zaklad_pracy.nazwa }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Opiekun Uczelniany (UOPZ):</strong> {{ praktyka.uopz.imie }} {{ praktyka.uopz.nazwisko }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Termin praktyki:</strong> {{ praktyka.termin_od.strftime('%d.%m.%Y') }} - {{ praktyka.termin_do.strftime('%d.%m.%Y') }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Rok Akademicki:</strong> {{ praktyka.rok_akademicki }}
+                        </div>
+                    </div>
+                </div>
+
+                {% if praktyka.status == 'Draft' %}
+                    <div class="alert alert-info">
+                        Twoje zgłoszenie jest szkicem. Kliknij przycisk poniżej, aby wysłać je do weryfikacji.
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button id="submit-draft-btn" class="btn btn-primary" data-praktyka-id="{{ praktyka.id }}">
+                            <span class="material-symbols-outlined align-middle me-2">send</span>Wyślij zgłoszenie do weryfikacji
+                        </button>
+                    </div>
+                    <script>
+                        document.getElementById('submit-draft-btn')?.addEventListener('click', function() {
+                            const pId = this.getAttribute('data-praktyka-id');
+                            fetch(`/api/v1/praktyki/${pId}/status`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ status: 'Submitted' })
+                            }).then(res => {
+                                if (res.ok) {
+                                    showToast("Zgłoszenie zostało wysłane!", "success");
+                                    setTimeout(() => window.location.reload(), 1000);
+                                } else {
+                                    showToast("Błąd wysyłania zgłoszenia.", "error");
+                                }
+                            });
+                        });
+                    </script>
+                {% elif praktyka.status == 'Rejected' %}
+                    <div class="alert alert-danger mb-4">
+                        Zgłoszenie zostało odrzucone i wymaga poprawy. Kliknij przycisk poniżej, aby je poprawić.
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button id="resubmit-btn" class="btn btn-primary" data-praktyka-id="{{ praktyka.id }}">
+                            <span class="material-symbols-outlined align-middle me-2">edit</span>Popraw zgłoszenie (powrót do szkicu)
+                        </button>
+                    </div>
+                    <script>
+                        document.getElementById('resubmit-btn')?.addEventListener('click', function() {
+                            const pId = this.getAttribute('data-praktyka-id');
+                            fetch(`/api/v1/praktyki/${pId}/status`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ status: 'Draft' })
+                            }).then(res => {
+                                if (res.ok) {
+                                    window.location.reload();
+                                } else {
+                                    showToast("Błąd resetowania zgłoszenia.", "error");
+                                }
+                            });
+                        });
+                    </script>
+                {% else %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Powrót do Dashboardu</a>
+                    </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="card-sopz">
+                <h3 class="mb-2"><span class="material-symbols-outlined align-middle me-2" style="color: var(--primary);">assignment</span>Zgłoszenie Praktyki Zawodowej (P1)</h3>
+                <p class="text-secondary mb-4">Wypełnij poniższy formularz, aby zgłosić chęć odbycia praktyki zawodowej w wybranym zakładzie pracy.</p>
+
+                <form id="zgloszenie-form">
                 
                 <!-- Wybór zakładu pracy -->
                 <div class="mb-4">
@@ -137,10 +233,28 @@
                             body: JSON.stringify(payload)
                         }).then(res => {
                             if (res.status === 201) {
-                                showToast("Zgłoszenie zostało wysłane pomyślnie!", "success");
-                                setTimeout(() => {
-                                    window.location.href = '/dashboard';
-                                }, 1000);
+                                res.json().then(data => {
+                                    const praktykaId = data.data.id;
+                                    fetch(`/api/v1/praktyki/${praktykaId}/status`, {
+                                        method: 'PATCH',
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify({ status: 'Submitted' })
+                                    }).then(patchRes => {
+                                        if (patchRes.ok) {
+                                            showToast("Zgłoszenie zostało wysłane pomyślnie!", "success");
+                                            setTimeout(() => {
+                                                window.location.href = '/dashboard';
+                                            }, 1000);
+                                        } else {
+                                            showToast("Utworzono szkic, ale nie udało się go automatycznie wysłać.", "warning");
+                                            setTimeout(() => {
+                                                window.location.href = '/dashboard';
+                                            }, 1500);
+                                        }
+                                    });
+                                });
                             } else {
                                 res.json().then(data => {
                                     showToast("Błąd: " + (data.error?.message || "Nieznany błąd serwera. Sprawdź format danych (np. NIP)."), "error");
@@ -158,6 +272,7 @@
                 </div>
             </form>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

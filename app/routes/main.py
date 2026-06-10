@@ -89,16 +89,24 @@ def dashboard():
 @login_required
 def zgloszenie_praktyki():
     if current_user.rola != 'student':
-        return redirect(url_for('main.dashboard'))
-    
-    zaklady = ZakladPracy.query.filter_by(status='Approved').all()
+        abort(403)
+    from app.models import Student, ZakladPracy, Uzytkownik, Praktyka
+    student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+    praktyka = Praktyka.query.filter_by(student_id=student.id).first() if student else None
+    zaklady = ZakladPracy.query.all()
     uopz_list = Uzytkownik.query.filter_by(rola='uopz').all()
-    return render_template('praktyka/zgloszenie.html', zaklady=zaklady, uopz_list=uopz_list)
+    return render_template('praktyka/zgloszenie.html', zaklady=zaklady, uopz_list=uopz_list, praktyka=praktyka)
 
 @main_bp.route('/wniosek/alternatywny')
 @login_required
 def zgloszenie_alternatywne():
     if current_user.rola != 'student':
+        return redirect(url_for('main.dashboard'))
+    from app.models import Student, Praktyka
+    student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+    praktyka = Praktyka.query.filter_by(student_id=student.id).first() if student else None
+    if praktyka and praktyka.status in ['Approved', 'Closed']:
+        flash("Twoje zgłoszenie praktyki zostało już zaakceptowane. Nie możesz złożyć wniosku alternatywnego.", "warning")
         return redirect(url_for('main.dashboard'))
     return render_template('praktyka/wniosek_alternatywny.html')
 
@@ -120,15 +128,30 @@ def check_praktyka_ownership(praktyka):
 @main_bp.route('/harmonogram/edycja')
 @login_required
 def harmonogram_edit():
-    if current_user.rola != 'student':
-        abort(403)
-    student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
-    praktyka = Praktyka.query.filter_by(student_id=student.id).first() if student else None
-    if not praktyka:
-        return redirect(url_for('main.dashboard'))
+    from app.models import Student, Praktyka, Harmonogram
+    praktyka_id = request.args.get('praktyka_id', type=int)
+    
+    if current_user.rola == 'student':
+        student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+        praktyka = Praktyka.query.filter_by(student_id=student.id).first() if student else None
+        if not praktyka:
+            return redirect(url_for('main.dashboard'))
+    else:
+        if not praktyka_id:
+            abort(400, "Brak parametru praktyka_id")
+        praktyka = Praktyka.query.get_or_404(praktyka_id)
+        # Access checks
+        if current_user.rola == 'uopz':
+            if praktyka.uopz_id != current_user.id:
+                abort(403)
+        elif current_user.rola == 'zopz':
+            if not praktyka.zaklad_pracy.is_opiekun(current_user):
+                abort(403)
+        elif current_user.rola != 'administrator':
+            abort(403)
+            
     harmonogram = praktyka.harmonogram
     if not harmonogram:
-        from app.models import Harmonogram
         harmonogram = Harmonogram(praktyka_id=praktyka.id)
         db.session.add(harmonogram)
         db.session.commit()
@@ -223,7 +246,10 @@ def dokumentacja_checklist(praktyka_id):
 def dokumentacja_weryfikacja(praktyka_id):
     praktyka = Praktyka.query.get_or_404(praktyka_id)
     check_praktyka_ownership(praktyka)
-    return render_template('dokumentacja/review.html', praktyka=praktyka)
+    from app.routes.api.dokumentacja import check_checklist
+    checklist = check_checklist(praktyka)
+    all_approved = all(checklist.values())
+    return render_template('dokumentacja/review.html', praktyka=praktyka, all_approved=all_approved)
 
 @main_bp.route('/profile')
 @login_required

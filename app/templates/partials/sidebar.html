@@ -61,10 +61,12 @@
                     Ankieta
                 </a>
             {% endif %}
+            {% if not active_praktyka or active_praktyka.status not in ['Approved', 'Closed'] %}
             <a href="{{ url_for('main.zgloszenie_alternatywne') }}" class="sidebar-nav-item {% if request.endpoint == 'main.zgloszenie_alternatywne' %}active{% endif %}">
                 <span class="material-symbols-outlined">article</span>
                 Wniosek alternatywny
             </a>
+            {% endif %}
             
         {% elif current_user.rola == 'zopz' %}
             <a href="{{ url_for('main.dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'main.dashboard' and not request.args.get('praktyka_id') %}active{% endif %}">

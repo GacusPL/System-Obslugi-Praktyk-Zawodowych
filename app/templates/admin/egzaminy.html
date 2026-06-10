@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Zarządzanie Egzaminami - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Egzaminy</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card-sopz">
+            <div class="card-sopz-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <h2 class="h2 mb-0 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">event</span>
+                    Zarządzanie Egzaminami
+                </h2>
+                
+                <div class="d-flex gap-2 flex-wrap" style="min-width: 300px;">
+                    <input type="text" id="search-input" class="form-control" placeholder="Szukaj egzaminów...">
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table-sopz" id="exams-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Termin</th>
+                            <th>Komisja Egzaminacyjna</th>
+                            <th>Oceny</th>
+                            <th>Status</th>
+                            <th>Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for e in egzaminy %}
+                        <tr>
+                            <td>
+                                <div class="fw-semibold text-primary">
+                                    {{ e.praktyka.student.uzytkownik.imie }} {{ e.praktyka.student.uzytkownik.nazwisko }}
+                                </div>
+                                <span class="text-secondary small">Album: {{ e.praktyka.student.nr_albumu }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ e.termin.strftime('%d.%m.%Y %H:%M') }}</div>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    {% for member in e.komisja %}
+                                        <div class="mb-1">
+                                            <strong>{{ 'Przewodniczący' if member.rola_w_komisji == 'przewodniczacy' else 'Członek' }}:</strong>
+                                            {{ member.uzytkownik.imie }} {{ member.uzytkownik.nazwisko }}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted">Brak komisji</span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    <div><strong>Ustna:</strong> {{ e.ocena_ustna or 'Brak' }}</div>
+                                    <div><strong>Końcowa:</strong> {{ e.ocena_koncowa or 'Brak' }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if e.status == 'Approved' %}
+                                    <span class="badge-status badge-status-approved"><span class="badge-role-text">Zatwierdzony</span></span>
+                                {% elif e.status == 'Rejected' %}
+                                    <span class="badge-status badge-status-rejected"><span class="badge-role-text">Odrzucony</span></span>
+                                {% else %}
+                                    <span class="badge-status badge-status-draft"><span class="badge-role-text">Szkic</span></span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('admin.view_egzamin_protokol', egzamin_id=e.id) }}" class="btn btn-sm btn-secondary d-flex align-items-center gap-1 w-fit">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">file_earmark_text</span> Protokół
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-secondary py-4">Brak zaplanowanych egzaminów w systemie.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        initPagination('exams-table', 15);
+        initTableSearch('exams-table', 'search-input');
+    });
+</script>
+{% endblock %}

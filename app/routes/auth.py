@@ -14,10 +14,10 @@ def login():
             return redirect(url_for('auth.waiting'))
         return redirect(url_for('main.dashboard'))
     
-    is_dev = current_app.config.get('E2E')
+    is_dev = current_app.config.get('E2E') or current_app.config.get('TESTING')
     
     # In testing or E2E environment we can bypass Microsoft OAuth redirect by providing a mock login
-    if current_app.config.get('TESTING') or is_dev:
+    if is_dev:
         mock_email = request.args.get('mock_email')
         if mock_email:
             user = Uzytkownik.query.filter_by(email=mock_email).first()

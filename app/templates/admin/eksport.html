@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Eksport Danych USOS - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Eksport Danych</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="card-sopz">
+            <div class="card-sopz-header">
+                <h2 class="h2 mb-0 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">upload</span>
+                    Eksport Danych do Systemu USOS
+                </h2>
+            </div>
+            
+            <p class="text-secondary mb-4">Wybierz rok akademicki, a następnie pobierz odpowiednie pliki raportów i ocen do zaczytania w systemie USOS.</p>
+
+            <div class="p-4 border rounded bg-light mb-4">
+                <h5 class="fw-bold mb-3"><i class="bi bi-funnel text-primary me-2"></i>Kryteria eksportu</h5>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Rok Akademicki</label>
+                    <select id="rok-akademicki-select" class="form-select">
+                        <option value="">Wszystkie lata</option>
+                        {% for year in years %}
+                        <option value="{{ year }}">{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex flex-column gap-3">
+                <div class="p-3 border rounded d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h6 class="fw-bold mb-1">Protokół Ocen USOS (Arkusz Excel)</h6>
+                        <span class="text-secondary small">Zawiera wykaz ocen końcowych studentów (format XLSX).</span>
+                    </div>
+                    <button class="btn btn-success d-flex align-items-center gap-2" onclick="downloadData('oceny', 'xlsx')">
+                        <span class="material-symbols-outlined">download</span> Pobierz XLSX
+                    </button>
+                </div>
+
+                <div class="p-3 border rounded d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h6 class="fw-bold mb-1">Protokół Ocen USOS (Plik CSV)</h6>
+                        <span class="text-secondary small">Zawiera wykaz ocen końcowych studentów (format CSV).</span>
+                    </div>
+                    <button class="btn btn-secondary d-flex align-items-center gap-2" onclick="downloadData('oceny', 'csv')">
+                        <span class="material-symbols-outlined">download</span> Pobierz CSV
+                    </button>
+                </div>
+
+                <div class="p-3 border rounded d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h6 class="fw-bold mb-1">Ogólny Stan Praktyk (Plik CSV)</h6>
+                        <span class="text-secondary small">Statystyki oraz szczegółowe statusy i oceny studentów.</span>
+                    </div>
+                    <button class="btn btn-secondary d-flex align-items-center gap-2" onclick="downloadData('raport', 'csv')">
+                        <span class="material-symbols-outlined">download</span> Pobierz CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function downloadData(type, format) {
+        const year = document.getElementById('rok-akademicki-select').value;
+        let url = '';
+        
+        if (type === 'oceny') {
+            url = `/api/v1/eksport/oceny?format=${format}`;
+        } else {
+            url = `/api/v1/raporty/eksport?`;
+        }
+        
+        if (year) {
+            url += `&rok_ak=${encodeURIComponent(year)}`;
+        }
+        
+        window.location.href = url;
+    }
+</script>
+{% endblock %}

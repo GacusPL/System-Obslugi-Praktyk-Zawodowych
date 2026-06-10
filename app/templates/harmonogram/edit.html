@@ -85,7 +85,7 @@
             <h3 class="mb-2"><span class="material-symbols-outlined align-middle me-2" style="color: var(--primary);">calendar_month</span>Harmonogram Praktyki (P1)</h3>
             <p class="text-secondary mb-4">Podziel 120 dni praktyk na poszczególne działy/obszary tematyczne w firmie.</p>
 
-            {% if harmonogram.status != 'Draft' and current_user.rola == 'student' %}
+            {% if (harmonogram.status != 'Draft' and current_user.rola == 'student') or current_user.rola in ['zopz', 'uopz'] %}
             <!-- Tryb tylko do odczytu -->
             <div class="table-responsive">
                 <table class="table-sopz">

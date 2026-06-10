@@ -6,6 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'default-key-for-development')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    E2E = os.environ.get('E2E', 'False').lower() in ['true', '1', 'yes']
     
     # MSAL Settings
     MICROSOFT_CLIENT_ID = os.environ.get('MICROSOFT_CLIENT_ID')

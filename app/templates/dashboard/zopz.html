@@ -171,12 +171,15 @@
                             <div><strong>Status:</strong> <span class="badge-status badge-status-{{ p.status|lower }}">{{ p.status|translate_status }}</span></div>
                             <div><strong>Dziennik:</strong> <span class="badge bg-light text-primary border">{{ p.dziennik_status|translate_status }}</span></div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <a href="{{ url_for('main.dziennik_list') }}?praktyka_id={{ p.id }}" class="btn btn-secondary btn-sm w-100">
-                                <span class="material-symbols-outlined align-middle me-1" style="font-size: 16px;">edit_note</span>Dziennik
+                        <div class="d-flex gap-1 flex-wrap">
+                            <a href="{{ url_for('main.dziennik_list') }}?praktyka_id={{ p.id }}" class="btn btn-secondary btn-sm flex-grow-1" style="font-size: 11px; padding: 4px 8px;">
+                                <span class="material-symbols-outlined align-middle me-1" style="font-size: 14px;">edit_note</span>Dziennik
                             </a>
-                            <a href="{{ url_for('main.karta_praktyki_view', praktyka_id=p.id) }}" class="btn btn-primary btn-sm w-100">
-                                <span class="material-symbols-outlined align-middle me-1" style="font-size: 16px;">grade</span>Oceń
+                            <a href="{{ url_for('main.harmonogram_edit') }}?praktyka_id={{ p.id }}" class="btn btn-outline-primary btn-sm flex-grow-1" style="font-size: 11px; padding: 4px 8px;">
+                                <span class="material-symbols-outlined align-middle me-1" style="font-size: 14px;">calendar_month</span>Harmonogram
+                            </a>
+                            <a href="{{ url_for('main.karta_praktyki_view', praktyka_id=p.id) }}" class="btn btn-primary btn-sm flex-grow-1" style="font-size: 11px; padding: 4px 8px;">
+                                <span class="material-symbols-outlined align-middle me-1" style="font-size: 14px;">grade</span>Oceń
                             </a>
                         </div>
                     </div>

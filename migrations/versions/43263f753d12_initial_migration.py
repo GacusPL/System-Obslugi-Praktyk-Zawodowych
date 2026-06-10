@@ -1,8 +1,8 @@
-"""initial schema
+"""Initial migration
 
-Revision ID: 4db9ec5cbf7a
+Revision ID: 43263f753d12
 Revises: 
-Create Date: 2026-06-03 06:52:54.259446
+Create Date: 2026-06-10 10:08:44.099646
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '4db9ec5cbf7a'
+revision = '43263f753d12'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -51,21 +51,6 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
     )
-    op.create_table('zaklad_pracy',
-    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('nazwa', sa.String(length=255), nullable=False),
-    sa.Column('adres', sa.String(length=255), nullable=False),
-    sa.Column('nip', sa.String(length=20), nullable=False),
-    sa.Column('zopz_imie', sa.String(length=100), nullable=False),
-    sa.Column('zopz_nazwisko', sa.String(length=100), nullable=False),
-    sa.Column('zopz_stanowisko', sa.String(length=100), nullable=False),
-    sa.Column('zopz_wyksztalcenie', sa.String(length=100), nullable=False),
-    sa.Column('status', sa.String(length=50), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=False),
-    sa.CheckConstraint("status IN ('Approved', 'Rejected')", name='check_zaklad_pracy_status'),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('nip')
-    )
     op.create_table('ankieta_odpowiedz',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
     sa.Column('ankieta_id', sa.Integer(), nullable=False),
@@ -92,6 +77,23 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('nr_albumu'),
     sa.UniqueConstraint('uzytkownik_id')
+    )
+    op.create_table('zaklad_pracy',
+    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('nazwa', sa.String(length=255), nullable=False),
+    sa.Column('adres', sa.String(length=255), nullable=False),
+    sa.Column('nip', sa.String(length=20), nullable=False),
+    sa.Column('zopz_imie', sa.String(length=100), nullable=False),
+    sa.Column('zopz_nazwisko', sa.String(length=100), nullable=False),
+    sa.Column('zopz_stanowisko', sa.String(length=100), nullable=False),
+    sa.Column('zopz_wyksztalcenie', sa.String(length=100), nullable=False),
+    sa.Column('status', sa.String(length=50), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('zopz_uzytkownik_id', sa.Integer(), nullable=True),
+    sa.CheckConstraint("status IN ('Approved', 'Rejected')", name='check_zaklad_pracy_status'),
+    sa.ForeignKeyConstraint(['zopz_uzytkownik_id'], ['uzytkownik.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('nip')
     )
     op.create_table('praktyka',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
@@ -311,9 +313,9 @@ def downgrade():
     op.drop_table('dokument')
     op.drop_table('wniosek_alternatywny')
     op.drop_table('praktyka')
+    op.drop_table('zaklad_pracy')
     op.drop_table('student')
     op.drop_table('ankieta_odpowiedz')
-    op.drop_table('zaklad_pracy')
     op.drop_table('uzytkownik')
     op.drop_table('efekt_uczenia')
     op.drop_table('ankieta')

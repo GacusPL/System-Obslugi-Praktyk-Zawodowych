@@ -43,21 +43,25 @@
             <div class="stepper">
                 {% set step = 1 %}
                 {% if praktyka %}
-                    {% set step = 2 %}
-                    {% if praktyka.harmonogram and praktyka.harmonogram.status == 'Approved' %}
-                        {% set step = 3 %}
-                        {% if praktyka.dziennik_status == 'Approved' %}
-                            {% set step = 4 %}
-                            {% if praktyka.potwierdzenie_efektow and praktyka.potwierdzenie_efektow.godziny_zrealizowane >= 120 %}
-                                {% set step = 5 %}
-                                {% if praktyka.sprawozdania and praktyka.sprawozdania[-1].status == 'Approved' %}
-                                    {% set step = 6 %}
-                                    {% if praktyka.karta_praktyki and praktyka.karta_praktyki.ocena_koncowa %}
-                                        {% set step = 7 %}
-                                        {% if praktyka.dokumentacja_status == 'Approved' %}
-                                            {% set step = 8 %}
-                                            {% if praktyka.ankieta_wypelniona %}
-                                                {% set step = 9 %}
+                    {% if praktyka.status in ['Draft', 'Submitted', 'Under_Review', 'Rejected'] %}
+                        {% set step = 1 %}
+                    {% elif praktyka.status in ['Approved', 'Closed'] %}
+                        {% set step = 2 %}
+                        {% if praktyka.harmonogram and praktyka.harmonogram.status == 'Approved' %}
+                            {% set step = 3 %}
+                            {% if praktyka.dziennik_status == 'Approved' or praktyka.dziennik_status == 'Closed' %}
+                                {% set step = 4 %}
+                                {% if praktyka.potwierdzenie_efektow and praktyka.potwierdzenie_efektow.status == 'Approved' %}
+                                    {% set step = 5 %}
+                                    {% if praktyka.sprawozdania and praktyka.sprawozdania[-1].status == 'Approved' %}
+                                        {% set step = 6 %}
+                                        {% if praktyka.karta_praktyki and praktyka.karta_praktyki.status == 'Approved' %}
+                                            {% set step = 7 %}
+                                            {% if praktyka.status == 'Closed' %}
+                                                {% set step = 8 %}
+                                                {% if praktyka.ankieta_wypelniona %}
+                                                    {% set step = 9 %}
+                                                {% endif %}
                                             {% endif %}
                                         {% endif %}
                                     {% endif %}
@@ -154,8 +158,19 @@
                     <h3>Zadanie do wykonania</h3>
                 </div>
                 {% if step == 1 %}
-                    <p>Złóż formularz zgłoszenia praktyki, aby rozpocząć proces.</p>
-                    <a href="{{ url_for('main.zgloszenie_praktyki') }}" class="btn btn-primary">Przejdź do Zgłoszenia</a>
+                    {% if not praktyka %}
+                        <p>Złóż formularz zgłoszenia praktyki, aby rozpocząć proces.</p>
+                        <a href="{{ url_for('main.zgloszenie_praktyki') }}" class="btn btn-primary">Przejdź do Zgłoszenia</a>
+                    {% elif praktyka.status == 'Draft' %}
+                        <p>Masz utworzone zgłoszenie praktyki (szkic). Wyślij je do weryfikacji.</p>
+                        <a href="{{ url_for('main.zgloszenie_praktyki') }}" class="btn btn-primary">Wyślij Zgłoszenie</a>
+                    {% elif praktyka.status in ['Submitted', 'Under_Review'] %}
+                        <p>Twoje zgłoszenie praktyki zostało wysłane i oczekuje na weryfikację przez opiekuna uczelnianego.</p>
+                        <button class="btn btn-secondary" disabled>Oczekuje na weryfikację</button>
+                    {% elif praktyka.status == 'Rejected' %}
+                        <p>Twoje zgłoszenie praktyki zostało odrzucone i wymaga poprawy.</p>
+                        <a href="{{ url_for('main.zgloszenie_praktyki') }}" class="btn btn-danger">Popraw Zgłoszenie</a>
+                    {% endif %}
                 {% elif step == 2 %}
                     <p>Twój harmonogram wymaga uzupełnienia i podpisania przez Ciebie, opiekuna zakładowego oraz uczelnianego.</p>
                     <a href="{{ url_for('main.harmonogram_edit') }}" class="btn btn-primary">Przejdź do Harmonogramu</a>
