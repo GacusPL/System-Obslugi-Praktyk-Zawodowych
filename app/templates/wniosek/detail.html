@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Szczegóły wniosku - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Szczegóły wniosku</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="card-sopz">
+            <div class="card-sopz-header d-flex justify-content-between align-items-center">
+                <h2 class="h2 mb-0 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">description</span>
+                    Wniosek Alternatywny #{{ wniosek.id }}
+                </h2>
+                {% if wniosek.status == 'Approved' %}
+                    <span class="badge-status badge-status-approved">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span> Zaakceptowany
+                    </span>
+                {% elif wniosek.status == 'Rejected' %}
+                    <span class="badge-status badge-status-rejected">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">cancel</span> Odrzucony
+                    </span>
+                {% elif wniosek.status == 'Under_Review' %}
+                    <span class="badge-status badge-status-under-review">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">hourglass_empty</span> W weryfikacji
+                    </span>
+                {% else %}
+                    <span class="badge-status badge-status-submitted">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">send</span> Złożony
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="table table-striped table-bordered text-secondary small">
+                    <tbody>
+                        <tr>
+                            <td class="fw-semibold" style="width: 200px;">Student</td>
+                            <td>{{ wniosek.student.uzytkownik.imie }} {{ wniosek.student.uzytkownik.nazwisko }} (Album: {{ wniosek.student.nr_albumu }})</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">Typ wnioskowanej ścieżki</td>
+                            <td>
+                                {% if wniosek.typ == 'praca_zawodowa' %}
+                                    Praca zawodowa (stosunek pracy / cywilnoprawny)
+                                {% elif wniosek.typ == 'staz' %}
+                                    Staż zawodowy krajowy lub zagraniczny
+                                {% elif wniosek.typ == 'dzialalnosc_gospodarcza' %}
+                                    Własna działalność gospodarcza
+                                {% else %}
+                                    {{ wniosek.typ }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">Data złożenia</td>
+                            <td>{{ wniosek.created_at.strftime('%d.%m.%Y %H:%M') if wniosek.created_at else 'Brak' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mb-4">
+                <h3 class="h3 mb-2 text-primary" style="font-size: 16px;">Uzasadnienie studenta:</h3>
+                <div class="bg-light p-3 rounded border text-secondary small" style="white-space: pre-line;">{{ wniosek.uzasadnienie }}</div>
+            </div>
+
+            <div class="mb-4">
+                <h3 class="h3 mb-2 text-primary" style="font-size: 16px;">Załączone dokumenty:</h3>
+                <div class="list-group list-group-flush border rounded">
+                    {% for doc in skany %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3 bg-transparent border-bottom-0">
+                        <div>
+                            <span class="fw-semibold text-primary small">{{ doc.nazwa_pliku }}</span>
+                            <span class="text-secondary small ms-2">({{ doc.typ_dokumentu }})</span>
+                        </div>
+                        <a href="/api/v1/files/download/{{ doc.sciezka_pliku.split('/')[-1] }}" class="btn btn-sm btn-secondary d-flex align-items-center gap-1" target="_blank">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">download</span> Pobierz
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="p-3 text-secondary small text-center">Brak załączonych skanów dokumentów.</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if wniosek.decyzja %}
+            <div class="mb-4 p-4 border rounded {% if wniosek.status == 'Approved' %}bg-success-light border-success{% else %}bg-danger-light border-danger{% endif %}">
+                <h3 class="h3 mb-2 {% if wniosek.status == 'Approved' %}text-success{% else %}text-danger{% endif %}" style="font-size: 16px;">Decyzja Komisji Oceny:</h3>
+                <table class="table table-borderless table-sm mb-3 small">
+                    <tr>
+                        <td class="fw-semibold" style="width: 150px;">Decyzja:</td>
+                        <td>
+                            {% if wniosek.decyzja == 'zgoda_pelna' %}
+                                <span class="badge bg-success">Zgoda pełna (Zaliczenie całości)</span>
+                            {% elif wniosek.decyzja == 'zgoda_czesciowa' %}
+                                <span class="badge bg-warning text-dark">Zgoda częściowa</span>
+                            {% elif wniosek.decyzja == 'odmowa' %}
+                                <span class="badge bg-danger">Odmowa</span>
+                            {% else %}
+                                {{ wniosek.decyzja }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+                <div class="fw-semibold text-secondary small mb-1">Opinia / Uzasadnienie Komisji:</div>
+                <p class="mb-0 text-secondary bg-white p-2 rounded border small" style="font-style: italic;">{{ wniosek.opinia_komisji or 'Brak opinii' }}</p>
+            </div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Powrót</a>
+                {% if current_user.rola in ['dyrektor', 'administrator'] and not wniosek.decyzja %}
+                <a href="/wniosek/{{ wniosek.id }}/komisja" class="btn btn-primary d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined">gavel</span> Wystaw decyzję komisji
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

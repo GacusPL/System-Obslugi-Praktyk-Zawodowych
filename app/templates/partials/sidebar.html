@@ -1,0 +1,184 @@
+<aside class="sidebar navbar-collapse">
+    <div class="sidebar-header flex-column align-items-start py-3">
+        <div class="d-flex align-items-center gap-2">
+            <img src="{{ url_for('static', filename='img/favicon-ans.png') }}" alt="ANS Signet" class="sidebar-logo">
+            <span class="fw-bold text-primary fs-5">SOPZ</span>
+        </div>
+        <span class="sidebar-subtitle">
+            {% if current_user.rola == 'student' %}
+                Portal Studenta
+            {% elif current_user.rola == 'zopz' %}
+                Portal Opiekuna
+            {% elif current_user.rola == 'uopz' %}
+                Portal Opiekuna
+            {% elif current_user.rola == 'administrator' %}
+                Panel Administracyjny
+            {% elif current_user.rola == 'dyrektor' %}
+                Panel Dyrektora
+            {% else %}
+                Portal Użytkownika
+            {% endif %}
+        </span>
+    </div>
+    
+    <div class="sidebar-nav">
+        {% if current_user.rola == 'student' %}
+            <a href="{{ url_for('main.dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
+                <span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+            <a href="{{ url_for('main.zgloszenie_praktyki') }}" class="sidebar-nav-item {% if request.endpoint == 'main.zgloszenie_praktyki' %}active{% endif %}">
+                <span class="material-symbols-outlined">assignment</span>
+                Zgłoszenie
+            </a>
+            {% if active_praktyka %}
+                <a href="{{ url_for('main.harmonogram_edit') }}" class="sidebar-nav-item {% if request.endpoint == 'main.harmonogram_edit' %}active{% endif %}">
+                    <span class="material-symbols-outlined">calendar_month</span>
+                    Harmonogram
+                </a>
+                <a href="{{ url_for('main.dziennik_list') }}" class="sidebar-nav-item {% if request.endpoint == 'main.dziennik_list' %}active{% endif %}">
+                    <span class="material-symbols-outlined">edit_note</span>
+                    Dziennik praktyk
+                </a>
+                <a href="{{ url_for('main.efekty_potwierdzenie', praktyka_id=active_praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.efekty_potwierdzenie' %}active{% endif %}">
+                    <span class="material-symbols-outlined">checklist</span>
+                    Efekty uczenia się
+                </a>
+                <a href="{{ url_for('main.sprawozdanie_form', praktyka_id=active_praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.sprawozdanie_form' %}active{% endif %}">
+                    <span class="material-symbols-outlined">description</span>
+                    Sprawozdanie
+                </a>
+                <a href="{{ url_for('main.karta_praktyki_view', praktyka_id=active_praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.karta_praktyki_view' %}active{% endif %}">
+                    <span class="material-symbols-outlined">grade</span>
+                    Karta praktyki
+                </a>
+                <a href="{{ url_for('main.dokumentacja_checklist', praktyka_id=active_praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.dokumentacja_checklist' %}active{% endif %}">
+                    <span class="material-symbols-outlined">folder_open</span>
+                    Checklist P6
+                </a>
+                <a href="{{ url_for('main.ankieta_form') }}" class="sidebar-nav-item {% if request.endpoint == 'main.ankieta_form' %}active{% endif %}">
+                    <span class="material-symbols-outlined">quiz</span>
+                    Ankieta
+                </a>
+            {% endif %}
+            <a href="{{ url_for('main.zgloszenie_alternatywne') }}" class="sidebar-nav-item {% if request.endpoint == 'main.zgloszenie_alternatywne' %}active{% endif %}">
+                <span class="material-symbols-outlined">article</span>
+                Wniosek alternatywny
+            </a>
+            
+        {% elif current_user.rola == 'zopz' %}
+            <a href="{{ url_for('main.dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'main.dashboard' and not request.args.get('praktyka_id') %}active{% endif %}">
+                <span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+            <a href="{{ url_for('main.dashboard') }}#students" class="sidebar-nav-item">
+                <span class="material-symbols-outlined">group</span>
+                Moja Grupa
+            </a>
+            {% if praktyka %}
+                <div class="sidebar-nav-group-label">Bieżąca praktyka</div>
+                <a href="{{ url_for('main.dziennik_list', praktyka_id=praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.dziennik_list' %}active{% endif %}">
+                    <span class="material-symbols-outlined">fact_check</span>
+                    Weryfikacja wpisów
+                </a>
+                <a href="{{ url_for('main.efekty_potwierdzenie', praktyka_id=praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.efekty_potwierdzenie' %}active{% endif %}">
+                    <span class="material-symbols-outlined">star_rate</span>
+                    Ocena efektów
+                </a>
+                <a href="{{ url_for('main.karta_praktyki_view', praktyka_id=praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.karta_praktyki_view' %}active{% endif %}">
+                    <span class="material-symbols-outlined">assessment</span>
+                    Ocena karty
+                </a>
+            {% endif %}
+
+        {% elif current_user.rola == 'uopz' %}
+            <a href="{{ url_for('main.dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'main.dashboard' and not praktyka %}active{% endif %}">
+                <span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+            <a href="{{ url_for('main.dashboard') }}#praktyki" class="sidebar-nav-item">
+                <span class="material-symbols-outlined">school</span>
+                Nadzorowane praktyki
+            </a>
+            {% if praktyka %}
+                <div class="sidebar-nav-group-label">Bieżąca praktyka</div>
+                <a href="{{ url_for('main.dziennik_list', praktyka_id=praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.dziennik_list' %}active{% endif %}">
+                    <span class="material-symbols-outlined">edit_note</span>
+                    Przegląd dzienników
+                </a>
+                <a href="{{ url_for('main.sprawozdanie_form', praktyka_id=praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.sprawozdanie_form' %}active{% endif %}">
+                    <span class="material-symbols-outlined">description</span>
+                    Sprawozdania
+                </a>
+                <a href="{{ url_for('main.efekty_potwierdzenie', praktyka_id=praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.efekty_potwierdzenie' %}active{% endif %}">
+                    <span class="material-symbols-outlined">checklist</span>
+                    Efekty uczenia się
+                </a>
+                <a href="{{ url_for('main.dokumentacja_weryfikacja', praktyka_id=praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.dokumentacja_weryfikacja' %}active{% endif %}">
+                    <span class="material-symbols-outlined">folder_open</span>
+                    Dokumentacja
+                </a>
+            {% endif %}
+
+        {% elif current_user.rola == 'administrator' %}
+            <a href="{{ url_for('main.dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
+                <span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+            <div class="sidebar-nav-group-label">Zarządzanie</div>
+            <a href="{{ url_for('admin.users_list') }}" class="sidebar-nav-item {% if 'admin/users' in request.path %}active{% endif %}">
+                <span class="material-symbols-outlined">people</span>
+                Użytkownicy
+            </a>
+            <a href="{{ url_for('admin.praktyki_list') }}" class="sidebar-nav-item {% if 'admin/praktyki' in request.path %}active{% endif %}">
+                <span class="material-symbols-outlined">work</span>
+                Praktyki
+            </a>
+            <a href="{{ url_for('admin.zaklady_manage') }}" class="sidebar-nav-item {% if 'admin/zaklady' in request.path %}active{% endif %}">
+                <span class="material-symbols-outlined">domain</span>
+                Zakłady pracy
+            </a>
+            <a href="/admin/przypisania" class="sidebar-nav-item {% if 'admin/przypisania' in request.path %}active{% endif %}">
+                <span class="material-symbols-outlined">link</span>
+                Przypisania UOPZ
+            </a>
+            <a href="/admin/egzaminy" class="sidebar-nav-item {% if 'admin/egzaminy' in request.path %}active{% endif %}">
+                <span class="material-symbols-outlined">event</span>
+                Egzaminy
+            </a>
+            <div class="sidebar-nav-group-label">Raporty</div>
+            <a href="{{ url_for('admin.raporty_view') }}" class="sidebar-nav-item {% if 'admin/raporty' in request.path %}active{% endif %}">
+                <span class="material-symbols-outlined">bar_chart</span>
+                Raporty
+            </a>
+            <a href="/admin/eksport" class="sidebar-nav-item {% if 'admin/eksport' in request.path %}active{% endif %}">
+                <span class="material-symbols-outlined">upload</span>
+                Eksport USOS
+            </a>
+
+        {% elif current_user.rola == 'dyrektor' %}
+            <a href="{{ url_for('main.dashboard') }}" class="sidebar-nav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
+                <span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+            <a href="{{ url_for('main.dashboard') }}#wnioski" class="sidebar-nav-item">
+                <span class="material-symbols-outlined">article</span>
+                Wnioski alternatywne
+            </a>
+            {% if wniosek_id %}
+                <a href="/wniosek/{{ wniosek_id }}/komisja" class="sidebar-nav-item">
+                    <span class="material-symbols-outlined">gavel</span>
+                    Komisja oceny
+                </a>
+            {% endif %}
+        {% endif %}
+    </div>
+    
+    <div class="sidebar-footer d-none d-lg-block">
+        <a href="{{ url_for('auth.logout') }}" class="sidebar-nav-item text-danger border-0 m-0 p-0 d-flex" style="background: none; hover: none;">
+            <span class="material-symbols-outlined text-danger">logout</span>
+            Wyloguj
+        </a>
+        <div class="mt-3 text-muted">SOPZ v1.0.0 &copy; 2026 ANS Elbląg</div>
+    </div>
+</aside>

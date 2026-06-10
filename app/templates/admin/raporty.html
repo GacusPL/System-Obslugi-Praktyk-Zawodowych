@@ -11,33 +11,38 @@
 <div class="row">
     <!-- Statystyki Globalne -->
     <div class="col-lg-6 mb-4">
-        <div class="card card-custom h-100">
-            <h5 class="fw-bold mb-4"><i class="bi bi-pie-chart text-primary me-2"></i>Statusy Praktyk Studenckich</h5>
+        <div class="card-sopz h-100">
+            <div class="card-sopz-header">
+                <h2 class="h2 mb-0 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">bar_chart</span>
+                    Statusy Praktyk Studenckich
+                </h2>
+            </div>
             
             <div class="list-group list-group-flush">
-                <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>Szkice (Draft)</span>
-                    <span class="badge bg-secondary rounded-pill fs-6">{{ stats.get('Draft', 0) }}</span>
+                <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent py-3 border-0 border-bottom">
+                    <span class="fw-semibold text-secondary small">Szkice (Draft)</span>
+                    <span class="badge-status badge-status-draft">{{ stats.get('Draft', 0) }}</span>
                 </div>
-                <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>Złożone do weryfikacji (Submitted)</span>
-                    <span class="badge bg-info text-dark rounded-pill fs-6">{{ stats.get('Submitted', 0) }}</span>
+                <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent py-3 border-0 border-bottom">
+                    <span class="fw-semibold text-secondary small">Złożone do weryfikacji (Submitted)</span>
+                    <span class="badge-status badge-status-submitted">{{ stats.get('Submitted', 0) }}</span>
                 </div>
-                <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>W trakcie weryfikacji (Under_Review)</span>
-                    <span class="badge bg-warning text-dark rounded-pill fs-6">{{ stats.get('Under_Review', 0) }}</span>
+                <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent py-3 border-0 border-bottom">
+                    <span class="fw-semibold text-secondary small">W trakcie weryfikacji (Under_Review)</span>
+                    <span class="badge-status badge-status-under-review">{{ stats.get('Under_Review', 0) }}</span>
                 </div>
-                <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>Zatwierdzone (Approved)</span>
-                    <span class="badge bg-success rounded-pill fs-6">{{ stats.get('Approved', 0) }}</span>
+                <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent py-3 border-0 border-bottom">
+                    <span class="fw-semibold text-secondary small">Zatwierdzone (Approved)</span>
+                    <span class="badge-status badge-status-approved">{{ stats.get('Approved', 0) }}</span>
                 </div>
-                <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>Odrzucone (Rejected)</span>
-                    <span class="badge bg-danger rounded-pill fs-6">{{ stats.get('Rejected', 0) }}</span>
+                <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent py-3 border-0 border-bottom">
+                    <span class="fw-semibold text-secondary small">Odrzucone (Rejected)</span>
+                    <span class="badge-status badge-status-rejected">{{ stats.get('Rejected', 0) }}</span>
                 </div>
-                <div class="list-group-item d-flex justify-content-between align-items-center fw-bold">
-                    <span>Zakończone / Zaliczone (Closed)</span>
-                    <span class="badge bg-primary rounded-pill fs-6">{{ stats.get('Closed', 0) }}</span>
+                <div class="list-group-item d-flex justify-content-between align-items-center bg-transparent py-3 border-0 fw-bold">
+                    <span class="text-primary">Zakończone / Zaliczone (Closed)</span>
+                    <span class="badge-status badge-status-closed">{{ stats.get('Closed', 0) }}</span>
                 </div>
             </div>
         </div>
@@ -45,12 +50,18 @@
 
     <!-- Panel Eksportu -->
     <div class="col-lg-6 mb-4">
-        <div class="card card-custom h-100">
-            <h5 class="fw-bold mb-3"><i class="bi bi-file-earmark-arrow-down text-primary me-2"></i>Eksport Raportów i Ocen</h5>
-            <p class="text-muted small">Wybierz rok akademicki i pobierz dane w wybranym formacie.</p>
+        <div class="card-sopz h-100">
+            <div class="card-sopz-header">
+                <h2 class="h2 mb-0 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">download</span>
+                    Eksport Raportów i Ocen
+                </h2>
+            </div>
+            
+            <p class="text-secondary small mb-4">Wybierz rok akademicki i pobierz dane w wybranym formacie.</p>
 
             <div class="mb-4">
-                <label class="form-label small fw-semibold">Rok Akademicki</label>
+                <label class="form-label fw-semibold">Rok Akademicki</label>
                 <select id="rok-akademicki-select" class="form-select">
                     <option value="">Wszystkie lata</option>
                     {% for y in years %}
@@ -59,20 +70,20 @@
                 </select>
             </div>
 
-            <h6 class="fw-bold small text-muted mb-2">Eksport Danych Praktyk</h6>
+            <h3 class="h3 mb-3 text-secondary" style="font-size: 14px;">Eksport Danych Praktyk</h3>
             <div class="d-grid gap-2 mb-4">
-                <button onclick="downloadReport('csv')" class="btn btn-outline-primary text-start">
-                    <i class="bi bi-filetype-csv me-2"></i> Pobierz Raport Stanu Praktyk (CSV)
+                <button onclick="downloadReport('csv')" class="btn btn-secondary d-flex align-items-center justify-content-start gap-2 text-start">
+                    <span class="material-symbols-outlined">csv</span> Pobierz Raport Stanu Praktyk (CSV)
                 </button>
             </div>
 
-            <h6 class="fw-bold small text-muted mb-2">Eksport Protokołów do USOS (Tylko zamknięte praktyki)</h6>
+            <h3 class="h3 mb-3 text-secondary" style="font-size: 14px;">Eksport Protokołów do USOS (Tylko zamknięte praktyki)</h3>
             <div class="d-grid gap-2">
-                <button onclick="downloadOceny('xlsx')" class="btn btn-outline-success text-start">
-                    <i class="bi bi-file-earmark-excel me-2"></i> Pobierz Oceny Końcowe (XLSX)
+                <button onclick="downloadOceny('xlsx')" class="btn btn-success d-flex align-items-center justify-content-start gap-2 text-start">
+                    <span class="material-symbols-outlined">table_view</span> Pobierz Oceny Końcowe (XLSX)
                 </button>
-                <button onclick="downloadOceny('csv')" class="btn btn-outline-secondary text-start">
-                    <i class="bi bi-filetype-csv me-2"></i> Pobierz Oceny Końcowe (CSV)
+                <button onclick="downloadOceny('csv')" class="btn btn-secondary d-flex align-items-center justify-content-start gap-2 text-start">
+                    <span class="material-symbols-outlined">csv</span> Pobierz Oceny Końcowe (CSV)
                 </button>
             </div>
         </div>

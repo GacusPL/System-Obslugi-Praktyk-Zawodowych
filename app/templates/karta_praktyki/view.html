@@ -11,34 +11,34 @@
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <!-- Zestawienie Ocen -->
-        <div class="card card-custom">
-            <h3 class="fw-bold mb-3" style="color: var(--primary);"><i class="bi bi-award-fill text-primary me-2"></i>Karta Praktyki Zawodowej (P6)</h3>
-            <p class="text-muted mb-4">Podsumowanie ocen i opinii uzyskanych w trakcie odbywania praktyki zawodowej.</p>
+        <div class="card-sopz">
+            <h3 class="mb-2" style="color: var(--primary);"><span class="material-symbols-outlined align-middle me-2">military_tech</span>Karta Praktyki Zawodowej (P6)</h3>
+            <p class="text-secondary mb-4">Podsumowanie ocen i opinii uzyskanych w trakcie odbywania praktyki zawodowej.</p>
 
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
-                    <div class="p-3 border rounded bg-light-subtle h-100">
-                        <span class="text-muted small fw-semibold text-uppercase">Ocena Opiekuna Zakładowego (ZOPZ)</span>
+                    <div class="p-3 border rounded bg-light-subtle h-100" style="border-color: var(--border) !important;">
+                        <span class="text-secondary small fw-semibold text-uppercase" style="font-size: 11px;">Ocena Opiekuna Zakładowego (ZOPZ)</span>
                         <h4 class="fw-bold mt-1 text-primary">{{ karta.ocena_param_zopz or 'Brak' }}</h4>
-                        <p class="small text-muted mb-0">Opinia: {{ karta.ocena_opisowa_zopz or 'Oczekuje na wystawienie' }}</p>
+                        <p class="small text-secondary mb-0">Opinia: {{ karta.ocena_opisowa_zopz or 'Oczekuje na wystawienie' }}</p>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="p-3 border rounded bg-light-subtle h-100">
-                        <span class="text-muted small fw-semibold text-uppercase">Ocena Opiekuna Uczelnianego (UOPZ)</span>
+                    <div class="p-3 border rounded bg-light-subtle h-100" style="border-color: var(--border) !important;">
+                        <span class="text-secondary small fw-semibold text-uppercase" style="font-size: 11px;">Ocena Opiekuna Uczelnianego (UOPZ)</span>
                         <h4 class="fw-bold mt-1 text-primary">{{ karta.ocena_param_uopz or 'Brak' }}</h4>
-                        <p class="small text-muted mb-0">Opinia: {{ karta.ocena_opisowa_uopz or 'Oczekuje na wystawienie' }}</p>
+                        <p class="small text-secondary mb-0">Opinia: {{ karta.ocena_opisowa_uopz or 'Oczekuje na wystawienie' }}</p>
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="p-3 border rounded bg-light-subtle h-100">
-                        <span class="text-muted small fw-semibold text-uppercase">Ocena ze Sprawozdania</span>
+                    <div class="p-3 border rounded bg-light-subtle h-100" style="border-color: var(--border) !important;">
+                        <span class="text-secondary small fw-semibold text-uppercase" style="font-size: 11px;">Ocena ze Sprawozdania</span>
                         <h4 class="fw-bold mt-1 text-primary">{{ karta.ocena_sprawozdania or 'Brak' }}</h4>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="p-3 bg-primary text-white rounded h-100 shadow-sm">
-                        <span class="opacity-75 small fw-semibold text-uppercase">Ocena Końcowa Praktyki</span>
+                        <span class="opacity-75 small fw-semibold text-uppercase" style="font-size: 11px;">Ocena Końcowa Praktyki</span>
                         <h4 class="fw-bold mt-1">{{ praktyka.ocena_koncowa or 'Brak' }}</h4>
                     </div>
                 </div>
@@ -46,9 +46,9 @@
 
             <!-- Upload skanów podpisanych dokumentów -->
             {% if current_user.rola == 'student' %}
-            <div class="p-4 border rounded bg-light-subtle mb-4">
-                <h5 class="fw-bold mb-3"><i class="bi bi-upload text-primary me-2"></i>Prześlij podpisany skan Karty Praktyki i Sprawozdania</h5>
-                <p class="text-muted small">Przed zaliczeniem końcowym musisz wydrukować, podpisać i wgrać skan kompletnej dokumentacji (karta praktyk, opinie opiekunów).</p>
+            <div class="p-4 border rounded bg-light-subtle mb-4" style="border-color: var(--border) !important; background-color: var(--bg-page) !important;">
+                <h5 class="fw-bold mb-3" style="color: var(--text-primary);"><span class="material-symbols-outlined align-middle me-2">upload</span>Prześlij podpisany skan Karty Praktyki i Sprawozdania</h5>
+                <p class="text-secondary small">Przed zaliczeniem końcowym musisz wydrukować, podpisać i wgrać skan kompletnej dokumentacji (karta praktyk, opinie opiekunów).</p>
                 
                 <form action="/api/v1/wniosek/upload" method="POST" enctype="multipart/form-data" id="skan-upload-form">
                     <input type="hidden" name="praktyka_id" value="{{ praktyka.id }}">
@@ -58,7 +58,7 @@
                     
                     <div id="upload-feedback" class="alert d-none mb-3 border-0 shadow-sm" role="alert"></div>
 
-                    <button type="submit" class="btn btn-primary btn-primary-custom" id="btn-upload">Prześlij plik</button>
+                    <button type="submit" class="btn btn-primary" id="btn-upload">Prześlij plik</button>
                 </form>
             </div>
 
@@ -66,14 +66,14 @@
             {% if praktyka.status == 'Draft' %}
             <div class="d-grid mt-4">
                 <button class="btn btn-success py-2 btn-submit-doc" data-id="{{ praktyka.id }}">
-                    <i class="bi bi-send-check-fill me-2"></i> Złóż dokumentację do weryfikacji UOPZ
+                    <span class="material-symbols-outlined align-middle me-2">send</span> Złóż dokumentację do weryfikacji UOPZ
                 </button>
             </div>
             {% endif %}
             {% endif %}
 
             <div class="d-flex justify-content-between align-items-center mt-4">
-                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Powrót</a>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Powrót</a>
             </div>
         </div>
     </div>
@@ -103,17 +103,17 @@
                 }).then(res => {
                     if (res.ok) {
                         feedbackDiv.className = 'alert alert-success border-0 shadow-sm';
-                        feedbackDiv.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>Skan został pomyślnie przesłany!`;
+                        feedbackDiv.innerHTML = `<span class="material-symbols-outlined align-middle me-2">check_circle</span>Skan został pomyślnie przesłany!`;
                         setTimeout(() => window.location.reload(), 1000);
                     } else {
                         feedbackDiv.className = 'alert alert-danger border-0 shadow-sm';
-                        feedbackDiv.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i>Wystąpił błąd przy przesyłaniu pliku.`;
+                        feedbackDiv.innerHTML = `<span class="material-symbols-outlined align-middle me-2">warning</span>Wystąpił błąd przy przesyłaniu pliku.`;
                         btnUpload.disabled = false;
                         btnUpload.innerHTML = `Prześlij plik`;
                     }
                 }).catch(err => {
                     feedbackDiv.className = 'alert alert-danger border-0 shadow-sm';
-                    feedbackDiv.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i>Błąd połączenia z serwerem.`;
+                    feedbackDiv.innerHTML = `<span class="material-symbols-outlined align-middle me-2">warning</span>Błąd połączenia z serwerem.`;
                     btnUpload.disabled = false;
                     btnUpload.innerHTML = `Prześlij plik`;
                 });
@@ -135,16 +135,19 @@
                     body: JSON.stringify({ status: 'Submitted' })
                 }).then(res => {
                     if (res.ok) {
-                        window.location.reload();
+                        showToast("Dokumentacja została złożona do weryfikacji!", "success");
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
                     } else {
-                        alert("Wystąpił błąd podczas wysyłania wniosku.");
+                        showToast("Wystąpił błąd podczas wysyłania wniosku.", "error");
                         btnSubmitDoc.disabled = false;
-                        btnSubmitDoc.innerHTML = `<i class="bi bi-send-check-fill me-2"></i> Złóż dokumentację do weryfikacji UOPZ`;
+                        btnSubmitDoc.innerHTML = `<span class="material-symbols-outlined align-middle me-2">send</span> Złóż dokumentację do weryfikacji UOPZ`;
                     }
                 }).catch(err => {
-                    alert("Błąd połączenia.");
+                    showToast("Błąd połączenia.", "error");
                     btnSubmitDoc.disabled = false;
-                    btnSubmitDoc.innerHTML = `<i class="bi bi-send-check-fill me-2"></i> Złóż dokumentację do weryfikacji UOPZ`;
+                    btnSubmitDoc.innerHTML = `<span class="material-symbols-outlined align-middle me-2">send</span> Złóż dokumentację do weryfikacji UOPZ`;
                 });
             });
         }

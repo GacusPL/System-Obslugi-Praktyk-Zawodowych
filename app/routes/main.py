@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, request, abort
 from flask_login import login_required, current_user
-from app.models import Student, Praktyka, ZakladPracy, WpisDziennika, WniosekAlternatywny, Egzamin, Uzytkownik, Sprawozdanie, EfektUczenia, db
+from app.models import Student, Praktyka, ZakladPracy, WpisDziennika, WniosekAlternatywny, Egzamin, Uzytkownik, Sprawozdanie, EfektUczenia, KartaPraktyki, ZalacznikSkan, db
+from app.decorators import role_required
 
 main_bp = Blueprint('main', __name__)
 
@@ -229,3 +230,64 @@ def dokumentacja_weryfikacja(praktyka_id):
 def profile_view():
     student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
     return render_template('profile/view.html', student=student)
+
+@main_bp.route('/praktyka/<int:praktyka_id>/karta/ocena-zopz')
+@login_required
+@role_required('zopz', 'administrator')
+def ocena_zopz_form(praktyka_id):
+    praktyka = Praktyka.query.get_or_404(praktyka_id)
+    check_praktyka_ownership(praktyka)
+    karta = KartaPraktyki.query.filter_by(praktyka_id=praktyka_id).first()
+    return render_template('karta_praktyki/ocena_zopz.html', praktyka=praktyka, karta=karta)
+
+@main_bp.route('/praktyka/<int:praktyka_id>/karta/ocena-uopz')
+@login_required
+@role_required('uopz', 'administrator')
+def ocena_uopz_form(praktyka_id):
+    praktyka = Praktyka.query.get_or_404(praktyka_id)
+    check_praktyka_ownership(praktyka)
+    karta = KartaPraktyki.query.filter_by(praktyka_id=praktyka_id).first()
+    return render_template('karta_praktyki/ocena_uopz.html', praktyka=praktyka, karta=karta)
+
+@main_bp.route('/wniosek/<int:wniosek_id>/komisja')
+@login_required
+@role_required('dyrektor', 'administrator')
+def komisja_ocena_form(wniosek_id):
+    wniosek = WniosekAlternatywny.query.get_or_404(wniosek_id)
+    efekty = EfektUczenia.query.order_by(EfektUczenia.nr).all()
+    return render_template('wniosek/komisja_ocena.html', wniosek=wniosek, efekty=efekty)
+
+@main_bp.route('/wniosek/<int:wniosek_id>')
+@login_required
+def wniosek_detail(wniosek_id):
+    wniosek = WniosekAlternatywny.query.get_or_404(wniosek_id)
+    # Access checks
+    if current_user.rola == 'student':
+        student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+        if not student or wniosek.student_id != student.id:
+            abort(403)
+    skany = ZalacznikSkan.query.filter_by(wniosek_id=wniosek_id).all()
+    return render_template('wniosek/detail.html', wniosek=wniosek, skany=skany)
+
+@main_bp.route('/praktyka/<int:praktyka_id>/dziennik/pelny')
+@login_required
+@role_required('uopz', 'administrator')
+def dziennik_pelny(praktyka_id):
+    praktyka = Praktyka.query.get_or_404(praktyka_id)
+    check_praktyka_ownership(praktyka)
+    wpisy = WpisDziennika.query.filter_by(praktyka_id=praktyka_id).order_by(WpisDziennika.dzien_nr.asc()).all()
+    return render_template('dziennik/pelny.html', praktyka=praktyka, wpisy=wpisy)
+
+@main_bp.route('/dziennik/wpisy/<int:wpis_id>/edycja')
+@login_required
+@role_required('student')
+def wpis_edit_form(wpis_id):
+    wpis = WpisDziennika.query.get_or_404(wpis_id)
+    praktyka = wpis.praktyka
+    student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+    if not student or praktyka.student_id != student.id:
+        abort(403)
+    if wpis.status not in ['Draft', 'Rejected']:
+        abort(400)
+    efekty = EfektUczenia.query.order_by(EfektUczenia.nr).all()
+    return render_template('dziennik/wpis_edit.html', wpis=wpis, efekty=efekty)

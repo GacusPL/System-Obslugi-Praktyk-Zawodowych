@@ -10,25 +10,25 @@
 {% block content %}
 <div class="row">
     <div class="col-lg-12">
-        <div class="card card-custom">
+        <div class="card-sopz">
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
                 <div>
-                    <h3 class="fw-bold m-0" style="color: var(--primary);"><i class="bi bi-book text-primary me-2"></i>Dziennik Praktyk Zawodowych (P2)</h3>
-                    <p class="text-muted mt-1 mb-0">Rejestr zadań realizowanych każdego dnia praktyki zawodowej. Sumarycznie wymagane jest 120 dni.</p>
+                    <h3 class="fw-bold m-0" style="color: var(--primary);"><span class="material-symbols-outlined align-middle me-2">edit_note</span>Dziennik Praktyk Zawodowych (P2)</h3>
+                    <p class="text-secondary mt-1 mb-0">Rejestr zadań realizowanych każdego dnia praktyki zawodowej. Sumarycznie wymagane jest 120 dni.</p>
                 </div>
                 
                 {% if current_user.rola == 'student' %}
-                <button type="button" class="btn btn-primary btn-primary-custom" data-bs-toggle="modal" data-bs-target="#addWpisModal">
-                    <i class="bi bi-plus-circle me-1"></i> Dodaj Wpis
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWpisModal">
+                    <span class="material-symbols-outlined align-middle me-1">add</span> Dodaj Wpis
                 </button>
                 {% endif %}
             </div>
 
-            <!-- Filtry wyszukiwania i statusów (Instantly filter in DOM) -->
-            <div class="row g-3 mb-4 p-3 bg-light-subtle border rounded-3 align-items-center">
+            <!-- Filtry wyszukiwania i statusów -->
+            <div class="row g-3 mb-4 p-3 border rounded-3 align-items-center" style="background-color: var(--bg-page); border-color: var(--border);">
                 <div class="col-md-6">
                     <div class="input-group">
-                        <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <span class="input-group-text bg-transparent border-end-0"><span class="material-symbols-outlined text-secondary" style="font-size: 20px;">search</span></span>
                         <input type="text" id="search-opis" class="form-control border-start-0 ps-0" placeholder="Filtruj po opisie prac...">
                     </div>
                 </div>
@@ -47,7 +47,7 @@
 
             <!-- Tabela Wpisów -->
             <div class="table-responsive">
-                <table class="table align-middle" id="wpisy-table">
+                <table class="table-sopz align-middle" id="wpisy-table">
                     <thead>
                         <tr>
                             {% if current_user.rola == 'zopz' %}
@@ -81,21 +81,21 @@
                                 <td class="opis-cell">
                                     <div class="opis-text">{{ wpis.opis_prac }}</div>
                                     {% if wpis.komentarz_zopz %}
-                                    <div class="text-danger small mt-1 py-1 px-2 bg-danger-subtle rounded-2 d-inline-block">
-                                        <i class="bi bi-chat-left-text-fill me-1"></i>Komentarz ZOPZ: {{ wpis.komentarz_zopz }}
+                                    <div class="text-danger small mt-1 py-1 px-2 bg-danger-light rounded-2 d-inline-block" style="border: 1px solid var(--danger);">
+                                        <span class="material-symbols-outlined align-middle me-1" style="font-size: 16px;">chat</span>Komentarz ZOPZ: {{ wpis.komentarz_zopz }}
                                     </div>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% for efekt in wpis.efekty %}
-                                    <span class="badge bg-light text-primary border border-primary-subtle rounded-pill py-1 px-2 mb-1 d-inline-block" title="{{ efekt.opis }}" style="cursor: help;">
+                                    <span class="badge bg-primary-light text-primary border rounded-pill py-1 px-2 mb-1 d-inline-block" title="{{ efekt.opis }}" style="cursor: help; font-size: 11px;">
                                         EU{{ efekt.nr }}
                                     </span>
                                     {% endfor %}
                                 </td>
                                 <td>
-                                    <span class="badge-custom badge-custom-{{ wpis.status|lower }}">
-                                        <i class="bi {{ wpis.status|status_icon }} me-1"></i> {{ wpis.status|translate_status }}
+                                    <span class="badge-status badge-status-{{ wpis.status|lower }}">
+                                        {{ wpis.status|translate_status }}
                                     </span>
                                 </td>
                                 {% if current_user.rola == 'zopz' %}
@@ -103,14 +103,14 @@
                                     {% if wpis.status == 'Submitted' %}
                                     <div class="d-flex gap-1">
                                         <button class="btn btn-sm btn-success py-1 px-2 btn-action-approve" data-id="{{ wpis.id }}" title="Zatwierdź">
-                                            <i class="bi bi-check-lg"></i>
+                                            <span class="material-symbols-outlined align-middle">done</span>
                                         </button>
                                         <button class="btn btn-sm btn-danger py-1 px-2 btn-action-reject" data-id="{{ wpis.id }}" title="Odrzuć">
-                                            <i class="bi bi-x-lg"></i>
+                                            <span class="material-symbols-outlined align-middle">close</span>
                                         </button>
                                     </div>
                                     {% else %}
-                                    <span class="text-muted small"><i class="bi bi-patch-check-fill text-success me-1"></i>Zweryfikowany</span>
+                                    <span class="text-success small d-flex align-items-center gap-1"><span class="material-symbols-outlined align-middle" style="font-size: 18px;">check_circle</span>Zweryfikowany</span>
                                     {% endif %}
                                 </td>
                                 {% endif %}
@@ -120,9 +120,9 @@
                             <tr id="empty-row">
                                 <td colspan="{{ '7' if current_user.rola == 'zopz' else '6' }}" class="text-center py-5">
                                     <div class="empty-state">
-                                        <i class="bi bi-journal-x"></i>
-                                        <h5 class="fw-bold">Brak wpisów w Dzienniku</h5>
-                                        <p class="text-muted mb-0">Student nie dodał jeszcze żadnych wpisów do dziennika praktyk.</p>
+                                        <span class="material-symbols-outlined" style="font-size: 56px;">notes</span>
+                                        <h5 class="fw-bold mt-2">Brak wpisów w Dzienniku</h5>
+                                        <p class="text-secondary mb-0">Student nie dodał jeszcze żadnych wpisów do dziennika praktyk.</p>
                                     </div>
                                 </td>
                             </tr>
@@ -138,12 +138,12 @@
 {% if current_user.rola == 'zopz' %}
 <div id="batch-verify-bar" class="batch-verify-panel d-none">
     <div>
-        <span class="fw-bold text-primary" id="selected-count"><i class="bi bi-check2-all me-1"></i>Wybrano: 0 wpisów</span>
+        <span class="fw-bold text-primary" id="selected-count"><span class="material-symbols-outlined align-middle me-1">done_all</span>Wybrano: 0 wpisów</span>
     </div>
     <div class="d-flex gap-2 align-items-center flex-wrap">
         <input type="text" id="batch-comment" class="form-control form-control-sm" placeholder="Komentarz dla wybranych (opcjonalny)..." style="min-width: 280px; max-width: 400px;">
-        <button class="btn btn-sm btn-success" id="btn-batch-approve"><i class="bi bi-check-circle-fill me-1"></i>Zatwierdź zaznaczone</button>
-        <button class="btn btn-sm btn-danger" id="btn-batch-reject"><i class="bi bi-x-circle-fill me-1"></i>Odrzuć zaznaczone</button>
+        <button class="btn btn-success btn-sm" id="btn-batch-approve"><span class="material-symbols-outlined align-middle me-1" style="font-size: 18px;">check_circle</span>Zatwierdź zaznaczone</button>
+        <button class="btn btn-danger btn-sm" id="btn-batch-reject"><span class="material-symbols-outlined align-middle me-1" style="font-size: 18px;">cancel</span>Odrzuć zaznaczone</button>
     </div>
 </div>
 {% endif %}
@@ -152,9 +152,9 @@
 {% if current_user.rola == 'zopz' %}
 <div class="modal fade" id="rejectWpisModal" tabindex="-1" aria-labelledby="rejectWpisModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content border-0 shadow-lg" style="background-color: var(--bg-card); color: var(--text-color);">
+        <div class="modal-content border-0 shadow-lg" style="background-color: var(--bg-card); color: var(--text-primary); border-radius: 12px;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold" id="rejectWpisModalLabel"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Odrzuć Wpis</h5>
+                <h5 class="modal-title fw-bold" id="rejectWpisModalLabel"><span class="material-symbols-outlined align-middle text-danger me-2" style="font-size: 24px;">warning</span>Odrzuć Wpis</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body pt-3">
@@ -165,7 +165,7 @@
                 </div>
             </div>
             <div class="modal-footer border-top-0 pt-0">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
                 <button type="button" id="btn-submit-reject" class="btn btn-danger">Odrzuć Wpis</button>
             </div>
         </div>
@@ -177,9 +177,9 @@
 {% if current_user.rola == 'student' %}
 <div class="modal fade" id="addWpisModal" tabindex="-1" aria-labelledby="addWpisModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content border-0 shadow-lg" style="background-color: var(--bg-card); color: var(--text-color);">
+        <div class="modal-content border-0 shadow-lg" style="background-color: var(--bg-card); color: var(--text-primary); border-radius: 12px;">
             <div class="modal-header border-bottom-0 pb-0">
-                <h5 class="modal-title fw-bold" id="addWpisModalLabel"><i class="bi bi-pencil-square text-primary me-2"></i>Dodaj nowy wpis do Dziennika</h5>
+                <h5 class="modal-title fw-bold" id="addWpisModalLabel"><span class="material-symbols-outlined align-middle text-primary me-2" style="font-size: 24px;">edit</span>Dodaj nowy wpis do Dziennika</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="wpis-form">
@@ -202,13 +202,13 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Realizowane efekty uczenia się</label>
-                            <div class="p-3 border rounded-3 bg-light-subtle" style="max-height: 220px; overflow-y: auto;">
+                            <div class="p-3 border rounded-3" style="max-height: 220px; overflow-y: auto; background-color: var(--bg-page); border-color: var(--border);">
                                 <div class="row g-2">
                                     {% for efekt in efekty %}
                                     <div class="col-12">
-                                        <div class="form-check p-2 border-bottom border-light-subtle">
+                                        <div class="form-check p-2 border-bottom" style="border-color: var(--border) !important;">
                                             <input class="form-check-input efekty-checkbox" type="checkbox" value="{{ efekt.id }}" id="efekt-{{ efekt.id }}">
-                                            <label class="form-check-label small" for="efekt-{{ efekt.id }}" title="{{ efekt.opis }}">
+                                            <label class="form-check-label small ms-2" for="efekt-{{ efekt.id }}" title="{{ efekt.opis }}">
                                                 <strong>EU{{ efekt.nr }}</strong> - {{ efekt.opis }}
                                             </label>
                                         </div>
@@ -220,8 +220,8 @@
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Anuluj</button>
-                    <button type="submit" class="btn btn-primary btn-primary-custom">Zapisz Wpis</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="submit" class="btn btn-primary">Zapisz Wpis</button>
                 </div>
             </form>
         </div>

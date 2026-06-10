@@ -1,172 +1,294 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard Opiekuna Uczelnianego (UOPZ) - SOPZ{% endblock %}
+{% block title %}Dashboard UOPZ - SOPZ{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item active" aria-current="page">Dashboard UOPZ</li>
+<li class="active">Dashboard</li>
 {% endblock %}
 
 {% block content %}
-<!-- Statystyki -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card card-custom border-start border-primary border-4 py-3 mb-3 mb-md-0">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-uppercase text-muted fw-semibold small">Praktyki ogółem</span>
-                    <h2 class="fw-bold m-0 mt-1">{{ praktyki|length }}</h2>
-                </div>
-                <div class="fs-1 text-primary"><i class="bi bi-briefcase"></i></div>
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h2 mb-1">Panel Opiekuna Uczelnianego</h1>
+        <p class="text-secondary mb-0">UOPZ: <span class="fw-semibold text-primary">{{ current_user.imie }} {{ current_user.nazwisko }}</span></p>
+    </div>
+</div>
+
+<!-- Calculate total decisions pending -->
+{% set pending_decisions = namespace(value=0) %}
+{% for p in praktyki %}
+    {% if p.status in ['Submitted', 'Under_Review'] or p.dziennik_status == 'Under_Review' %}
+        {% set pending_decisions.value = pending_decisions.value + 1 %}
+    {% endif %}
+{% endfor %}
+{% for s in oczekujace_sprawozdania %}
+    {% set pending_decisions.value = pending_decisions.value + 1 %}
+{% endfor %}
+
+<!-- Stat cards -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon-wrapper bg-primary-light text-primary">
+                <span class="material-symbols-outlined">school</span>
+            </div>
+            <div class="stat-details">
+                <h2>{{ praktyki|length }}</h2>
+                <p>Nadzorowane praktyki</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card card-custom border-start border-warning border-4 py-3 mb-3 mb-md-0">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-uppercase text-muted fw-semibold small">Dzienniki Under Review</span>
-                    <h2 class="fw-bold m-0 mt-1">{{ oczekujace_dzienniki|length }}</h2>
-                </div>
-                <div class="fs-1 text-warning"><i class="bi bi-clock-history"></i></div>
+    <div class="col-md-6">
+        <div class="stat-card">
+            <div class="stat-icon-wrapper bg-warning-light text-warning">
+                <span class="material-symbols-outlined">pending_actions</span>
             </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card card-custom border-start border-info border-4 py-3 mb-3 mb-md-0">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-uppercase text-muted fw-semibold small">Oczekujące sprawozdania</span>
-                    <h2 class="fw-bold m-0 mt-1">{{ oczekujace_sprawozdania|length }}</h2>
-                </div>
-                <div class="fs-1 text-info"><i class="bi bi-file-earmark-check"></i></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card card-custom border-start border-success border-4 py-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <span class="text-uppercase text-muted fw-semibold small">Zatwierdzone (Approved)</span>
-                    <h2 class="fw-bold m-0 mt-1">
-                        {{ praktyki|selectattr('status', 'equalto', 'Approved')|list|length }}
-                    </h2>
-                </div>
-                <div class="fs-1 text-success"><i class="bi bi-check-all"></i></div>
+            <div class="stat-details">
+                <h2>{{ pending_decisions.value }}</h2>
+                <p>Oczekujące decyzje</p>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <!-- Lista Praktyk pod nadzorem -->
-    <div class="col-lg-8">
-        <div class="card card-custom">
-            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-                <h5 class="fw-bold m-0"><i class="bi bi-journals text-primary me-2"></i>Wszystkie Praktyki pod nadzorem</h5>
-                <!-- Prosty filtr -->
-                <div class="d-flex gap-2">
-                    <select class="form-select form-select-sm" style="width: 150px;">
-                        <option value="">Wszystkie statusy</option>
-                        <option value="Draft">Draft</option>
-                        <option value="Submitted">Submitted</option>
-                        <option value="Under_Review">Under Review</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Rejected">Rejected</option>
-                    </select>
-                </div>
-            </div>
-            
-            {% if not praktyki %}
-            <p class="text-muted py-4 text-center">Brak przypisanych praktyk zawodowych do nadzoru.</p>
-            {% else %}
+<div class="card-sopz">
+    <div class="card-sopz-header border-0 pb-0">
+        <h3>Obszar Roboczy</h3>
+    </div>
+    
+    <!-- Bootstrap tabs -->
+    <ul class="nav nav-tabs mb-3" id="uopzTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="zgloszenia-tab" data-bs-toggle="tab" data-bs-target="#zgloszenia" type="button" role="tab">Zgłoszenia</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="dzienniki-tab" data-bs-toggle="tab" data-bs-target="#dzienniki" type="button" role="tab">Dzienniki</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="sprawozdania-tab" data-bs-toggle="tab" data-bs-target="#sprawozdania" type="button" role="tab">Sprawozdania</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="dokumentacja-tab" data-bs-toggle="tab" data-bs-target="#dokumentacja" type="button" role="tab">Dokumentacja</button>
+        </li>
+    </ul>
+    
+    <div class="tab-content" id="uopzTabsContent">
+        <!-- Zgłoszenia Tab -->
+        <div class="tab-pane fade show active" id="zgloszenia" role="tabpanel">
             <div class="table-responsive">
-                <table class="table align-middle">
+                <table class="table-sopz" id="table-zgloszenia">
                     <thead>
                         <tr>
                             <th>Student</th>
-                            <th>Zakład Pracy</th>
-                            <th>Termin</th>
+                            <th>Zakład pracy</th>
                             <th>Status</th>
-                            <th>Opcje</th>
+                            <th>Akcja</th>
                         </tr>
                     </thead>
                     <tbody>
+                        {% set zgl_count = namespace(value=0) %}
                         {% for p in praktyki %}
-                        <tr>
-                            <td>
-                                <div class="fw-semibold">{{ p.student.uzytkownik.imie }} {{ p.student.uzytkownik.nazwisko }}</div>
-                                <span class="text-muted small">{{ p.student.nr_albumu }}</span>
-                            </td>
-                            <td>{{ p.zaklad_pracy.nazwa }}</td>
-                            <td>{{ p.termin_od.strftime('%d.%m.%Y') }} - {{ p.termin_do.strftime('%d.%m.%Y') }}</td>
-                            <td>
-                                <span class="badge bg-{{ 'secondary' if p.status == 'Draft' else 'primary' if p.status == 'Submitted' else 'warning' if p.status == 'Under_Review' else 'success' if p.status == 'Approved' else 'danger' }}">
-                                    {{ p.status }}
-                                </span>
-                            </td>
-                            <td>
-                                <div class="btn-group">
-                                    <a href="{{ url_for('main.dokumentacja_weryfikacja', praktyka_id=p.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> Szczegóły</a>
-                                </div>
-                            </td>
-                        </tr>
+                            {% if p.status in ['Submitted', 'Under_Review'] %}
+                                {% set zgl_count.value = zgl_count.value + 1 %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="table-avatar">
+                                                {{ p.student.uzytkownik.imie[0] }}{{ p.student.uzytkownik.nazwisko[0] }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">{{ p.student.uzytkownik.imie }} {{ p.student.uzytkownik.nazwisko }}</div>
+                                                <span class="text-secondary small">album: {{ p.student.nr_albumu }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ p.zaklad_pracy.nazwa }}</td>
+                                    <td>
+                                        <span class="badge-status badge-status-{{ p.status|lower }}">
+                                            {{ p.status|translate_status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('main.dokumentacja_weryfikacja', praktyka_id=p.id) }}" class="btn btn-secondary btn-sm">Szczegóły</a>
+                                    </td>
+                                </tr>
+                            {% endif %}
                         {% endfor %}
+                        {% if zgl_count.value == 0 %}
+                            <tr>
+                                <td colspan="4" class="text-center text-secondary py-4">Brak oczekujących zgłoszeń praktyk</td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
-            {% endif %}
         </div>
-    </div>
-
-    <!-- Panel akcji oczekujących weryfikacji -->
-    <div class="col-lg-4">
-        <!-- Oczekujące Dzienniki -->
-        <div class="card card-custom">
-            <h5 class="fw-bold mb-3 text-warning"><i class="bi bi-clock-history me-2"></i>Dzienniki do weryfikacji</h5>
-            {% if not oczekujace_dzienniki %}
-            <p class="text-muted small mb-0">Brak dzienników oczekujących na zatwierdzenie.</p>
-            {% else %}
-            <div class="list-group list-group-flush">
-                {% for p in oczekujace_dzienniki %}
-                <div class="list-group-item py-2 px-0 border-0 {% if not loop.first %}border-top{% endif %}">
-                    <div class="fw-semibold">{{ p.student.uzytkownik.imie }} {{ p.student.uzytkownik.nazwisko }}</div>
-                    <span class="text-muted small">{{ p.zaklad_pracy.nazwa }}</span>
-                    <div class="mt-2">
-                        <button class="btn btn-xs btn-outline-success px-2 py-1 text-xs" 
-                                hx-patch="/api/v1/praktyki/{{ p.id }}/status"
-                                hx-vals='{"status": "Approved"}'
-                                hx-headers='{"Content-Type": "application/json"}'
-                                hx-swap="none"
-                                onclick="setTimeout(() => window.location.reload(), 500)">
-                            Zatwierdź
-                        </button>
-                        <a href="{{ url_for('main.dziennik_list') }}?praktyka_id={{ p.id }}" class="btn btn-xs btn-outline-primary px-2 py-1 text-xs">Podgląd</a>
-                    </div>
-                </div>
-                {% endfor %}
+        
+        <!-- Dzienniki Tab -->
+        <div class="tab-pane fade" id="dzienniki" role="tabpanel">
+            <div class="table-responsive">
+                <table class="table-sopz" id="table-dzienniki">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Zakład pracy</th>
+                            <th>Status dziennika</th>
+                            <th>Akcja</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set dzn_count = namespace(value=0) %}
+                        {% for p in praktyki %}
+                            {% if p.dziennik_status == 'Under_Review' %}
+                                {% set dzn_count.value = dzn_count.value + 1 %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="table-avatar">
+                                                {{ p.student.uzytkownik.imie[0] }}{{ p.student.uzytkownik.nazwisko[0] }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">{{ p.student.uzytkownik.imie }} {{ p.student.uzytkownik.nazwisko }}</div>
+                                                <span class="text-secondary small">album: {{ p.student.nr_albumu }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ p.zaklad_pracy.nazwa }}</td>
+                                    <td>
+                                        <span class="badge bg-warning-light text-warning border">W weryfikacji</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ url_for('main.dziennik_list', praktyka_id=p.id) }}" class="btn btn-secondary btn-sm">Podgląd</a>
+                                            <button class="btn btn-primary btn-sm"
+                                                    hx-patch="/api/v1/praktyki/{{ p.id }}/status"
+                                                    hx-vals='{"status": "Approved"}'
+                                                    hx-headers='{"Content-Type": "application/json"}'
+                                                    hx-swap="none"
+                                                    onclick="setTimeout(() => window.location.reload(), 500)">
+                                                Zatwierdź
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                        {% if dzn_count.value == 0 %}
+                            <tr>
+                                <td colspan="4" class="text-center text-secondary py-4">Brak dzienników oczekujących na zatwierdzenie</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
-            {% endif %}
         </div>
-
-        <!-- Oczekujące Sprawozdania -->
-        <div class="card card-custom">
-            <h5 class="fw-bold mb-3 text-info"><i class="bi bi-file-earmark-text me-2"></i>Sprawozdania do oceny</h5>
-            {% if not oczekujace_sprawozdania %}
-            <p class="text-muted small mb-0">Brak sprawozdań do oceny.</p>
-            {% else %}
-            <div class="list-group list-group-flush">
-                {% for s in oczekujace_sprawozdania %}
-                <div class="list-group-item py-2 px-0 border-0 {% if not loop.first %}border-top{% endif %}">
-                    <div class="fw-semibold">{{ s.praktyka.student.uzytkownik.imie }} {{ s.praktyka.student.uzytkownik.nazwisko }}</div>
-                    <span class="text-muted small">Wersja: {{ s.wersja }}</span>
-                    <div class="mt-2">
-                        <a href="{{ url_for('main.sprawozdanie_form', praktyka_id=s.praktyka_id) }}" class="btn btn-xs btn-outline-info px-2 py-1 text-xs">Oceń i Skomentuj</a>
-                    </div>
-                </div>
-                {% endfor %}
+        
+        <!-- Sprawozdania Tab -->
+        <div class="tab-pane fade" id="sprawozdania" role="tabpanel">
+            <div class="table-responsive">
+                <table class="table-sopz" id="table-sprawozdania">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Wersja</th>
+                            <th>Status</th>
+                            <th>Akcja</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if oczekujace_sprawozdania %}
+                            {% for s in oczekujace_sprawozdania %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="table-avatar">
+                                            {{ s.praktyka.student.uzytkownik.imie[0] }}{{ s.praktyka.student.uzytkownik.nazwisko[0] }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">{{ s.praktyka.student.uzytkownik.imie }} {{ s.praktyka.student.uzytkownik.nazwisko }}</div>
+                                            <span class="text-secondary small">album: {{ s.praktyka.student.nr_albumu }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Wersja {{ s.wersja }}</td>
+                                <td>
+                                    <span class="badge-status badge-status-{{ s.status|lower }}">
+                                        {{ s.status|translate_status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('main.sprawozdanie_form', praktyka_id=s.praktyka_id) }}" class="btn btn-primary btn-sm">Oceń i Skomentuj</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-secondary py-4">Brak sprawozdań do oceny</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
-            {% endif %}
+        </div>
+        
+        <!-- Dokumentacja Tab -->
+        <div class="tab-pane fade" id="dokumentacja" role="tabpanel">
+            <div class="table-responsive">
+                <table class="table-sopz" id="table-dokumentacja">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Zakład pracy</th>
+                            <th>Status ogólny</th>
+                            <th>Akcja</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if praktyki %}
+                            {% for p in praktyki %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="table-avatar">
+                                            {{ p.student.uzytkownik.imie[0] }}{{ p.student.uzytkownik.nazwisko[0] }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">{{ p.student.uzytkownik.imie }} {{ p.student.uzytkownik.nazwisko }}</div>
+                                            <span class="text-secondary small">album: {{ p.student.nr_albumu }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ p.zaklad_pracy.nazwa }}</td>
+                                <td>
+                                    <span class="badge-status badge-status-{{ p.status|lower }}">
+                                        {{ p.status|translate_status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('main.dokumentacja_weryfikacja', praktyka_id=p.id) }}" class="btn btn-secondary btn-sm">Zweryfikuj P6</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-secondary py-4">Brak praktyk pod nadzorem</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        initPagination('table-zgloszenia', 10);
+        initPagination('table-dzienniki', 10);
+        initPagination('table-sprawozdania', 10);
+        initPagination('table-dokumentacja', 10);
+    });
+</script>
 {% endblock %}

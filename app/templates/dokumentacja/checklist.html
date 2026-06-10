@@ -9,10 +9,16 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card card-custom">
-            <h3 class="fw-bold mb-3" style="color: var(--primary);"><i class="bi bi-folder-check text-primary me-2"></i>Kompletacja Dokumentacji Praktyki (P6)</h3>
-            <p class="text-muted mb-4">Aby sfinalizować praktykę zawodową, wszystkie poniższe dokumenty muszą zostać zatwierdzone (status ✓).</p>
+    <div class="col-lg-8 col-md-10">
+        <div class="card-sopz">
+            <div class="card-sopz-header">
+                <h2 class="h2 mb-0 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">folder_open</span>
+                    Kompletacja Dokumentacji Praktyki (P6)
+                </h2>
+            </div>
+            
+            <p class="text-secondary mb-4">Aby sfinalizować praktykę zawodową, wszystkie poniższe dokumenty muszą zostać zatwierdzone (status ✓).</p>
 
             {% set p1_status = 'Approved' if praktyka.harmonogram and praktyka.harmonogram.status == 'Approved' else 'Draft' %}
             {% set p2_status = praktyka.dziennik_status %}
@@ -30,44 +36,63 @@
                 {"name": "Karta Praktyki (P6)", "status": p6_status, "desc": "Podsumowanie ocen i podpisany skan"}
             ] %}
 
-            {% set all_approved = namespace(value=true) %}
+            {% set approved_count = (1 if p1_status == 'Approved' else 0) + 
+                                   (1 if p2_status == 'Approved' or p2_status == 'Closed' else 0) + 
+                                   (1 if p3_status == 'Approved' else 0) + 
+                                   (1 if p4_status == 'Approved' else 0) + 
+                                   (1 if p5_status == 'Approved' else 0) + 
+                                   (1 if p6_status == 'Approved' else 0) %}
 
-            <ul class="list-group list-group-flush mb-4">
+            {% set all_approved = approved_count == 6 %}
+
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-semibold text-color">Postęp kompletacji</span>
+                    <span class="fw-bold text-primary">{{ approved_count }}/6 zatwierdzonych</span>
+                </div>
+                <div class="progress" style="height: 8px; border-radius: 4px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ (approved_count / 6 * 100)|int }}%;" aria-valuenow="{{ approved_count }}" aria-valuemin="0" aria-valuemax="6"></div>
+                </div>
+            </div>
+
+            <div class="list-group list-group-flush mb-4">
                 {% for doc in docs %}
-                <li class="list-group-item py-3 px-0 border-0 {% if not loop.first %}border-top{% endif %} d-flex justify-content-between align-items-center">
+                <div class="list-group-item py-3 px-0 border-0 {% if not loop.first %}border-top{% endif %} d-flex justify-content-between align-items-center bg-transparent">
                     <div>
-                        <div class="fw-semibold text-color">{{ doc.name }}</div>
-                        <span class="text-muted small">{{ doc.desc }}</span>
+                        <div class="fw-semibold text-primary" style="font-size: 15px;">{{ doc.name }}</div>
+                        <span class="text-secondary small">{{ doc.desc }}</span>
                     </div>
                     <div>
                         {% if doc.status == 'Approved' or doc.status == 'Closed' %}
-                            <span class="badge-custom badge-custom-approved">
-                                <i class="bi bi-check-circle-fill"></i> Zatwierdzony
+                            <span class="badge-status badge-status-approved">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span> Zatwierdzony
                             </span>
                         {% else %}
-                            {% set all_approved.value = false %}
-                            <span class="badge-custom badge-custom-under-review">
-                                <i class="bi bi-hourglass-split"></i> W toku
+                            <span class="badge-status badge-status-under-review">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">hourglass_empty</span> W toku
                             </span>
                         {% endif %}
                     </div>
-                </li>
+                </div>
                 {% endfor %}
-            </ul>
+            </div>
 
             {% if praktyka.dokumenty %}
-            <div class="mt-4 p-4 border rounded bg-light-subtle">
-                <h5 class="fw-bold mb-3 text-danger"><i class="bi bi-file-earmark-pdf-fill me-2"></i>Wygenerowane Dokumenty Oficjalne</h5>
-                <p class="text-muted small">Pobierz wygenerowane pliki PDF w celu wydrukowania i podpisania:</p>
+            <div class="mt-4 p-4 border rounded bg-light">
+                <h5 class="fw-bold mb-3 text-danger d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-danger">picture_as_pdf</span>
+                    Wygenerowane Dokumenty Oficjalne
+                </h5>
+                <p class="text-secondary small">Pobierz wygenerowane pliki PDF w celu wydrukowania i podpisania:</p>
                 <div class="list-group list-group-flush">
                     {% for doc in praktyka.dokumenty %}
                     <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-0 bg-transparent">
                         <div>
-                            <span class="fw-semibold text-color">{{ doc.typ }}</span>
-                            <span class="text-muted small ms-2">(Załącznik PDF)</span>
+                            <span class="fw-semibold text-primary">{{ doc.typ }}</span>
+                            <span class="text-secondary small ms-2">(Załącznik PDF)</span>
                         </div>
-                        <a href="{{ doc.get_download_url() }}" class="btn btn-sm btn-outline-danger">
-                            <i class="bi bi-download me-1"></i> Pobierz PDF
+                        <a href="{{ doc.get_download_url() }}" class="btn btn-sm btn-secondary d-flex align-items-center gap-1">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">download</span> Pobierz PDF
                         </a>
                     </div>
                     {% endfor %}
@@ -76,10 +101,10 @@
             {% endif %}
 
             <div class="d-grid mt-4">
-                <button class="btn btn-success py-2" 
+                <button class="btn btn-success py-2 d-flex align-items-center justify-content-center gap-2" 
                         id="submit-dokumentacja-btn"
-                        {% if not all_approved.value %}disabled{% endif %}>
-                    <i class="bi bi-check-all me-2"></i> Złóż kompletną dokumentację praktyki
+                        {% if not all_approved %}disabled{% endif %}>
+                    <span class="material-symbols-outlined">send</span> Złóż kompletną dokumentację praktyki
                 </button>
                 <div id="submit-feedback" class="alert d-none mt-3 border-0 shadow-sm" role="alert"></div>
 
@@ -99,33 +124,42 @@
                         }).then(res => {
                             if (res.ok) {
                                 feedback.className = 'alert alert-success border-0 shadow-sm mt-3';
-                                feedback.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>Dokumentacja została pomyślnie złożona!`;
+                                feedback.innerHTML = `<span class="material-symbols-outlined align-middle me-2">check_circle</span>Dokumentacja została pomyślnie złożona!`;
+                                if (window.showToast) {
+                                    window.showToast('Dokumentacja została pomyślnie złożona!', 'success');
+                                }
                                 setTimeout(() => {
                                     window.location.href = '/dashboard';
                                 }, 1000);
                             } else {
                                 feedback.className = 'alert alert-danger border-0 shadow-sm mt-3';
-                                feedback.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i>Błąd składania dokumentacji.`;
+                                feedback.innerHTML = `<span class="material-symbols-outlined align-middle me-2">error</span>Błąd składania dokumentacji.`;
+                                if (window.showToast) {
+                                    window.showToast('Błąd składania dokumentacji.', 'error');
+                                }
                                 btn.disabled = false;
-                                btn.innerHTML = `<i class="bi bi-check-all me-2"></i> Złóż kompletną dokumentację praktyki`;
+                                btn.innerHTML = `<span class="material-symbols-outlined">send</span> Złóż kompletną dokumentację praktyki`;
                             }
                         }).catch(err => {
                             feedback.className = 'alert alert-danger border-0 shadow-sm mt-3';
-                            feedback.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i>Błąd połączenia z serwerem.`;
+                            feedback.innerHTML = `<span class="material-symbols-outlined align-middle me-2">error</span>Błąd połączenia z serwerem.`;
+                            if (window.showToast) {
+                                window.showToast('Błąd połączenia z serwerem.', 'error');
+                            }
                             btn.disabled = false;
-                            btn.innerHTML = `<i class="bi bi-check-all me-2"></i> Złóż kompletną dokumentację praktyki`;
+                            btn.innerHTML = `<span class="material-symbols-outlined">send</span> Złóż kompletną dokumentację praktyki`;
                         });
                     });
                 </script>
-                {% if not all_approved.value %}
+                {% if not all_approved %}
                 <div class="form-text text-center text-danger mt-2">
-                    <i class="bi bi-info-circle me-1"></i> Przycisk będzie aktywny dopiero po zatwierdzeniu wszystkich 6 dokumentów.
+                    <span class="material-symbols-outlined align-middle" style="font-size: 16px;">info</span> Przycisk będzie aktywny dopiero po zatwierdzeniu wszystkich 6 dokumentów.
                 </div>
                 {% endif %}
             </div>
 
             <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Powrót</a>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Powrót</a>
             </div>
         </div>
     </div>

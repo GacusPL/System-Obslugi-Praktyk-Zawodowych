@@ -9,13 +9,34 @@
 
 {% block content %}
 <div class="row">
-    <!-- List of all users -->
-    <div class="col-lg-12">
-        <div class="card card-custom">
-            <h3 class="fw-bold mb-4"><i class="bi bi-people-fill text-primary me-2"></i>Wszyscy Użytkownicy Systemu</h3>
+    <div class="col-12">
+        <div class="card-sopz">
+            <div class="card-sopz-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <h2 class="h2 mb-0 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">people</span>
+                    Zarządzanie Użytkownikami Systemu
+                </h2>
+                
+                <div class="d-flex gap-2 flex-wrap" style="min-width: 300px;">
+                    <div class="flex-grow-1">
+                        <input type="text" id="search-input" class="form-control" placeholder="Szukaj użytkowników...">
+                    </div>
+                    <div>
+                        <select id="role-filter" class="form-select">
+                            <option value="">Wszystkie role</option>
+                            <option value="student">Student</option>
+                            <option value="zopz">Opiekun Zakładowy</option>
+                            <option value="uopz">Opiekun Uczelniany</option>
+                            <option value="dyrektor">Dyrektor</option>
+                            <option value="administrator">Administrator</option>
+                            <option value="brak roli">Oczekujący (brak roli)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
 
             <div class="table-responsive">
-                <table class="table align-middle">
+                <table class="table-sopz" id="users-table">
                     <thead>
                         <tr>
                             <th>Użytkownik</th>
@@ -27,15 +48,25 @@
                     <tbody>
                         {% for u in all_users %}
                         <tr id="user-row-{{ u.id }}">
-                            <td class="fw-semibold">{{ u.imie }} {{ u.nazwisko }}</td>
-                            <td>{{ u.email }}</td>
+                            <td class="fw-semibold text-primary">{{ u.imie }} {{ u.nazwisko }}</td>
+                            <td class="text-secondary small">{{ u.email }}</td>
                             <td>
-                                <span class="badge badge-role badge-{{ u.rola or 'none' }}">
-                                    {{ u.rola or 'Brak roli (Oczekuje)' }}
-                                </span>
+                                {% if u.rola == 'student' %}
+                                    <span class="badge-status badge-status-approved"><span class="badge-role-text">Student</span></span>
+                                {% elif u.rola == 'zopz' %}
+                                    <span class="badge-status badge-status-under-review"><span class="badge-role-text">Opiekun Zakładowy (ZOPZ)</span></span>
+                                {% elif u.rola == 'uopz' %}
+                                    <span class="badge-status badge-status-submitted"><span class="badge-role-text">Opiekun Uczelniany (UOPZ)</span></span>
+                                {% elif u.rola == 'dyrektor' %}
+                                    <span class="badge-status badge-status-closed"><span class="badge-role-text">Dyrektor</span></span>
+                                {% elif u.rola == 'administrator' %}
+                                    <span class="badge-status badge-status-approved"><span class="badge-role-text">Administrator</span></span>
+                                {% else %}
+                                    <span class="badge-status badge-status-draft"><span class="badge-role-text">Brak roli (Oczekuje)</span></span>
+                                {% endif %}
                             </td>
                             <td>
-                                <form action="{{ url_for('admin.update_user_role', user_id=u.id) }}" method="POST" class="d-flex gap-2" style="max-width: 300px;">
+                                <form action="{{ url_for('admin.update_user_role', user_id=u.id) }}" method="POST" class="d-flex gap-2 align-items-center" style="max-width: 320px;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <select name="rola" class="form-select form-select-sm" required>
                                         <option value="student" {% if u.rola == 'student' %}selected{% endif %}>Student</option>
@@ -44,7 +75,9 @@
                                         <option value="dyrektor" {% if u.rola == 'dyrektor' %}selected{% endif %}>Dyrektor</option>
                                         <option value="administrator" {% if u.rola == 'administrator' %}selected{% endif %}>Administrator</option>
                                     </select>
-                                    <button type="submit" class="btn btn-sm btn-primary">Zapisz</button>
+                                    <button type="submit" class="btn btn-sm btn-primary py-1 px-3 d-flex align-items-center gap-1">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">save</span> Zapisz
+                                    </button>
                                 </form>
                             </td>
                         </tr>
@@ -55,4 +88,28 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        initPagination('users-table', 15);
+        initTableSearch('users-table', 'search-input');
+        
+        const roleFilter = document.getElementById('role-filter');
+        if (roleFilter) {
+            roleFilter.addEventListener('change', function() {
+                const filterValue = this.value.toLowerCase();
+                const rows = document.querySelectorAll('#users-table tbody tr');
+                
+                rows.forEach(row => {
+                    const roleText = row.querySelector('.badge-role-text').innerText.toLowerCase();
+                    if (filterValue === '' || roleText.includes(filterValue)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+</script>
 {% endblock %}

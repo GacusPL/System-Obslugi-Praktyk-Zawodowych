@@ -10,9 +10,9 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-10">
-        <div class="card card-custom">
-            <h3 class="fw-bold mb-3"><i class="bi bi-file-earmark-ruled text-primary me-2"></i>Sprawozdanie z Przebiegu Praktyki (P4)</h3>
-            <p class="text-muted mb-4">Opisz szczegółowo realizację praktyki zawodowej. Każda z sekcji musi zawierać minimum 100 znaków.</p>
+        <div class="card-sopz">
+            <h3 class="mb-2"><span class="material-symbols-outlined align-middle me-2" style="color: var(--primary);">description</span>Sprawozdanie z Przebiegu Praktyki (P4)</h3>
+            <p class="text-secondary mb-4">Opisz szczegółowo realizację praktyki zawodowej. Każda z sekcji musi zawierać minimum 100 znaków.</p>
 
             {% if current_user.rola == 'student' and (not sprawozdanie or sprawozdanie.status in ['Draft', 'Rejected']) %}
             <!-- Formularz Edycji dla Studenta -->
@@ -59,22 +59,26 @@
                             body: JSON.stringify(payload)
                         }).then(res => {
                             if (res.status === 201 || res.status === 200) {
-                                alert("Zapisano pomyślnie!");
-                                window.location.href = '/dashboard';
+                                showToast("Sprawozdanie zostało zapisane pomyślnie!", "success");
+                                setTimeout(() => {
+                                    window.location.href = '/dashboard';
+                                }, 1000);
                             } else {
                                 res.json().then(data => {
-                                    alert("Błąd walidacji: " + (data.error?.message || "Każda sekcja musi mieć min. 100 znaków."));
+                                    showToast("Błąd walidacji: " + (data.error?.message || "Każda sekcja musi mieć min. 100 znaków."), "error");
                                 });
                             }
+                        }).catch(err => {
+                            showToast("Wystąpił błąd sieciowy.", "error");
                         });
                     });
                 </script>
 
                 <div class="d-flex justify-content-between align-items-center mt-4">
-                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Powrót</a>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Powrót</a>
                     <div class="d-flex gap-2">
-                        <button type="submit" onclick="document.getElementById('sprawozdanie-status').value='Draft';" class="btn btn-outline-primary">Zapisz Szkic</button>
-                        <button type="submit" onclick="document.getElementById('sprawozdanie-status').value='Submitted';" class="btn btn-primary btn-primary-custom">Złóż Sprawozdanie</button>
+                        <button type="submit" onclick="document.getElementById('sprawozdanie-status').value='Draft';" class="btn btn-secondary">Zapisz Szkic</button>
+                        <button type="submit" onclick="document.getElementById('sprawozdanie-status').value='Submitted';" class="btn btn-primary">Złóż Sprawozdanie</button>
                     </div>
                 </div>
             </form>
@@ -83,31 +87,31 @@
             <!-- Tryb Podglądu i Oceny (UOPZ i inni) -->
             {% if sprawozdanie %}
             <div class="mb-4">
-                <span class="badge bg-{{ 'success' if sprawozdanie.status == 'Approved' else 'warning' if sprawozdanie.status == 'Submitted' else 'secondary' }} mb-2">
-                    Status: {{ sprawozdanie.status }}
+                <span class="badge-status badge-status-{{ sprawozdanie.status|lower }} mb-2 d-inline-block">
+                    {{ sprawozdanie.status|translate_status }}
                 </span>
-                <p class="text-muted small">Wersja sprawozdania: {{ sprawozdanie.wersja }} (z dnia {{ sprawozdanie.updated_at.strftime('%d.%m.%Y') }})</p>
+                <p class="text-secondary small">Wersja sprawozdania: {{ sprawozdanie.wersja }} (z dnia {{ sprawozdanie.updated_at.strftime('%d.%m.%Y') }})</p>
             </div>
 
-            <div class="mb-4 p-3 bg-light rounded">
-                <h6 class="fw-bold">Sekcja I: Opis struktury organizacyjnej</h6>
-                <p class="text-color" style="white-space: pre-wrap;">{{ sprawozdanie.sekcja_I }}</p>
+            <div class="mb-4 p-4 rounded" style="background-color: var(--bg-page); border: 1px solid var(--border);">
+                <h6 class="fw-bold" style="color: var(--text-primary);">Sekcja I: Opis struktury organizacyjnej</h6>
+                <p class="mb-0" style="white-space: pre-wrap; color: var(--text-primary);">{{ sprawozdanie.sekcja_I }}</p>
             </div>
 
-            <div class="mb-4 p-3 bg-light rounded">
-                <h6 class="fw-bold">Sekcja II: Opis stanowisk i zadań</h6>
-                <p class="text-color" style="white-space: pre-wrap;">{{ sprawozdanie.sekcja_II }}</p>
+            <div class="mb-4 p-4 rounded" style="background-color: var(--bg-page); border: 1px solid var(--border);">
+                <h6 class="fw-bold" style="color: var(--text-primary);">Sekcja II: Opis stanowisk i zadań</h6>
+                <p class="mb-0" style="white-space: pre-wrap; color: var(--text-primary);">{{ sprawozdanie.sekcja_II }}</p>
             </div>
 
-            <div class="mb-4 p-3 bg-light rounded">
-                <h6 class="fw-bold">Sekcja III: Podsumowanie i ocena własna</h6>
-                <p class="text-color" style="white-space: pre-wrap;">{{ sprawozdanie.sekcja_III }}</p>
+            <div class="mb-4 p-4 rounded" style="background-color: var(--bg-page); border: 1px solid var(--border);">
+                <h6 class="fw-bold" style="color: var(--text-primary);">Sekcja III: Podsumowanie i ocena własna</h6>
+                <p class="mb-0" style="white-space: pre-wrap; color: var(--text-primary);">{{ sprawozdanie.sekcja_III }}</p>
             </div>
 
             <!-- Panel Oceny dla UOPZ -->
             {% if current_user.rola == 'uopz' and sprawozdanie.status == 'Submitted' %}
-            <div class="card p-4 border-primary border-start border-4 bg-light">
-                <h5 class="fw-bold mb-3"><i class="bi bi-star-fill text-warning me-2"></i>Ocena i Weryfikacja Sprawozdania</h5>
+            <div class="p-4 rounded mb-4" style="background-color: var(--bg-page); border: 1px solid var(--border); border-left: 4px solid var(--primary) !important;">
+                <h5 class="fw-bold mb-3" style="color: var(--text-primary);"><span class="material-symbols-outlined align-middle me-2" style="color: var(--warning);">star</span>Ocena i Weryfikacja Sprawozdania</h5>
                 <form id="ocena-sprawozdania-form" data-sprawozdanie-id="{{ sprawozdanie.id }}">
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -150,21 +154,25 @@
                                 body: JSON.stringify(payload)
                             }).then(res => {
                                 if (res.ok) {
-                                    alert("Ocena została wystawiona!");
-                                    window.location.href = '/dashboard';
+                                    showToast("Ocena została wystawiona!", "success");
+                                    setTimeout(() => {
+                                        window.location.href = '/dashboard';
+                                    }, 1000);
                                 } else {
-                                    alert("Wystąpił błąd przy wystawianiu oceny.");
+                                    showToast("Wystąpił błąd przy wystawianiu oceny.", "error");
                                 }
+                            }).catch(err => {
+                                showToast("Wystąpił błąd sieciowy.", "error");
                             });
                         });
                     </script>
-                    <button type="submit" class="btn btn-primary btn-primary-custom mt-3">Zapisz ocenę</button>
+                    <button type="submit" class="btn btn-primary mt-3">Zapisz ocenę</button>
                 </form>
             </div>
             {% endif %}
             
             {% else %}
-            <p class="text-muted py-4 text-center">Student nie złożył jeszcze sprawozdania.</p>
+            <p class="text-secondary py-4 text-center">Student nie złożył jeszcze sprawozdania.</p>
             {% endif %}
             {% endif %}
         </div>

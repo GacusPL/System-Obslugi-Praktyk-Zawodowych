@@ -10,18 +10,26 @@
 {% block content %}
 <div class="row">
     <!-- Lista Zakładów -->
-    <div class="col-lg-8">
-        <div class="card card-custom">
-            <h5 class="fw-bold mb-4"><i class="bi bi-building text-primary me-2"></i>Zatwierdzone Zakłady Pracy</h5>
+    <div class="col-lg-8 col-md-12">
+        <div class="card-sopz">
+            <div class="card-sopz-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <h2 class="h2 mb-0 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">domain</span>
+                    Zatwierdzone Zakłady Pracy
+                </h2>
+                <div style="min-width: 250px;">
+                    <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Szukaj zakładu...">
+                </div>
+            </div>
             
             {% if not zaklady %}
-            <div class="text-center py-4">
-                <i class="bi bi-exclamation-circle text-warning fs-1"></i>
-                <p class="text-muted mt-2 mb-0">Brak zarejestrowanych zakładów pracy.</p>
+            <div class="text-center py-5">
+                <span class="material-symbols-outlined text-warning" style="font-size: 48px;">warning</span>
+                <p class="text-secondary mt-2 mb-0">Brak zarejestrowanych zakładów pracy.</p>
             </div>
             {% else %}
             <div class="table-responsive">
-                <table class="table align-middle">
+                <table class="table-sopz" id="zaklady-table">
                     <thead>
                         <tr>
                             <th>Nazwa i adres</th>
@@ -34,18 +42,24 @@
                         {% for z in zaklady %}
                         <tr>
                             <td>
-                                <div class="fw-semibold">{{ z.nazwa }}</div>
-                                <span class="text-muted small">{{ z.adres }}</span>
+                                <div class="fw-semibold text-primary">{{ z.nazwa }}</div>
+                                <span class="text-secondary small">{{ z.adres }}</span>
                             </td>
                             <td><code>{{ z.nip }}</code></td>
                             <td>
-                                <div>{{ z.zopz_imie }} {{ z.zopz_nazwisko }}</div>
-                                <span class="text-muted small">{{ z.zopz_stanowisko }} ({{ z.zopz_wyksztalcenie }})</span>
+                                <div class="text-primary fw-medium">{{ z.zopz_imie }} {{ z.zopz_nazwisko }}</div>
+                                <span class="text-secondary small">{{ z.zopz_stanowisko }} ({{ z.zopz_wyksztalcenie }})</span>
                             </td>
                             <td>
-                                <span class="badge bg-{{ 'success' if z.status == 'Approved' else 'danger' }}">
-                                    {{ z.status }}
-                                </span>
+                                {% if z.status == 'Approved' %}
+                                    <span class="badge-status badge-status-approved">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> Zatwierdzony
+                                    </span>
+                                {% else %}
+                                    <span class="badge-status badge-status-rejected">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">cancel</span> {{ z.status }}
+                                    </span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -57,78 +71,118 @@
     </div>
 
     <!-- Formularz Dodawania Nowego Zakładu -->
-    <div class="col-lg-4">
-        <div class="card card-custom">
-            <h5 class="fw-bold mb-3"><i class="bi bi-plus-circle text-primary me-2"></i>Dodaj Zakład Pracy</h5>
+    <div class="col-lg-4 col-md-12">
+        <div class="card-sopz">
+            <div class="card-sopz-header">
+                <h3 class="h3 mb-0 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 24px;">add_circle</span>
+                    Dodaj Zakład Pracy
+                </h3>
+            </div>
             
             <form id="zaklad-form">
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">Nazwa Zakładu</label>
-                    <input type="text" name="nazwa" class="form-control form-control-sm" required>
+                    <input type="text" name="nazwa" class="form-control" required>
                 </div>
                 
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">Adres</label>
-                    <input type="text" name="adres" class="form-control form-control-sm" required>
+                    <input type="text" name="adres" class="form-control" required>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label small fw-semibold">NIP</label>
-                    <input type="text" name="nip" class="form-control form-control-sm" required>
+                    <input type="text" name="nip" class="form-control" required>
                 </div>
 
-                <hr>
-                <h6 class="fw-bold text-muted small mb-3">Dane Opiekuna (ZOPZ)</h6>
+                <hr class="my-4">
+                <h3 class="h3 mb-3 text-secondary" style="font-size: 14px;">Dane Opiekuna (ZOPZ)</h3>
 
-                <div class="mb-2">
+                <div class="mb-3">
                     <label class="form-label small fw-semibold">Imię</label>
-                    <input type="text" name="zopz_imie" class="form-control form-control-sm" required>
-                </div>
-
-                <div class="mb-2">
-                    <label class="form-label small fw-semibold">Nazwisko</label>
-                    <input type="text" name="zopz_nazwisko" class="form-control form-control-sm" required>
-                </div>
-
-                <div class="mb-2">
-                    <label class="form-label small fw-semibold">Stanowisko</label>
-                    <input type="text" name="zopz_stanowisko" class="form-control form-control-sm" required>
+                    <input type="text" name="zopz_imie" class="form-control" required>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label small fw-semibold">Wykształcenie (wymagane wyższe/inż.)</label>
-                    <input type="text" name="zopz_wyksztalcenie" class="form-control form-control-sm" placeholder="np. Wyższe magisterskie" required>
+                    <label class="form-label small fw-semibold">Nazwisko</label>
+                    <input type="text" name="zopz_nazwisko" class="form-control" required>
                 </div>
 
-                <script>
-                    document.getElementById('zaklad-form').addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        const formData = new FormData(this);
-                        const payload = {};
-                        formData.forEach((val, key) => payload[key] = val);
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Stanowisko</label>
+                    <input type="text" name="zopz_stanowisko" class="form-control" required>
+                </div>
 
-                        fetch('/api/v1/zaklady', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(payload)
-                        }).then(res => {
-                            if (res.status === 201) {
-                                alert("Zakład pracy dodany pomyślnie!");
-                                window.location.reload();
-                            } else {
-                                res.json().then(data => {
-                                    alert("Błąd: " + (data.error?.message || "Nie udało się dodać zakładu. Upewnij się, że NIP jest unikalny a opiekun ma wykształcenie wyższe."));
-                                });
-                            }
-                        });
-                    });
-                </script>
+                <div class="mb-4">
+                    <label class="form-label small fw-semibold">Wykształcenie (wymagane wyższe/inż.)</label>
+                    <input type="text" name="zopz_wyksztalcenie" class="form-control" placeholder="np. Wyższe magisterskie" required>
+                </div>
 
-                <button type="submit" class="btn btn-sm btn-primary w-100 mt-2">Zapisz Zakład</button>
+                <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                    <span class="material-symbols-outlined">save</span> Zapisz Zakład
+                </button>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        initPagination('zaklady-table', 10);
+        initTableSearch('zaklady-table', 'search-input');
+        
+        document.getElementById('zaklad-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const payload = {};
+            formData.forEach((val, key) => payload[key] = val);
+            
+            const btn = this.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Zapisywanie...`;
+
+            fetch('/api/v1/zaklady', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            }).then(res => {
+                if (res.status === 201) {
+                    if (window.showToast) {
+                        window.showToast('Zakład pracy dodany pomyślnie!', 'success');
+                    }
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    res.json().then(data => {
+                        const errMsg = data.error?.message || "Nie udało się dodać zakładu. Upewnij się, że NIP jest unikalny a opiekun ma wykształcenie wyższe.";
+                        if (window.showToast) {
+                            window.showToast(errMsg, 'error');
+                        } else {
+                            alert("Błąd: " + errMsg);
+                        }
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                    }).catch(() => {
+                        if (window.showToast) {
+                            window.showToast('Wystąpił błąd serwera.', 'error');
+                        }
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                    });
+                }
+            }).catch(err => {
+                if (window.showToast) {
+                    window.showToast('Błąd połączenia z serwerem.', 'error');
+                }
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            });
+        });
+    });
+</script>
 {% endblock %}

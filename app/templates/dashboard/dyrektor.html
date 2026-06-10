@@ -3,43 +3,97 @@
 {% block title %}Dashboard Dyrektora - SOPZ{% endblock %}
 
 {% block breadcrumb_items %}
-<li class="breadcrumb-item active" aria-current="page">Dashboard Dyrektora</li>
+<li class="active">Dashboard Dyrektora</li>
 {% endblock %}
 
 {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h2 mb-1">Panel Dyrektora Instytutu</h1>
+        <p class="text-secondary mb-0">Rola: <span class="badge bg-primary-light text-primary">Dyrektor</span></p>
+    </div>
+</div>
+
+<!-- Stat cards -->
+<div class="row">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon-wrapper bg-warning-light text-warning">
+                <span class="material-symbols-outlined">pending_actions</span>
+            </div>
+            <div class="stat-details">
+                <h2>{{ wnioski_alternatywne|length }}</h2>
+                <p>Wnioski oczekujące</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon-wrapper bg-success-light text-success">
+                <span class="material-symbols-outlined">assignment_turned_in</span>
+            </div>
+            <div class="stat-details">
+                <h2>-</h2>
+                <p>Rozpatrzone wnioski</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-icon-wrapper bg-primary-light text-primary">
+                <span class="material-symbols-outlined">verified</span>
+            </div>
+            <div class="stat-details">
+                <h2>-</h2>
+                <p>Zaakceptowane ścieżki</p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-lg-12">
-        <div class="card card-custom">
-            <h5 class="fw-bold mb-4"><i class="bi bi-file-earmark-diff text-primary me-2"></i>Wnioski o zaliczenie alternatywnej ścieżki praktyk (Załącznik 4b)</h5>
+        <div class="card-sopz">
+            <div class="card-sopz-header">
+                <h3>Wnioski o zaliczenie alternatywnej ścieżki praktyk (Załącznik 4b)</h3>
+            </div>
             
             {% if not wnioski_alternatywne %}
-            <div class="text-center py-4">
-                <i class="bi bi-check-circle text-success fs-1"></i>
-                <p class="text-muted mt-2 mb-0">Brak nowych wniosków alternatywnych do rozpatrzenia.</p>
+            <div class="empty-state py-4 border-0 bg-transparent">
+                <span class="material-symbols-outlined text-success" style="font-size: 48px;">check_circle</span>
+                <h3>Brak nowych wniosków</h3>
+                <p>Wszystkie wnioski alternatywne zostały rozpatrzone.</p>
             </div>
             {% else %}
             <div class="table-responsive">
-                <table class="table align-middle">
+                <table class="table-sopz" id="dyrektor-wnioski-table">
                     <thead>
                         <tr>
                             <th>Student</th>
                             <th>Typ wniosku</th>
-                            <th>Data Złożenia</th>
+                            <th>Data złożenia</th>
                             <th>Uzasadnienie</th>
-                            <th>Skany</th>
-                            <th>Decyzja Dyrektora</th>
+                            <th>Dokumenty</th>
+                            <th>Decyzja</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for w in wnioski_alternatywne %}
                         <tr id="wniosek-row-{{ w.id }}">
                             <td>
-                                <div class="fw-semibold">{{ w.student.uzytkownik.imie }} {{ w.student.uzytkownik.nazwisko }}</div>
-                                <span class="text-muted small">Album: {{ w.student.nr_albumu }}</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="table-avatar">
+                                        {{ w.student.uzytkownik.imie[0] }}{{ w.student.uzytkownik.nazwisko[0] }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">{{ w.student.uzytkownik.imie }} {{ w.student.uzytkownik.nazwisko }}</div>
+                                        <span class="text-secondary small">Album: {{ w.student.nr_albumu }}</span>
+                                    </div>
+                                </div>
                             </td>
                             <td>
-                                <span class="badge bg-info text-dark">
-                                    {{ 'Praca zawodowa' if w.typ == 'praca_zawodowa' else 'Staż' if w.typ == 'staz' else 'Działalność gospodarcza' }}
+                                <span class="badge bg-primary-light text-primary text-uppercase" style="font-size: 11px;">
+                                    {% if w.typ == 'praca_zawodowa' %}Praca zawodowa{% elif w.typ == 'staz' %}Staż{% else %}DG / Inne{% endif %}
                                 </span>
                             </td>
                             <td>{{ w.created_at.strftime('%d.%m.%Y') }}</td>
@@ -52,22 +106,17 @@
                                 {% if w.skany %}
                                     <div class="d-flex flex-column gap-1">
                                         {% for skan in w.skany %}
-                                        <a href="/api/v1/files/download/{{ skan.nazwa_pliku }}" class="btn btn-xs btn-outline-secondary py-1 px-2 text-start" style="font-size: 0.75rem;" target="_blank">
-                                            <i class="bi bi-file-earmark-pdf me-1"></i> {{ skan.typ_dokumentu }}
+                                        <a href="/api/v1/files/download/{{ skan.nazwa_pliku }}" class="btn btn-secondary btn-sm text-start py-1 px-2" style="font-size: 11px;" target="_blank">
+                                            <span class="material-symbols-outlined align-middle me-1" style="font-size: 14px;">picture_as_pdf</span> {{ skan.typ_dokumentu }}
                                         </a>
                                         {% endfor %}
                                     </div>
                                 {% else %}
-                                    <span class="text-muted small">Brak skanów</span>
+                                    <span class="text-secondary small">Brak skanów</span>
                                 {% endif %}
                             </td>
                             <td>
-                                <form hx-post="/api/v1/komisja/ocena" 
-                                      hx-headers='{"Content-Type": "application/json"}'
-                                      hx-target="#wniosek-row-{{ w.id }}"
-                                      hx-swap="outerHTML"
-                                      class="d-flex flex-column gap-2" 
-                                      style="min-width: 250px;">
+                                <form id="form-wniosek-{{ w.id }}" class="d-flex flex-column gap-2" style="min-width: 220px;">
                                     <select name="decyzja" class="form-select form-select-sm" required>
                                         <option value="">Wybierz decyzję...</option>
                                         <option value="zgoda_pelna">Zgoda pełna</option>
@@ -76,9 +125,8 @@
                                     </select>
                                     <textarea name="opinia_komisji" class="form-control form-control-sm" rows="2" placeholder="Opinia Komisji..." required></textarea>
                                     
-                                    <!-- Dynamiczny JSON parser dla HTMX form submission -->
                                     <script>
-                                        document.currentScript.parentElement.addEventListener('submit', function(e) {
+                                        document.getElementById('form-wniosek-{{ w.id }}').addEventListener('submit', function(e) {
                                             e.preventDefault();
                                             const formData = new FormData(this);
                                             const payload = {
@@ -88,24 +136,25 @@
                                                 oceny: Array.from({length: 13}, (_, i) => ({efekt_nr: i + 1, uzyskano: true}))
                                             };
                                             
-                                            // Wysyłamy json
                                             fetch(`/api/v1/komisja/ocena`, {
                                                 method: 'POST',
                                                 headers: {
-                                                    'Content-Type': 'application/json'
+                                                    'Content-Type': 'application/json',
+                                                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                                                 },
                                                 body: JSON.stringify(payload)
                                             }).then(res => {
                                                 if(res.ok) {
+                                                    showToast("Decyzja została zapisana pomyślnie.", "success");
                                                     document.getElementById("wniosek-row-{{ w.id }}").remove();
                                                 } else {
-                                                    alert("Wystąpił błąd przy zapisywaniu decyzji.");
+                                                    showToast("Wystąpił błąd przy zapisywaniu decyzji.", "error");
                                                 }
                                             });
                                         });
                                     </script>
-                                    <button type="submit" class="btn btn-sm btn-success w-100">
-                                        <i class="bi bi-save me-1"></i> Zapisz decyzję
+                                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                                        Zapisz decyzję
                                     </button>
                                 </form>
                             </td>
@@ -118,4 +167,12 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        initPagination('dyrektor-wnioski-table', 10);
+    });
+</script>
 {% endblock %}

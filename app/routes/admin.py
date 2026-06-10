@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
-from flask_login import login_required
+from flask_login import login_required, current_user
 from app import db
 from app.models import Uzytkownik
 from app.decorators import admin_required
@@ -106,3 +106,25 @@ def raporty_view():
     years = [y[0] for y in years if y[0]]
     
     return render_template('admin/raporty.html', stats=stats_dict, years=years)
+
+@admin_bp.route('/przypisania', methods=['GET'])
+@login_required
+@admin_required
+def przypisania_uopz_view():
+    from app.models import Praktyka, Uzytkownik
+    uopz_list = Uzytkownik.query.filter_by(rola='uopz').all()
+    praktyki = Praktyka.query.all()
+    return render_template('admin/przypisania.html', uopz_list=uopz_list, praktyki=praktyki)
+
+@admin_bp.route('/przedluzenie/<int:praktyka_id>', methods=['GET'])
+@login_required
+def przedluzenie_view(praktyka_id):
+    from app.models import Praktyka
+    from datetime import timedelta
+    praktyka = Praktyka.query.get_or_404(praktyka_id)
+    if current_user.rola == 'uopz' and praktyka.uopz_id != current_user.id:
+        abort(403)
+    elif current_user.rola not in ['uopz', 'administrator']:
+        abort(403)
+    max_data_do = praktyka.termin_do + timedelta(days=31)
+    return render_template('admin/przedluzenie.html', praktyka=praktyka, max_data_do=max_data_do)

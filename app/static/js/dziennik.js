@@ -33,7 +33,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.location.reload();
                 } else {
                     res.json().then(data => {
-                        showGlobalNotification("Błąd: " + (data.error?.message || "Nie udało się dodać wpisu."), "danger");
+                        if (window.showToast) {
+                            window.showToast("Błąd: " + (data.error?.message || "Nie udało się dodać wpisu."), "error");
+                        } else {
+                            alert("Błąd: " + (data.error?.message || "Nie udało się dodać wpisu."));
+                        }
                     });
                 }
             });
@@ -109,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const checkedCount = document.querySelectorAll('.wpis-select:checked').length;
         if (checkedCount > 0) {
             batchBar.classList.remove('d-none');
-            selectedCountSpan.innerHTML = `<i class="bi bi-check2-all me-1"></i>Wybrano: <strong>${checkedCount}</strong> wpisów`;
+            selectedCountSpan.innerHTML = `<span class="material-symbols-outlined align-middle me-1" style="font-size: 20px;">checklist</span>Wybrano: <strong>${checkedCount}</strong> wpisów`;
         } else {
             batchBar.classList.add('d-none');
         }
@@ -139,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const id = this.getAttribute('data-id');
             patchWpisStatus(id, 'Approved', '', (success) => {
                 if (success) {
-                    updateRowUI(id, 'Approved', 'Zatwierdzony', 'bi-check-circle-fill', 'success-light');
+                    updateRowUI(id, 'Approved', 'Zatwierdzony', 'check_circle');
                 }
             });
         });
@@ -160,13 +164,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const id = rejectWpisIdInput.value;
             const comment = rejectKomentarzInput.value.trim();
             if (!comment) {
-                alert("Komentarz jest wymagany!");
+                if (window.showToast) {
+                    window.showToast("Komentarz jest wymagany!", "warning");
+                } else {
+                    alert("Komentarz jest wymagany!");
+                }
                 return;
             }
             if (rejectModal) rejectModal.hide();
             patchWpisStatus(id, 'Rejected', comment, (success) => {
                 if (success) {
-                    updateRowUI(id, 'Rejected', 'Odrzucony', 'bi-exclamation-triangle-fill', 'danger-light', comment);
+                    updateRowUI(id, 'Rejected', 'Odrzucony', 'cancel', comment);
                 }
             });
         });
@@ -185,13 +193,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             executeBatchStatus(selectedIds, 'Approved', comment)
                 .then(() => {
-                    showGlobalNotification(`Pomyślnie zatwierdzono ${selectedIds.length} wpisów!`, "success");
+                    if (window.showToast) {
+                        window.showToast(`Pomyślnie zatwierdzono ${selectedIds.length} wpisów!`, "success");
+                    }
                     setTimeout(() => window.location.reload(), 1000);
                 })
                 .catch(err => {
-                    showGlobalNotification("Wystąpił błąd podczas masowego zatwierdzania.", "danger");
+                    if (window.showToast) {
+                        window.showToast("Wystąpił błąd podczas masowego zatwierdzania.", "error");
+                    }
                     btnBatchApprove.disabled = false;
-                    btnBatchApprove.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>Zatwierdź zaznaczone`;
+                    btnBatchApprove.innerHTML = `<span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span> Zatwierdź zaznaczone`;
                 });
         });
     }
@@ -204,7 +216,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (selectedIds.length === 0) return;
             if (!comment) {
-                showGlobalNotification("Podanie komentarza jest wymagane przy masowym odrzucaniu!", "warning");
+                if (window.showToast) {
+                    window.showToast("Podanie komentarza jest wymagane przy masowym odrzucaniu!", "warning");
+                } else {
+                    alert("Podanie komentarza jest wymagane przy masowym odrzucaniu!");
+                }
                 if (batchCommentInput) batchCommentInput.focus();
                 return;
             }
@@ -214,13 +230,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             executeBatchStatus(selectedIds, 'Rejected', comment)
                 .then(() => {
-                    showGlobalNotification(`Odrzucono ${selectedIds.length} wpisów.`, "info");
+                    if (window.showToast) {
+                        window.showToast(`Odrzucono ${selectedIds.length} wpisów.`, "info");
+                    }
                     setTimeout(() => window.location.reload(), 1000);
                 })
                 .catch(err => {
-                    showGlobalNotification("Wystąpił błąd podczas masowego odrzucania.", "danger");
+                    if (window.showToast) {
+                        window.showToast("Wystąpił błąd podczas masowego odrzucania.", "error");
+                    }
                     btnBatchReject.disabled = false;
-                    btnBatchReject.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>Odrzuć zaznaczone`;
+                    btnBatchReject.innerHTML = `<span class="material-symbols-outlined" style="font-size: 16px;">cancel</span> Odrzuć zaznaczone`;
                 });
         });
     }
@@ -248,12 +268,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 callback(true);
             } else {
-                showGlobalNotification("Błąd: " + (data.error?.message || "Wystąpił błąd"), "danger");
+                if (window.showToast) {
+                    window.showToast("Błąd: " + (data.error?.message || "Wystąpił błąd"), "error");
+                }
                 callback(false);
             }
         })
         .catch(err => {
-            showGlobalNotification("Błąd połączenia z serwerem.", "danger");
+            if (window.showToast) {
+                window.showToast("Błąd połączenia z serwerem.", "error");
+            }
             callback(false);
         });
     }
@@ -282,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return chain;
     }
 
-    function updateRowUI(id, status, statusTextPl, iconClass, badgeTypeClass, comment = '') {
+    function updateRowUI(id, status, statusTextPl, iconClass, comment = '') {
         const row = document.getElementById(`wpis-row-${id}`);
         if (!row) return;
 
@@ -290,12 +314,11 @@ document.addEventListener('DOMContentLoaded', function() {
         row.setAttribute('data-status', status);
 
         // Update status badge cell
-        const badgeCell = row.querySelector('.badge-custom').parentElement;
+        const badgeCell = row.querySelector('.badge-status');
         if (badgeCell) {
+            badgeCell.className = `badge-status badge-status-${status.toLowerCase()}`;
             badgeCell.innerHTML = `
-                <span class="badge-custom badge-custom-${status.toLowerCase()}">
-                    <i class="bi ${iconClass} me-1"></i> ${statusTextPl}
-                </span>
+                <span class="material-symbols-outlined" style="font-size: 14px;">${iconClass}</span> ${statusTextPl}
             `;
         }
 
@@ -310,7 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Remove actions buttons
         const actionCell = row.querySelector('td:last-child');
         if (actionCell) {
-            actionCell.innerHTML = `<span class="text-muted small"><i class="bi bi-patch-check-fill text-success me-1"></i>Zweryfikowany</span>`;
+            actionCell.innerHTML = `<span class="text-secondary small d-flex align-items-center gap-1 justify-content-center"><span class="material-symbols-outlined text-success" style="font-size: 16px;">verified</span> Zweryfikowany</span>`;
         }
 
         // Add comment to description cell if present
@@ -322,8 +345,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (oldComment) oldComment.remove();
 
                 const commentDiv = document.createElement('div');
-                commentDiv.className = 'text-danger small mt-1 py-1 px-2 bg-danger-subtle rounded-2 d-inline-block';
-                commentDiv.innerHTML = `<i class="bi bi-chat-left-text-fill me-1"></i>Komentarz ZOPZ: ${comment}`;
+                commentDiv.className = 'text-danger small mt-1 py-1 px-2 bg-danger-light rounded d-inline-block';
+                commentDiv.innerHTML = `<span class="material-symbols-outlined align-middle me-1" style="font-size: 14px;">chat_bubble</span>Komentarz ZOPZ: ${comment}`;
                 opisCell.appendChild(commentDiv);
             }
         } else {
@@ -336,35 +359,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         updateBatchBar();
-    }
-
-    function showGlobalNotification(message, type = "success") {
-        // Find or create notification container
-        let container = document.getElementById('notification-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'notification-container';
-            container.style.position = 'fixed';
-            container.style.top = '20px';
-            container.style.right = '20px';
-            container.style.zIndex = '9999';
-            document.body.appendChild(container);
-        }
-
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show shadow-lg border-0`;
-        alertDiv.role = 'alert';
-        alertDiv.innerHTML = `
-            <i class="bi ${type === 'danger' ? 'bi-exclamation-triangle-fill' : type === 'warning' ? 'bi-exclamation-circle-fill' : 'bi-check-circle-fill'} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        `;
-        container.appendChild(alertDiv);
-
-        // Auto dismiss after 4 seconds
-        setTimeout(() => {
-            const bsAlert = new bootstrap.Alert(alertDiv);
-            bsAlert.close();
-        }, 4000);
     }
 });

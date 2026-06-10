@@ -10,14 +10,11 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card card-custom">
-            <h3 class="fw-bold mb-3"><i class="bi bi-file-earmark-plus text-primary me-2"></i>Zgłoszenie Praktyki Zawodowej (P1)</h3>
-            <p class="text-muted mb-4">Wypełnij poniższy formularz, aby zgłosić chęć odbycia praktyki zawodowej w wybranym zakładzie pracy.</p>
+        <div class="card-sopz">
+            <h3 class="mb-2"><span class="material-symbols-outlined align-middle me-2" style="color: var(--primary);">assignment</span>Zgłoszenie Praktyki Zawodowej (P1)</h3>
+            <p class="text-secondary mb-4">Wypełnij poniższy formularz, aby zgłosić chęć odbycia praktyki zawodowej w wybranym zakładzie pracy.</p>
 
-            <form hx-post="/api/v1/praktyki" 
-                  hx-headers='{"Content-Type": "application/json"}'
-                  hx-swap="none"
-                  id="zgloszenie-form">
+            <form id="zgloszenie-form">
                 
                 <!-- Wybór zakładu pracy -->
                 <div class="mb-4">
@@ -32,36 +29,36 @@
                 </div>
 
                 <!-- Nowy zakład pracy (domyślnie ukryty) -->
-                <div id="new_zaklad_fields" class="p-3 bg-light rounded-3 mb-4 d-none">
-                    <h6 class="fw-bold mb-3"><i class="bi bi-building-add text-secondary me-2"></i>Dane Nowego Zakładu Pracy</h6>
+                <div id="new_zaklad_fields" class="p-4 rounded-3 mb-4 d-none" style="background-color: var(--bg-page); border: 1px solid var(--border);">
+                    <h6 class="fw-bold mb-3" style="color: var(--text-primary);"><span class="material-symbols-outlined align-middle me-2" style="font-size: 20px;">domain_add</span>Dane Nowego Zakładu Pracy</h6>
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">Nazwa firmy</label>
-                            <input type="text" name="new_zaklad_nazwa" class="form-control form-control-sm">
+                            <input type="text" name="new_zaklad_nazwa" class="form-control">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">NIP</label>
-                            <input type="text" name="new_zaklad_nip" class="form-control form-control-sm">
+                            <input type="text" name="new_zaklad_nip" class="form-control">
                         </div>
                         <div class="col-12">
                             <label class="form-label">Adres siedziby</label>
-                            <input type="text" name="new_zaklad_adres" class="form-control form-control-sm">
+                            <input type="text" name="new_zaklad_adres" class="form-control">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Imię Opiekuna (ZOPZ)</label>
-                            <input type="text" name="new_zopz_imie" class="form-control form-control-sm">
+                            <input type="text" name="new_zopz_imie" class="form-control">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Nazwisko Opiekuna (ZOPZ)</label>
-                            <input type="text" name="new_zopz_nazwisko" class="form-control form-control-sm">
+                            <input type="text" name="new_zopz_nazwisko" class="form-control">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Stanowisko Opiekuna</label>
-                            <input type="text" name="new_zopz_stanowisko" class="form-control form-control-sm">
+                            <input type="text" name="new_zopz_stanowisko" class="form-control">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Wykształcenie Opiekuna</label>
-                            <input type="text" name="new_zopz_wyksztalcenie" class="form-control form-control-sm">
+                            <input type="text" name="new_zopz_wyksztalcenie" class="form-control">
                         </div>
                     </div>
                 </div>
@@ -94,7 +91,6 @@
                     </div>
                 </div>
 
-                <!-- Dynamiczny JSON parser dla HTMX form submission -->
                 <script>
                     document.getElementById('zaklad_select').addEventListener('change', function() {
                         const newFields = document.getElementById('new_zaklad_fields');
@@ -112,7 +108,6 @@
                         e.preventDefault();
                         const formData = new FormData(this);
                         
-                        // Konstruujemy payload zgodnie z API /api/v1/praktyki
                         let payload = {
                             uopz_id: parseInt(formData.get('uopz_id')),
                             termin_od: formData.get('termin_od'),
@@ -142,19 +137,24 @@
                             body: JSON.stringify(payload)
                         }).then(res => {
                             if (res.status === 201) {
-                                window.location.href = '/dashboard';
+                                showToast("Zgłoszenie zostało wysłane pomyślnie!", "success");
+                                setTimeout(() => {
+                                    window.location.href = '/dashboard';
+                                }, 1000);
                             } else {
                                 res.json().then(data => {
-                                    alert("Błąd: " + (data.error?.message || "Nieznany błąd serwera. Sprawdź format danych (np. NIP)."));
+                                    showToast("Błąd: " + (data.error?.message || "Nieznany błąd serwera. Sprawdź format danych (np. NIP)."), "error");
                                 });
                             }
+                        }).catch(err => {
+                            showToast("Wystąpił błąd sieciowy.", "error");
                         });
                     });
                 </script>
 
                 <div class="d-flex justify-content-between align-items-center mt-4">
-                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Anuluj</a>
-                    <button type="submit" class="btn btn-primary btn-primary-custom">Złóż Zgłoszenie</button>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Anuluj</a>
+                    <button type="submit" class="btn btn-primary">Złóż Zgłoszenie</button>
                 </div>
             </form>
         </div>

@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Przypisania UOPZ - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Przypisania UOPZ</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card-sopz">
+            <div class="card-sopz-header">
+                <h2 class="h2 mb-0 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">link</span>
+                    Masowe przypisywanie Opiekunów Uczelnianych (UOPZ)
+                </h2>
+            </div>
+            
+            <p class="text-secondary mb-4">Wybierz opiekuna uczelnianego oraz zaznacz studentów, których praktyki mają zostać do niego przypisane.</p>
+
+            <form id="przypisania-form">
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Wybierz Opiekuna Uczelnianego (UOPZ)</label>
+                        <select name="uopz_id" class="form-select" required>
+                            <option value="">Wybierz opiekuna...</option>
+                            {% for uopz in uopz_list %}
+                                <option value="{{ uopz.id }}">{{ uopz.imie }} {{ uopz.nazwisko }} ({{ uopz.email }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h3 class="h3 mb-0 text-primary" style="font-size: 16px;">Wybierz Studentów</h3>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-secondary py-1 px-2" id="select-all-btn">Zaznacz wszystkich</button>
+                            <button type="button" class="btn btn-sm btn-secondary py-1 px-2" id="deselect-all-btn">Odznacz wszystkich</button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table-sopz">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;" class="text-center">Wybór</th>
+                                    <th>Student</th>
+                                    <th>Album</th>
+                                    <th>Aktualny UOPZ</th>
+                                    <th>Zakład Pracy</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for praktyka in praktyki %}
+                                <tr>
+                                    <td class="text-center">
+                                        <input type="checkbox" class="form-check-input student-checkbox" name="studenci_ids" value="{{ praktyka.student.id }}">
+                                    </td>
+                                    <td class="fw-semibold text-primary">
+                                        {{ praktyka.student.uzytkownik.imie }} {{ praktyka.student.uzytkownik.nazwisko }}
+                                    </td>
+                                    <td>{{ praktyka.student.nr_albumu }}</td>
+                                    <td>
+                                        {% if praktyka.uopz %}
+                                            <span class="text-color fw-medium">{{ praktyka.uopz.imie }} {{ praktyka.uopz.nazwisko }}</span>
+                                        {% else %}
+                                            <span class="text-secondary small italic">Nieprzypisany</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small text-secondary">
+                                        {{ praktyka.zaklad_pracy.nazwa if praktyka.zaklad_pracy else 'Brak' }}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-secondary py-4">
+                                        Brak aktywnych praktyk bez przypisanego opiekuna.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Powrót</a>
+                    <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+                        <span class="material-symbols-outlined">save</span> Przypisz opiekuna
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('select-all-btn').addEventListener('click', function() {
+        document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = true);
+    });
+
+    document.getElementById('deselect-all-btn').addEventListener('click', function() {
+        document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = false);
+    });
+
+    document.getElementById('przypisania-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const uopzId = formData.get('uopz_id');
+        
+        let studenciIds = [];
+        document.querySelectorAll('.student-checkbox:checked').forEach(cb => {
+            studenciIds.push(parseInt(cb.value));
+        });
+
+        if (!uopzId) {
+            if (window.showToast) {
+                window.showToast('Proszę wybrać opiekuna uczelnianego.', 'error');
+            } else {
+                alert('Proszę wybrać opiekuna uczelnianego.');
+            }
+            return;
+        }
+
+        if (studenciIds.length === 0) {
+            if (window.showToast) {
+                window.showToast('Proszę zaznaczyć przynajmniej jednego studenta.', 'error');
+            } else {
+                alert('Proszę zaznaczyć przynajmniej jednego studenta.');
+            }
+            return;
+        }
+
+        const btn = this.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Zapisywanie...`;
+
+        const payload = {
+            uopz_id: parseInt(uopzId),
+            studenci_ids: studenciIds
+        };
+
+        fetch('/api/v1/przypisania', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        }).then(res => {
+            if (res.ok) {
+                if (window.showToast) {
+                    window.showToast('Pomyślnie przypisano opiekuna!', 'success');
+                }
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1000);
+            } else {
+                res.json().then(data => {
+                    const msg = data.error?.message || 'Wystąpił błąd podczas przypisywania opiekuna.';
+                    if (window.showToast) {
+                        window.showToast(msg, 'error');
+                    } else {
+                        alert('Błąd: ' + msg);
+                    }
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }).catch(() => {
+                    if (window.showToast) {
+                        window.showToast('Wystąpił błąd serwera.', 'error');
+                    }
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                });
+            }
+        }).catch(err => {
+            if (window.showToast) {
+                window.showToast('Błąd połączenia z serwerem.', 'error');
+            }
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+    });
+</script>
+{% endblock %}

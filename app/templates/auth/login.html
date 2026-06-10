@@ -6,27 +6,28 @@
     <title>Logowanie - System Obsługi Praktyk Zawodowych ANS Elbląg</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Fonts: Outfit (Display) & Plus Jakarta Sans (Body) -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts: Outfit (Display) & Inter (Body) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Google Material Symbols Outlined -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <style>
         :root {
-            --primary: #074b88;
-            --primary-hover: #053b6c;
-            --primary-light: rgba(7, 75, 136, 0.08);
-            --bg-main: #f8fafc;
-            --text-color: #0f172a;
-            --text-muted: #64748b;
-            --border-color: #e2e8f0;
-            --danger: #e11d48;
-            --danger-light: rgba(225, 29, 72, 0.08);
+            --primary: #00519e;
+            --primary-dark: #003D73;
+            --primary-light: #E8F0FE;
+            --bg-page: #F5F6FA;
+            --bg-card: #FFFFFF;
+            --text-primary: #1A1A2E;
+            --text-secondary: #6B7280;
+            --border: #E5E7EB;
+            --danger: #DC2626;
+            --danger-light: #FEF2F2;
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-main);
-            color: var(--text-color);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-primary);
             margin: 0;
             min-height: 100vh;
             display: flex;
@@ -38,28 +39,18 @@
             min-height: 100vh;
         }
 
-        /* Left Side: Brand Showcase */
+        /* Left Side: Hero image with overlay */
         .brand-section {
-            width: 55%;
-            background: linear-gradient(135deg, #052c52 0%, #074b88 100%);
+            width: 50%;
+            background: linear-gradient(135deg, rgba(0, 81, 158, 0.9), rgba(0, 61, 115, 0.95)), url("{{ url_for('static', filename='img/hero-login.png') }}");
+            background-size: cover;
+            background-position: center;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             padding: 60px;
             color: #ffffff;
             position: relative;
-            overflow: hidden;
-        }
-
-        .brand-section::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
-            pointer-events: none;
         }
 
         .brand-logo img {
@@ -78,45 +69,22 @@
             font-size: 2.8rem;
             line-height: 1.2;
             margin-bottom: 20px;
-            background: linear-gradient(to right, #ffffff, #cfebff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .brand-features {
-            list-style: none;
-            padding: 0;
-            margin: 30px 0 0 0;
-        }
-
-        .brand-features li {
-            margin-bottom: 15px;
-            font-size: 1.05rem;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            opacity: 0.9;
-        }
-
-        .brand-features li i {
-            color: #38bdf8;
-            font-size: 1.2rem;
         }
 
         .brand-footer {
             font-size: 0.85rem;
-            opacity: 0.6;
+            opacity: 0.7;
             z-index: 10;
         }
 
         /* Right Side: Form Container */
         .form-section {
-            width: 45%;
+            width: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 40px;
-            background-color: #ffffff;
+            background-color: var(--bg-card);
         }
 
         .login-card {
@@ -131,39 +99,35 @@
         }
 
         .btn-microsoft {
-            background-color: #2f2f2f;
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background-color: #2F2F2F;
+            color: #FFFFFF;
             font-weight: 600;
             padding: 14px 24px;
-            border-radius: 12px;
-            transition: all 0.25s ease;
+            border-radius: 6px;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
             width: 100%;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             text-decoration: none;
+            border: none;
         }
 
         .btn-microsoft:hover {
             background-color: #404040;
-            border-color: rgba(255, 255, 255, 0.25);
-            color: #ffffff;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+            color: #FFFFFF;
         }
 
         /* Dev Panel Styling */
         .dev-panel {
-            margin-top: 35px;
-            padding-top: 25px;
-            border-top: 1px dashed var(--border-color);
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px dashed var(--border);
         }
 
         .dev-title {
-            font-size: 0.85rem;
+            font-size: 12px;
             color: var(--danger);
             font-weight: 700;
             text-transform: uppercase;
@@ -175,28 +139,28 @@
         }
 
         .dev-user-list {
-            max-height: 220px;
+            max-height: 200px;
             overflow-y: auto;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
             padding: 6px;
-            background-color: var(--bg-main);
+            background-color: var(--bg-page);
         }
 
         .btn-dev {
-            font-size: 0.8rem;
-            padding: 10px 14px;
-            background-color: #ffffff;
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            border-radius: 8px;
+            font-size: 13px;
+            padding: 8px 12px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 6px;
             text-align: left;
             transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: space-between;
             width: 100%;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             text-decoration: none;
         }
 
@@ -206,38 +170,34 @@
             color: var(--primary);
         }
 
-        .btn-dev strong {
-            color: var(--text-color);
-        }
-
         .alert-custom {
             background-color: var(--danger-light);
-            border: 1px solid rgba(225, 29, 72, 0.2);
+            border: 1px solid rgba(220, 38, 38, 0.2);
             color: var(--danger);
-            border-radius: 12px;
-            font-size: 0.9rem;
-            padding: 14px;
-            margin-bottom: 24px;
+            border-radius: 6px;
+            font-size: 14px;
+            padding: 12px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         /* Mobile Adjustments */
-        @media (max-width: 992px) {
+        @media (max-width: 991px) {
             .brand-section {
                 display: none;
             }
             .form-section {
                 width: 100%;
-                background-color: var(--bg-main);
+                background-color: var(--bg-page);
             }
             .login-card {
-                background-color: #ffffff;
-                padding: 40px;
-                border-radius: 20px;
-                border: 1px solid var(--border-color);
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+                background-color: var(--bg-card);
+                padding: 32px;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07);
             }
         }
     </style>
@@ -248,19 +208,12 @@
     <!-- Left Side: Brand Showcase -->
     <div class="brand-section">
         <div class="brand-logo">
-            <img src="{{ url_for('static', filename='img/logo-ans-poziom.png') }}" alt="Logo ANS Elbląg">
+            <img src="{{ url_for('static', filename='img/logo-ans-web.png') }}" alt="Logo ANS Elbląg">
         </div>
         
         <div class="brand-content">
-            <h1 class="brand-title">SOPZ</h1>
-            <p class="lead opacity-75">System Obsługi Praktyk Zawodowych dla studentów i opiekunów Akademii Nauk Stosowanych w Elblągu.</p>
-            
-            <ul class="brand-features">
-                <li><i class="bi bi-patch-check-fill"></i> Szybka rejestracja i weryfikacja wniosków</li>
-                <li><i class="bi bi-book-fill"></i> Elektroniczny dziennik praktyk (120 dni)</li>
-                <li><i class="bi bi-file-earmark-pdf-fill"></i> Automatyczne generowanie dokumentacji PDF</li>
-                <li><i class="bi bi-shield-fill-check"></i> Pełna kontrola efektów uczenia się</li>
-            </ul>
+            <h1 class="brand-title">System Obsługi Praktyk Zawodowych</h1>
+            <p class="lead opacity-75">Platforma do zarządzania praktykami studenckimi w Akademii Nauk Stosowanych w Elblągu.</p>
         </div>
         
         <div class="brand-footer">
@@ -273,22 +226,23 @@
         <div class="login-card">
             <!-- Mobile Brand Header -->
             <div class="d-lg-none text-center mb-4">
-                <img src="{{ url_for('static', filename='img/logo-ans-poziom.png') }}" alt="Logo ANS Elbląg" class="mb-3" style="max-height: 40px;">
+                <img src="{{ url_for('static', filename='img/favicon-ans.png') }}" alt="Logo ANS Elbląg" class="mb-2" style="max-height: 48px;">
                 <h3 class="fw-bold mb-1" style="color: var(--primary);">SOPZ</h3>
-                <p class="text-muted small">System Obsługi Praktyk Zawodowych</p>
+                <p class="text-secondary small">System Obsługi Praktyk Zawodowych</p>
             </div>
 
             <!-- Desktop Header -->
-            <div class="d-none d-lg-block login-header mb-4">
-                <h2>Zaloguj się</h2>
-                <p class="text-muted small">Witaj w portalu SOPZ. Zaloguj się za pomocą konta uczelnianego.</p>
+            <div class="d-none d-lg-block mb-4">
+                <img src="{{ url_for('static', filename='img/favicon-ans.png') }}" alt="Logo ANS Elbląg" class="mb-3" style="max-height: 48px;">
+                <h2>Zaloguj się do systemu</h2>
+                <p class="text-secondary small">Użyj swojego konta uczelnianego Microsoft</p>
             </div>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
                     {% for category, message in messages %}
                         <div class="alert alert-custom" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span class="material-symbols-outlined">error</span>
                             <div>{{ message }}</div>
                         </div>
                     {% endfor %}
@@ -297,7 +251,7 @@
 
             <div class="mb-4">
                 <a href="{{ url_for('auth.login', microsoft='true') }}" class="btn btn-microsoft">
-                    <svg width="20" height="20" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="18" height="18" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
                         <rect x="0" y="0" width="11" height="11" fill="#f25022"/>
                         <rect x="12" y="0" width="11" height="11" fill="#7fba00"/>
                         <rect x="0" y="12" width="11" height="11" fill="#00a4ef"/>
@@ -310,17 +264,17 @@
             {% if is_dev %}
             <div class="dev-panel">
                 <div class="dev-title">
-                    <i class="bi bi-bug-fill"></i> Panel Deweloperski
+                    <span class="material-symbols-outlined" style="font-size: 16px;">bug_report</span> Panel Deweloperski
                 </div>
-                <p class="text-muted mb-3" style="font-size: 0.75rem;">Wybierz użytkownika, aby zalogować się lokalnie bez MSAL OAuth:</p>
+                <p class="text-secondary mb-3" style="font-size: 11px;">Wybierz użytkownika do szybkiego logowania lokalnego:</p>
                 
-                <input type="text" id="dev-user-search" class="form-control form-control-sm mb-3" placeholder="Szukaj użytkownika..." style="font-size: 0.8rem; background-color: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-color);">
+                <input type="text" id="dev-user-search" class="form-control form-control-sm mb-3" placeholder="Szukaj użytkownika..." style="font-size: 12px;">
                 
                 <div class="dev-user-list">
                     {% if dev_users %}
                         {% for u in dev_users %}
-                        <a href="{{ url_for('auth.login', mock_email=u.email, mock_rola=u.rola) }}" class="btn-dev w-100 mb-1 d-flex justify-content-between align-items-center">
-                            <div class="text-start text-truncate" style="max-width: 250px;">
+                        <a href="{{ url_for('auth.login', mock_email=u.email, mock_rola=u.rola) }}" class="btn-dev">
+                            <div class="text-truncate" style="max-width: 250px;">
                                 <strong class="d-block">
                                     {% if u.rola == 'student' and u.imie == 'Jan' and u.nazwisko == 'Kowalski' %}
                                         Student (Jan Kowalski)
@@ -336,15 +290,15 @@
                                         {{ u.imie }} {{ u.nazwisko }}
                                     {% endif %}
                                 </strong>
-                                <span class="text-muted" style="font-size: 0.7rem;">{{ u.email }}</span>
+                                <span class="text-secondary" style="font-size: 11px;">{{ u.email }}</span>
                             </div>
-                            <span class="badge rounded-pill" style="font-size: 0.65rem; background-color: {% if u.rola == 'administrator' %}var(--danger){% elif u.rola == 'dyrektor' %}#f59e0b{% elif u.rola == 'uopz' %}#10b981{% elif u.rola == 'zopz' %}#3b82f6{% else %}#64748b{% endif %}; text-transform: uppercase;">
+                            <span class="badge bg-primary-light text-primary text-uppercase" style="font-size: 9px;">
                                 {{ u.rola or 'brak' }}
                             </span>
                         </a>
                         {% endfor %}
                     {% else %}
-                        <div class="text-center text-muted p-3" style="font-size: 0.8rem;">Brak zarejestrowanych użytkowników.</div>
+                        <div class="text-center text-secondary p-3" style="font-size: 12px;">Brak użytkowników testowych.</div>
                     {% endif %}
                 </div>
 

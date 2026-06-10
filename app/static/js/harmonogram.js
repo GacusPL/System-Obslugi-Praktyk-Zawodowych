@@ -15,10 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
         totalDaysSpan.textContent = total;
         
         if (total === 120) {
-            statusMessage.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i> Suma wynosi dokładnie 120 dni.</span>';
+            statusMessage.innerHTML = '<span class="text-success fw-bold d-flex align-items-center gap-1"><span class="material-symbols-outlined" style="font-size: 18px;">check_circle</span> Suma wynosi dokładnie 120 dni.</span>';
             saveBtn.removeAttribute('disabled');
         } else {
-            statusMessage.innerHTML = `<span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i> Suma musi wynosić dokładnie 120 dni (obecnie: ${total}).</span>`;
+            statusMessage.innerHTML = `<span class="text-danger fw-bold d-flex align-items-center gap-1"><span class="material-symbols-outlined" style="font-size: 18px;">error</span> Suma musi wynosić dokładnie 120 dni (obecnie: ${total}).</span>`;
             saveBtn.setAttribute('disabled', 'true');
         }
     };
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <input type="number" class="form-control form-control-sm planowane-dni-input" value="0" min="1" required>
                 </td>
                 <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-danger remove-dzial-btn"><i class="bi bi-trash"></i></button>
+                    <button type="button" class="btn btn-sm btn-danger remove-dzial-btn d-flex align-items-center justify-content-center p-1"><span class="material-symbols-outlined" style="font-size: 16px;">delete</span></button>
                 </td>
             `;
             tableBody.appendChild(newRow);
@@ -84,6 +84,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
             
+            const btn = form.querySelector('button[type="submit"]');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Zapisywanie...`;
+            
             const harmonogramId = form.getAttribute('data-harmonogram-id');
             const payload = {
                 dzialy: dzialy
@@ -97,12 +102,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify(payload)
             }).then(res => {
                 if (res.ok) {
-                    window.location.reload();
+                    if (window.showToast) {
+                        window.showToast('Harmonogram został zapisany pomyślnie!', 'success');
+                    }
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 } else {
                     res.json().then(data => {
-                        alert("Błąd zapisu: " + (data.error?.message || "Nieznany błąd"));
+                        const errMsg = data.error?.message || "Nieznany błąd";
+                        if (window.showToast) {
+                            window.showToast("Błąd zapisu: " + errMsg, "error");
+                        } else {
+                            alert("Błąd zapisu: " + errMsg);
+                        }
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
                     });
                 }
+            }).catch(err => {
+                if (window.showToast) {
+                    window.showToast('Błąd połączenia z serwerem.', 'error');
+                }
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             });
         });
     }

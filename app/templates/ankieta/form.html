@@ -11,31 +11,31 @@
 <div class="row justify-content-center">
     <div class="col-lg-8">
         <!-- Success Screen -->
-        <div id="success-view" class="card card-custom text-center py-5 d-none">
+        <div id="success-view" class="card-sopz text-center py-5 d-none">
             <div class="mb-4">
-                <i class="bi bi-patch-check-fill text-success" style="font-size: 5rem; filter: drop-shadow(0 4px 12px rgba(13, 148, 136, 0.3));"></i>
+                <span class="material-symbols-outlined text-success" style="font-size: 5rem;">check_circle</span>
             </div>
             <h3 class="fw-bold">Dziękujemy za wypełnienie ankiety!</h3>
-            <p class="text-muted max-width-500 mx-auto mt-2">Twoje odpowiedzi zostały zapisane. Ankieta jest w pełni anonimowa i posłuży do podnoszenia jakości organizacji praktyk zawodowych w ANS w Elblągu.</p>
+            <p class="text-secondary max-width-500 mx-auto mt-2">Twoje odpowiedzi zostały zapisane. Ankieta jest w pełni anonimowa i posłuży do podnoszenia jakości organizacji praktyk zawodowych w ANS w Elblągu.</p>
             <div class="mt-4">
-                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary btn-primary-custom px-4 py-2">
-                    <i class="bi bi-house-door me-2"></i>Powrót do Dashboardu
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary px-4 py-2">
+                    <span class="material-symbols-outlined align-middle me-2">home</span>Powrót do Dashboardu
                 </a>
             </div>
         </div>
 
         <!-- Form Card -->
-        <div id="form-card" class="card card-custom">
+        <div id="form-card" class="card-sopz">
             <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                <h3 class="fw-bold m-0" style="color: var(--primary);"><i class="bi bi-patch-check text-primary me-2"></i>Ankieta Ewaluacyjna Praktyk (P5)</h3>
-                <span class="badge bg-light text-primary border border-primary-subtle rounded-pill py-2 px-3">Anonimowy kwestionariusz</span>
+                <h3 class="fw-bold m-0" style="color: var(--primary);"><span class="material-symbols-outlined align-middle me-2">quiz</span>Ankieta Ewaluacyjna Praktyk (P5)</h3>
+                <span class="badge bg-primary-light text-primary border rounded-pill py-2 px-3" style="font-size: 12px;">Anonimowy kwestionariusz</span>
             </div>
-            <p class="text-muted mb-4">Twój głos jest dla nas bardzo ważny. Prosimy o rzetelną ocenę poszczególnych aspektów praktyki.</p>
+            <p class="text-secondary mb-4">Twój głos jest dla nas bardzo ważny. Prosimy o rzetelną ocenę poszczególnych aspektów praktyki.</p>
 
             <form id="ankieta-form" data-praktyka-id="{{ praktyka.id }}">
                 <!-- Metryczka -->
-                <div class="p-4 bg-light-subtle border rounded-3 mb-4">
-                    <h6 class="fw-bold text-color mb-3"><i class="bi bi-info-circle text-primary me-2"></i>Metryczka ankiety</h6>
+                <div class="p-4 rounded-3 mb-4" style="background-color: var(--bg-page); border: 1px solid var(--border);">
+                    <h6 class="fw-bold text-color mb-3" style="color: var(--text-primary);"><span class="material-symbols-outlined align-middle me-2" style="font-size: 20px;">info</span>Metryczka ankiety</h6>
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label small fw-semibold">Rok Akademicki</label>
@@ -66,13 +66,13 @@
                         <span class="fw-semibold text-color">Postęp wypełniania pytań</span>
                         <span class="fw-bold text-primary" id="progress-text">0 / 14</span>
                     </div>
-                    <div class="progress progress-custom" style="height: 8px;">
-                        <div id="ankieta-progress-bar" class="progress-bar progress-bar-custom" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="14"></div>
+                    <div class="progress" style="height: 8px;">
+                        <div id="ankieta-progress-bar" class="progress-bar bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="14"></div>
                     </div>
                 </div>
 
                 <!-- Pytania -->
-                <h5 class="fw-bold text-color mb-3 mt-4 border-bottom pb-2">Ocena przebiegu praktyki (skala 1-5)</h5>
+                <h5 class="fw-bold text-color mb-3 mt-4 border-bottom pb-2" style="color: var(--text-primary);">Ocena przebiegu praktyki (skala 1-5)</h5>
 
                 {% set pytania = [
                     "Czy program praktyki był zgodny z Twoim kierunkiem studiów?",
@@ -81,7 +81,7 @@
                     "Czy warunki pracy w firmie były bezpieczne i higieniczne?",
                     "Czy miałeś dostęp do nowoczesnych narzędzi/technologii?",
                     "Czy pozyskane umiejętności przydadzą się w Twojej przyszłej pracy?",
-                    "Czy atmosfera w firmie sprzyjała nauce i rozwojowi?",
+                    "Czy atmosfera w firmie sprzyjała nauce i rozwoju?",
                     "Czy wymiar godzinowy praktyki był odpowiedni?",
                     "Czy uczelnia sprawnie przygotowała Cię do odbycia praktyk?",
                     "Czy opiekun z uczelni (UOPZ) udzielał Ci pomocy w sprawach formalnych?",
@@ -94,7 +94,7 @@
                 {% for pytanie in pytania %}
                 {% set pytanie_index = loop.index %}
                 <div class="mb-4 question-block" data-qindex="{{ pytanie_index }}">
-                    <label class="form-label fw-bold d-block text-color mb-3">
+                    <label class="form-label fw-bold d-block text-color mb-3" style="color: var(--text-primary);">
                         <span class="text-primary me-1">{{ pytanie_index }}.</span> {{ pytanie }}
                     </label>
                     <div class="scale-container">
@@ -123,11 +123,11 @@
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mt-5">
-                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Powrót
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                        <span class="material-symbols-outlined align-middle me-1">arrow_back</span>Powrót
                     </a>
-                    <button type="submit" class="btn btn-primary btn-primary-custom" id="btn-submit-ankieta">
-                        Wyślij Ankietę <i class="bi bi-send-fill ms-1"></i>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-ankieta">
+                        Wyślij Ankietę <span class="material-symbols-outlined align-middle ms-1">send</span>
                     </button>
                 </div>
             </form>
@@ -145,7 +145,6 @@
         const formCard = document.getElementById('form-card');
         const successView = document.getElementById('success-view');
 
-        // Dynamically compute progress
         const totalQuestions = 14;
         
         function updateSurveyProgress() {
@@ -162,7 +161,6 @@
             progressText.innerText = `${answered} / ${totalQuestions}`;
         }
 
-        // Attach listeners to all radio choices
         for (let i = 1; i <= totalQuestions; i++) {
             const radios = document.getElementsByName(`pytanie_${i}`);
             radios.forEach(radio => {
@@ -170,7 +168,6 @@
             });
         }
 
-        // Form Submit
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(this);
@@ -211,14 +208,14 @@
                     successView.classList.remove('d-none');
                     successView.scrollIntoView({ behavior: 'smooth' });
                 } else {
-                    alert("Wystąpił błąd przy wysyłaniu ankiety.");
+                    showToast("Wystąpił błąd przy wysyłaniu ankiety.", "error");
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = `Wyślij Ankietę <i class="bi bi-send-fill ms-1"></i>`;
+                    submitBtn.innerHTML = `Wyślij Ankietę <span class="material-symbols-outlined align-middle ms-1">send</span>`;
                 }
             }).catch(err => {
-                alert("Wystąpił błąd połączenia.");
+                showToast("Wystąpił błąd połączenia.", "error");
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = `Wyślij Ankietę <i class="bi bi-send-fill ms-1"></i>`;
+                submitBtn.innerHTML = `Wyślij Ankietę <span class="material-symbols-outlined align-middle ms-1">send</span>`;
             });
         });
     });

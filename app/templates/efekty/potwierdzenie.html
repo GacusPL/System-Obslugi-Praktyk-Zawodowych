@@ -10,14 +10,14 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-10">
-        <div class="card card-custom">
-            <h3 class="fw-bold mb-3"><i class="bi bi-award-fill text-primary me-2"></i>Karta Potwierdzenia Efektów Uczenia Się (P3)</h3>
-            <p class="text-muted mb-4">Weryfikacja osiągnięcia 13 efektów uczenia się przez studenta podczas praktyki. Suma godzin zrealizowanych: <strong>{{ potwierdzenie.godziny_zrealizowane }}h</strong>.</p>
+        <div class="card-sopz">
+            <h3 class="mb-2"><span class="material-symbols-outlined align-middle me-2" style="color: var(--primary);">military_tech</span>Karta Potwierdzenia Efektów Uczenia Się (P3)</h3>
+            <p class="text-secondary mb-4">Weryfikacja osiągnięcia 13 efektów uczenia się przez studenta podczas praktyki. Suma godzin zrealizowanych: <strong>{{ potwierdzenie.godziny_zrealizowane }}h</strong>.</p>
 
             <form id="efekty-form" data-potwierdzenie-id="{{ potwierdzenie.id }}">
                 <div class="table-responsive mb-4">
-                    <table class="table align-middle table-bordered">
-                        <thead class="table-light">
+                    <table class="table-sopz align-middle">
+                        <thead>
                             <tr>
                                 <th style="width: 80px;" class="text-center">Nr</th>
                                 <th>Opis Efektu Uczenia Się</th>
@@ -52,7 +52,6 @@
                               {% if current_user.rola != 'uopz' %}disabled{% endif %}>{{ potwierdzenie.opinia_uopz or '' }}</textarea>
                 </div>
 
-                <!-- Skrypt zapisu przez API -->
                 <script>
                     document.getElementById('efekty-form').addEventListener('submit', function(e) {
                         e.preventDefault();
@@ -81,19 +80,23 @@
                             body: JSON.stringify(payload)
                         }).then(res => {
                             if (res.ok) {
-                                alert("Pomyślnie zapisano potwierdzenie efektów.");
-                                window.location.href = '/dashboard';
+                                showToast("Zapisano potwierdzenie efektów.", "success");
+                                setTimeout(() => {
+                                    window.location.href = '/dashboard';
+                                }, 1000);
                             } else {
-                                alert("Wystąpił błąd przy zapisywaniu.");
+                                showToast("Wystąpił błąd przy zapisywaniu.", "error");
                             }
+                        }).catch(err => {
+                            showToast("Wystąpił błąd sieciowy.", "error");
                         });
                     });
                 </script>
 
                 <div class="d-flex justify-content-between align-items-center mt-4">
-                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">Powrót</a>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Powrót</a>
                     {% if current_user.rola in ['zopz', 'uopz'] %}
-                    <button type="submit" class="btn btn-primary btn-primary-custom">Zapisz Potwierdzenie</button>
+                    <button type="submit" class="btn btn-primary">Zapisz Potwierdzenie</button>
                     {% endif %}
                 </div>
             </form>
