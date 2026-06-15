@@ -74,8 +74,8 @@
                             <tbody>
                                 {% for efekt in efekty %}
                                 <tr>
-                                    <td class="fw-semibold text-primary">{{ efekt.symbol }}</td>
-                                    <td class="text-secondary small">{{ efekt.tresc }}</td>
+                                    <td class="fw-semibold text-primary">EU{{ efekt.nr }}</td>
+                                    <td class="text-secondary small">{{ efekt.opis }}</td>
                                     <td class="text-center">
                                         <div class="form-check form-switch d-inline-block">
                                             <input class="form-check-input efekt-checkbox" type="checkbox" data-efekt-nr="{{ efekt.nr }}" role="switch" checked>

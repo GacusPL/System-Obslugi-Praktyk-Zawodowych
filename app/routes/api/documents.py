@@ -1,4 +1,3 @@
-from datetime import datetime
 from flask import Blueprint, send_file, request, abort, current_app
 from flask_login import login_required, current_user
 from app import db
@@ -149,6 +148,23 @@ def compile_pdf_data(praktyka, typ):
 
     return data
 
+def generate_and_store(praktyka, typ):
+    """Generate a PDF attachment and upsert its Dokument record.
+    Returns the Dokument or None on failure (errors are swallowed and logged)."""
+    try:
+        pdf_data = compile_pdf_data(praktyka, typ)
+        filepath = generate_pdf(typ, pdf_data)
+        doc = Dokument.query.filter_by(praktyka_id=praktyka.id, typ=typ).first()
+        if not doc:
+            doc = Dokument(praktyka_id=praktyka.id, typ=typ, sciezka_pliku=filepath, status='Closed')
+            db.session.add(doc)
+        else:
+            doc.sciezka_pliku = filepath
+        return doc
+    except Exception as e:
+        print(f"Error generating PDF {typ} for praktyka {praktyka.id}: {e}")
+        return None
+
 @documents_api_bp.route('/documents/<int:doc_id>/download', methods=['GET'])
 @login_required
 def download_document(doc_id):
@@ -167,10 +183,19 @@ def download_document(doc_id):
         if praktyka and not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
 
-    if not os.path.exists(doc.sciezka_pliku):
+    # Resolve path: generated PDFs are stored absolute, uploaded scans relative to app/static
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+    paths_to_try = [
+        doc.sciezka_pliku,
+        os.path.join(base_dir, 'app', 'static', doc.sciezka_pliku),
+        os.path.join(base_dir, 'app', doc.sciezka_pliku),
+        os.path.join(base_dir, doc.sciezka_pliku),
+    ]
+    abs_path = next((p for p in paths_to_try if os.path.exists(p)), None)
+    if not abs_path:
         abort(404)
 
-    return send_file(doc.sciezka_pliku, as_attachment=True)
+    return send_file(abs_path, as_attachment=True)
 
 @documents_api_bp.route('/documents/generate', methods=['POST'])
 @login_required
@@ -194,7 +219,7 @@ def generate_document_api():
         if praktyka.uopz_id != current_user.id:
             abort(403)
     elif current_user.rola == 'zopz':
-        if praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko:
+        if not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
 
     # Compile data and generate PDF
@@ -208,7 +233,6 @@ def generate_document_api():
         db.session.add(doc)
     else:
         doc.sciezka_pliku = filepath
-        doc.updated_at = datetime.utcnow()
     
     db.session.commit()
 

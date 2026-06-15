@@ -1,7 +1,7 @@
 from flask import Blueprint, request, abort
 from flask_login import login_required, current_user
 from app import db
-from app.models import WniosekAlternatywny, ZalacznikSkan, Student, Praktyka, PotwierdzenieEfektow, PotwierdzenieEfektOcena, EfektUczenia, Uzytkownik
+from app.models import WniosekAlternatywny, ZalacznikSkan, Student, Praktyka, PotwierdzenieEfektow, PotwierdzenieEfektOcena, EfektUczenia, Uzytkownik, ZakladPracy
 from app.decorators import role_required
 from app.routes.api.helpers import api_success, api_error
 from app.utils.upload import save_uploaded_file
@@ -59,16 +59,19 @@ def create_wniosek():
 
     # Handle file uploads
     uploaded_files = request.files.getlist('skany') or request.files.getlist('files')
-    for file in uploaded_files:
+    # Per-file document types (aligned by index); fall back to single field then 'inny'
+    typy_list = request.form.getlist('typ_dokumentu')
+    allowed_td = ['umowa_o_prace', 'zakres_obowiazkow', 'ceidg', 'krs', 'inny']
+    for idx, file in enumerate(uploaded_files):
         if file and file.filename != '':
             path, err = save_uploaded_file(file, 'wnioski')
             if err:
                 db.session.rollback()
                 return api_error("UPLOAD_ERROR", err, status=400)
 
-            # Get typ_dokumentu from form or default to 'inny'
-            td = request.form.get('typ_dokumentu', 'inny')
-            if td not in ['umowa_o_prace', 'zakres_obowiazkow', 'ceidg', 'krs', 'inny']:
+            # Determine typ_dokumentu for this specific file
+            td = typy_list[idx] if idx < len(typy_list) else (typy_list[0] if typy_list else 'inny')
+            if td not in allowed_td:
                 td = 'inny'
 
             skan = ZalacznikSkan(
@@ -147,17 +150,26 @@ def evaluate_komisja():
         # Get or create practice for the student
         praktyka = Praktyka.query.filter_by(student_id=w.student_id).first()
         if not praktyka:
-            # We can create a default practice to hold these outcome confirmations
+            # Create a practice to hold these outcome confirmations.
+            # Do not assume fixed ids exist - resolve real records or fail clearly.
             student = Student.query.get(w.student_id)
-            # Find an uopz user to assign
             uopz_user = Uzytkownik.query.filter_by(rola='uopz').first()
-            uopz_id = uopz_user.id if uopz_user else 1
+            zaklad = ZakladPracy.query.filter_by(status='Approved').first() or ZakladPracy.query.first()
+            if not uopz_user or not zaklad:
+                db.session.rollback()
+                return api_error(
+                    "CANNOT_CREATE_PRAKTYKA",
+                    "Brak dostępnego opiekuna uczelnianego (UOPZ) lub zakładu pracy do utworzenia praktyki zaliczeniowej",
+                    status=400
+                )
+            from datetime import date
+            today = date.today()
             praktyka = Praktyka(
                 student_id=w.student_id,
-                zaklad_id=1, # assume a placeholder/approved zaklad exists
-                uopz_id=uopz_id,
-                termin_od=student.uzytkownik.created_at.date(),
-                termin_do=student.uzytkownik.created_at.date(),
+                zaklad_id=zaklad.id,
+                uopz_id=uopz_user.id,
+                termin_od=today,
+                termin_do=today,
                 rok_akademicki=student.rok_akademicki,
                 status='Approved'
             )
@@ -190,6 +202,12 @@ def evaluate_komisja():
                     uzyskano=uzyskano
                 )
                 db.session.add(ocena)
+
+    # Wygeneruj wniosek alternatywny (zal. 4b) po decyzji - wymaga praktyki jako kontekstu
+    praktyka_dok = Praktyka.query.filter_by(student_id=w.student_id).first()
+    if praktyka_dok:
+        from app.routes.api.documents import generate_and_store
+        generate_and_store(praktyka_dok, 'zal_nr4b')
 
     db.session.commit()
     return api_success(serialize_wniosek(w))

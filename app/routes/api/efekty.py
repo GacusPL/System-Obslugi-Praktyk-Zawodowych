@@ -37,7 +37,7 @@ def get_efekty_szablon(praktyka_id):
         if praktyka.uopz_id != current_user.id:
             abort(403)
     elif current_user.rola == 'zopz':
-        if praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko:
+        if not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
 
     efekty = EfektUczenia.query.order_by(EfektUczenia.nr.asc()).all()
@@ -72,7 +72,7 @@ def create_potwierdzenie():
 
     # Access check for ZOPZ
     if current_user.rola == 'zopz':
-        if praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko:
+        if not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
 
     # Check if already exists
@@ -128,13 +128,58 @@ def get_potwierdzenie(praktyka_id):
         if praktyka.uopz_id != current_user.id:
             abort(403)
     elif current_user.rola == 'zopz':
-        if praktyka.zaklad_pracy.zopz_imie != current_user.imie or praktyka.zaklad_pracy.zopz_nazwisko != current_user.nazwisko:
+        if not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
 
     pe = PotwierdzenieEfektow.query.filter_by(praktyka_id=praktyka_id).first()
     if not pe:
         return api_error("CONFIRMATION_NOT_FOUND", "Potwierdzenie efektów nie zostało jeszcze utworzone", status=404)
 
+    return api_success(serialize_potwierdzenie(pe))
+
+@efekty_api_bp.route('/efekty/potwierdzenie/<int:potwierdzenie_id>', methods=['PUT'])
+@login_required
+@role_required('zopz', 'uopz', 'administrator')
+def update_potwierdzenie(potwierdzenie_id):
+    pe = PotwierdzenieEfektow.query.get_or_404(potwierdzenie_id)
+    praktyka = pe.praktyka
+    data = request.get_json() or {}
+
+    is_zopz = current_user.rola == 'zopz'
+    is_uopz = current_user.rola == 'uopz'
+    is_admin = current_user.rola == 'administrator'
+
+    if is_zopz and not praktyka.zaklad_pracy.is_opiekun(current_user):
+        abort(403)
+    if is_uopz and praktyka.uopz_id != current_user.id:
+        abort(403)
+
+    oceny_data = data.get('oceny')
+    # ZOPZ (lub admin) zapisuje oceny 13 efektow
+    if oceny_data is not None and (is_zopz or is_admin):
+        if len(oceny_data) != 13:
+            return api_error("INVALID_EFFECTS_COUNT", f"Należy ocenić dokładnie 13 efektów (przesłano {len(oceny_data)})", status=400)
+
+        existing = {o.efekt_id: o for o in pe.oceny}
+        for o in oceny_data:
+            efekt_id = o.get('efekt_id')
+            uzyskano = o.get('uzyskano')
+            if uzyskano not in [0, 1]:
+                return api_error("INVALID_OCENA_VALUE", "Wartość uzyskano musi wynosić 0 lub 1", status=400)
+            efekt = EfektUczenia.query.get(efekt_id)
+            if not efekt:
+                return api_error("INVALID_EFFECT", f"Efekt o ID {efekt_id} nie istnieje", status=400)
+            if efekt_id in existing:
+                existing[efekt_id].uzyskano = uzyskano
+            else:
+                db.session.add(PotwierdzenieEfektOcena(potwierdzenie_id=pe.id, efekt_id=efekt_id, uzyskano=uzyskano))
+        pe.status = 'Submitted'
+
+    # UOPZ (lub admin) zapisuje opinie
+    if 'opinia_uopz' in data and (is_uopz or is_admin):
+        pe.opinia_uopz = data.get('opinia_uopz')
+
+    db.session.commit()
     return api_success(serialize_potwierdzenie(pe))
 
 @efekty_api_bp.route('/efekty/potwierdzenie/<int:potwierdzenie_id>', methods=['PATCH'])

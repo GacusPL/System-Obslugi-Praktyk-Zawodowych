@@ -106,7 +106,7 @@
                                 {% if w.skany %}
                                     <div class="d-flex flex-column gap-1">
                                         {% for skan in w.skany %}
-                                        <a href="/api/v1/files/download/{{ skan.nazwa_pliku }}" class="btn btn-secondary btn-sm text-start py-1 px-2" style="font-size: 11px;" target="_blank">
+                                        <a href="/api/v1/files/{{ skan.sciezka_pliku.split('/')[-2] }}" class="btn btn-secondary btn-sm text-start py-1 px-2" style="font-size: 11px;" target="_blank">
                                             <span class="material-symbols-outlined align-middle me-1" style="font-size: 14px;">picture_as_pdf</span> {{ skan.typ_dokumentu }}
                                         </a>
                                         {% endfor %}
@@ -129,13 +129,26 @@
                                         document.getElementById('form-wniosek-{{ w.id }}').addEventListener('submit', function(e) {
                                             e.preventDefault();
                                             const formData = new FormData(this);
+                                            const decyzja = formData.get('decyzja');
+
+                                            // Zgoda czesciowa wymaga oceny per-efekt -> kieruj na strone szczegolowa
+                                            if (decyzja === 'zgoda_czesciowa') {
+                                                window.location.href = "/wniosek/{{ w.id }}/komisja";
+                                                return;
+                                            }
+
+                                            // zgoda_pelna -> wszystkie 13 efektow zaliczone; odmowa -> brak ocen
+                                            const oceny = decyzja === 'zgoda_pelna'
+                                                ? Array.from({length: 13}, (_, i) => ({efekt_nr: i + 1, uzyskano: true}))
+                                                : [];
+
                                             const payload = {
                                                 wniosek_id: parseInt("{{ w.id }}"),
-                                                decyzja: formData.get('decyzja'),
+                                                decyzja: decyzja,
                                                 opinia_komisji: formData.get('opinia_komisji'),
-                                                oceny: Array.from({length: 13}, (_, i) => ({efekt_nr: i + 1, uzyskano: true}))
+                                                oceny: oceny
                                             };
-                                            
+
                                             fetch(`/api/v1/komisja/ocena`, {
                                                 method: 'POST',
                                                 headers: {

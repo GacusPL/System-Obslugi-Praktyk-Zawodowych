@@ -93,13 +93,22 @@ def assign_uopz():
     if not uopz or uopz.rola != 'uopz':
         return api_error("INVALID_UOPZ", "Użytkownik nie istnieje lub nie ma roli UOPZ", status=400)
 
-    # Update uopz_id in all active practices of the specified students
+    # Update uopz_id in all active practices of the specified students.
+    # Students without a practice cannot be linked here (UOPZ jest wybierany
+    # przy zgloszeniu praktyki) - zwracamy ich jawnie zamiast cicho pomijac.
     practices = Praktyka.query.filter(Praktyka.student_id.in_(studenci_ids)).all()
     for p in practices:
         p.uopz_id = uopz_id
 
+    students_with_practice = {p.student_id for p in practices}
+    skipped = [sid for sid in studenci_ids if sid not in students_with_practice]
+
     db.session.commit()
-    return api_success({"message": f"Przypisano opiekuna UOPZ do {len(practices)} praktyk"})
+    return api_success({
+        "message": f"Przypisano opiekuna UOPZ do {len(practices)} praktyk",
+        "assigned_count": len(practices),
+        "skipped_students_without_practice": skipped
+    })
 
 @administracja_api_bp.route('/przedluzenie', methods=['POST'])
 @login_required

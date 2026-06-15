@@ -125,6 +125,23 @@ def create_app(config_name=None):
         }
         return icons.get(status, 'bi-question-circle')
                 
+    # App-level error handlers for unmatched URLs / wrong methods.
+    # Blueprint-level handlers do NOT catch routing errors (404/405) for URLs
+    # that don't match any route, so API clients would otherwise get HTML.
+    @app.errorhandler(404)
+    def handle_404(error):
+        if request.path.startswith('/api/'):
+            from app.routes.api.helpers import api_error
+            return api_error("NOT_FOUND", "Zasób nie istnieje", status=404)
+        return error.get_response()
+
+    @app.errorhandler(405)
+    def handle_405(error):
+        if request.path.startswith('/api/'):
+            from app.routes.api.helpers import api_error
+            return api_error("METHOD_NOT_ALLOWED", "Metoda niedozwolona dla tego zasobu", status=405)
+        return error.get_response()
+
     # Security headers middleware
     @app.after_request
     def add_security_headers(response):

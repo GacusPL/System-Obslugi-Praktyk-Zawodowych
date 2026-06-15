@@ -61,5 +61,6 @@ local_docs/
 # Uploads and temporary/generated files
 app/static/uploads/
 app/static/generated/
+app/storage/generated/
 IMPLEMENTATION_PLAN.md
 CLAUDE.md

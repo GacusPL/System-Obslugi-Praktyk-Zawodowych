@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, abort
+from flask import Blueprint, render_template, redirect, url_for, request, abort, flash
 from flask_login import login_required, current_user
 from app.models import Student, Praktyka, ZakladPracy, WpisDziennika, WniosekAlternatywny, Egzamin, Uzytkownik, Sprawozdanie, EfektUczenia, KartaPraktyki, ZalacznikSkan, db
 from app.decorators import role_required
@@ -67,7 +67,7 @@ def dashboard():
         })
         
     elif current_user.rola == 'dyrektor':
-        wnioski = WniosekAlternatywny.query.filter_by(status='Submitted').all()
+        wnioski = WniosekAlternatywny.query.filter(WniosekAlternatywny.status.in_(['Submitted', 'Under_Review'])).all()
         
         context.update({
             'wnioski_alternatywne': wnioski

@@ -1,3 +1,4 @@
+import os
 from app import db
 from app.models import EfektUczenia, Uzytkownik
 
@@ -35,8 +36,12 @@ def seed_db():
             email=admin_email,
             rola="administrator"
         )
-        admin.set_password("admin123")
+        # Haslo admina pobierane z env (SEED_ADMIN_PASSWORD); fallback tylko dla dev.
+        admin_password = os.environ.get('SEED_ADMIN_PASSWORD', 'admin123')
+        admin.set_password(admin_password)
         db.session.add(admin)
+        if admin_password == 'admin123':
+            print("UWAGA: uzyto domyslnego hasla admina 'admin123'. Ustaw SEED_ADMIN_PASSWORD i zmien je.")
         
     db.session.commit()
     print("Database seeding completed.")

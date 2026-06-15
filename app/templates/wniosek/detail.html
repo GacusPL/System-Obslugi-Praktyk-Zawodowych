@@ -78,7 +78,7 @@
                             <span class="fw-semibold text-primary small">{{ doc.nazwa_pliku }}</span>
                             <span class="text-secondary small ms-2">({{ doc.typ_dokumentu }})</span>
                         </div>
-                        <a href="/api/v1/files/download/{{ doc.sciezka_pliku.split('/')[-1] }}" class="btn btn-sm btn-secondary d-flex align-items-center gap-1" target="_blank">
+                        <a href="/api/v1/files/{{ doc.sciezka_pliku.split('/')[-2] }}" class="btn btn-sm btn-secondary d-flex align-items-center gap-1" target="_blank">
                             <span class="material-symbols-outlined" style="font-size: 16px;">download</span> Pobierz
                         </a>
                     </div>

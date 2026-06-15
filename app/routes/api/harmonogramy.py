@@ -148,15 +148,13 @@ def update_harmonogram(harmonogram_id):
         if 'status' in data:
             harmonogram.status = data['status']
 
-    # Auto-approval check: if 3 signatures present, change status to Approved
+    # If 3 signatures present, harmonogram is Approved. The praktyka itself is
+    # only nudged from Draft into Under_Review - final praktyka approval stays an
+    # explicit UOPZ decision (praktyki.py), so we never auto-Approve here.
     if harmonogram.podpis_student == 1 and harmonogram.podpis_zopz == 1 and harmonogram.podpis_uopz == 1:
         harmonogram.status = 'Approved'
-        # Move praktyka status to Approved as well if it is not Closed
-        if praktyka.status not in ['Closed', 'Rejected']:
-            if praktyka.status == 'Draft':
-                praktyka.status = 'Under_Review'
-            else:
-                praktyka.status = 'Approved'
+        if praktyka.status == 'Draft':
+            praktyka.status = 'Under_Review'
 
     db.session.commit()
     return api_success(serialize_harmonogram(harmonogram))
@@ -259,15 +257,13 @@ def sign_harmonogram(harmonogram_id):
     else:
         return api_error("INVALID_ROLE", "Nieprawidłowa rola do podpisu", status=400)
 
-    # Auto-approval check: if 3 signatures present, change status to Approved
+    # If 3 signatures present, harmonogram is Approved. The praktyka itself is
+    # only nudged from Draft into Under_Review - final praktyka approval stays an
+    # explicit UOPZ decision (praktyki.py), so we never auto-Approve here.
     if harmonogram.podpis_student == 1 and harmonogram.podpis_zopz == 1 and harmonogram.podpis_uopz == 1:
         harmonogram.status = 'Approved'
-        # Move praktyka status to Approved as well if it is not Closed
-        if praktyka.status not in ['Closed', 'Rejected']:
-            if praktyka.status == 'Draft':
-                praktyka.status = 'Under_Review'
-            else:
-                praktyka.status = 'Approved'
+        if praktyka.status == 'Draft':
+            praktyka.status = 'Under_Review'
 
     db.session.commit()
     return api_success(serialize_harmonogram(harmonogram))

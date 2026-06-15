@@ -33,7 +33,7 @@
                             <div class="fw-semibold text-primary" style="font-size: 15px;">{{ doc.typ }}</div>
                             <span class="text-secondary small">Przesłano: {{ doc.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
                         </div>
-                        <a href="/api/v1/files/download/{{ doc.sciezka_pliku.split('/')[-1] }}" class="btn btn-sm btn-secondary d-flex align-items-center gap-1" target="_blank">
+                        <a href="/api/v1/documents/{{ doc.id }}/download" class="btn btn-sm btn-secondary d-flex align-items-center gap-1" target="_blank">
                             <span class="material-symbols-outlined" style="font-size: 16px;">download</span> Pobierz plik
                         </a>
                     </div>

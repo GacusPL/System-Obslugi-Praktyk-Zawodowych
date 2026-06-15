@@ -90,6 +90,11 @@ def create_ankieta():
 
     # Mark the student's practice as having the survey completed
     praktyka.ankieta_wypelniona = 1
+
+    # Wygeneruj zal. 5 (ankieta) - dane czerpane z anonimowych metadanych
+    from app.routes.api.documents import generate_and_store
+    generate_and_store(praktyka, 'zal_nr5')
+
     db.session.commit()
 
     return api_success({"message": "Ankieta została zapisana pomyślnie. Dziękujemy!"}, status=201)

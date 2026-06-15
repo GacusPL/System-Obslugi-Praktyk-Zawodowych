@@ -185,6 +185,10 @@ def submit_egzamin_wynik(egzamin_id):
         praktyka.status = 'Closed'
         praktyka.ocena_koncowa = ok
 
+    # Wygeneruj protokol egzaminu (zal. 8) niezaleznie od wyniku
+    from app.routes.api.documents import generate_and_store
+    generate_and_store(praktyka, 'zal_nr8')
+
     db.session.commit()
     return api_success(serialize_egzamin(e))
 

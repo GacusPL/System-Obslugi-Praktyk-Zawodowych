@@ -368,7 +368,7 @@ class Dokument(db.Model):
 
     __table_args__ = (
         db.CheckConstraint(
-            "typ IN ('zal_nr2a', 'zal_nr3', 'zal_nr4', 'zal_nr4b', 'zal_nr5', 'zal_nr6', 'zal_nr7', 'zal_nr8')",
+            "typ IN ('zal_nr2a', 'zal_nr3', 'zal_nr4', 'zal_nr4b', 'zal_nr5', 'zal_nr6', 'zal_nr7', 'zal_nr8', 'signed_karta_sprawozdanie')",
             name='check_dokument_typ'
         ),
     )

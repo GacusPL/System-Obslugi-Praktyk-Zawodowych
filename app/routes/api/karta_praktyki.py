@@ -51,7 +51,8 @@ def evaluate_zopz():
         return api_error("INVALID_OCENA_RANGE", "Ocena musi być z zakresu 2.0 do 5.0", status=400)
 
     karta = KartaPraktyki.query.filter_by(praktyka_id=praktyka_id).first()
-    if not karta:
+    is_new = karta is None
+    if is_new:
         karta = KartaPraktyki(
             praktyka_id=praktyka_id,
             ocena_param_zopz=val,
@@ -65,7 +66,7 @@ def evaluate_zopz():
         karta.status = 'Under_Review'
 
     db.session.commit()
-    return api_success(serialize_karta(karta), status=201 if not karta.id else 200)
+    return api_success(serialize_karta(karta), status=201 if is_new else 200)
 
 @karta_praktyki_api_bp.route('/karta-praktyki/<int:praktyka_id>', methods=['GET'])
 @login_required

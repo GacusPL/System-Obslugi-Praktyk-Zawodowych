@@ -50,7 +50,7 @@
                 <h5 class="fw-bold mb-3" style="color: var(--text-primary);"><span class="material-symbols-outlined align-middle me-2">upload</span>Prześlij podpisany skan Karty Praktyki i Sprawozdania</h5>
                 <p class="text-secondary small">Przed zaliczeniem końcowym musisz wydrukować, podpisać i wgrać skan kompletnej dokumentacji (karta praktyk, opinie opiekunów).</p>
                 
-                <form action="/api/v1/wniosek/upload" method="POST" enctype="multipart/form-data" id="skan-upload-form">
+                <form action="/api/v1/files/upload" method="POST" enctype="multipart/form-data" id="skan-upload-form">
                     <input type="hidden" name="praktyka_id" value="{{ praktyka.id }}">
                     <div class="mb-3">
                         <input type="file" name="skan_pdf" class="form-control" accept=".pdf,.png,.jpg,.jpeg" required>

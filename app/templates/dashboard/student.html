@@ -20,7 +20,19 @@
     <div class="text-secondary small" id="current-date"></div>
 </div>
 
-{% if not praktyka %}
+{% if not student %}
+    <!-- Onboarding: student must create academic profile before anything else -->
+    <div class="empty-state">
+        <span class="material-symbols-outlined" style="font-size: 56px;">badge</span>
+        <h3>Uzupełnij swój profil studenta</h3>
+        <p>Zanim zgłosisz praktykę, uzupełnij dane akademickie (nr albumu, kierunek, semestr, forma studiów). Bez profilu nie można zarejestrować praktyki.</p>
+        <div class="d-flex justify-content-center gap-3 mt-4">
+            <button onclick="window.location.href='{{ url_for('main.profile_view') }}'" class="btn btn-primary">
+                <span class="material-symbols-outlined align-middle me-2">edit</span>Uzupełnij profil
+            </button>
+        </div>
+    </div>
+{% elif not praktyka %}
     <!-- Empty state for student without active practice -->
     <div class="empty-state">
         <span class="material-symbols-outlined" style="font-size: 56px;">work_off</span>
