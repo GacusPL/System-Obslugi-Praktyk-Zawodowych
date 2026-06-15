@@ -53,6 +53,7 @@ Utwórz plik `.env` w katalogu głównym projektu na podstawie `.env.example`:
 FLASK_APP=run.py
 FLASK_ENV=development
 SECRET_KEY=dev_secret_key_random
+E2E=False
 
 # Konfiguracja Microsoft OAuth
 MICROSOFT_CLIENT_ID=twoj-client-id
@@ -65,7 +66,12 @@ MICROSOFT_AUTHORITY=https://login.microsoftonline.com/twoj-tenant-id
 ### Krok 3: Inicjalizacja bazy danych i seedowanie danych testowych
 ```bash
 flask db upgrade
+
+# Opcja A: Podstawowy seed (tylko efekty uczenia się i admin)
 flask seed
+
+# Opcja B: Pełny seed demonstracyjny (efekty, studenci, dzienniki, wpisy itp.)
+flask seed-demo
 ```
 
 ### Krok 4: Uruchomienie aplikacji
@@ -208,3 +214,24 @@ python -m pytest --cov=app --cov-report=term-missing
 5. **Administrator** — konfiguracja kont użytkowników, przypisywanie opiekunów, zarządzanie bazą zakładów pracy, eksport ocen do USOS.
 
 ---
+
+## 11. Resetowanie bazy danych i migracji
+
+### Ponowna inicjalizacja i seedowanie
+W aktywowanym środowisku wirtualnym (`venv`) uruchom:
+```bash
+# Inicjalizacja repozytorium migracji
+flask db init
+
+# Wygenerowanie nowej migracji początkowej
+flask db migrate -m "Initial migration"
+
+# Zaaplikowanie migracji do nowej bazy
+flask db upgrade
+
+# Wgranie danych (seed) - podstawowy lub demonstracyjny:
+flask seed       # podstawowy seed
+# LUB
+flask seed-demo  # pełny seed demonstracyjny (użytkownicy, dzienniki itp.)
+```
+
