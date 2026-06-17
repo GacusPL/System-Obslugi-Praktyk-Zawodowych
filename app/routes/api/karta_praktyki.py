@@ -17,6 +17,7 @@ def serialize_karta(k):
         "ocena_opisowa_uopz": k.ocena_opisowa_uopz,
         "ocena_sprawozdania": k.ocena_sprawozdania,
         "status": k.status,
+        "komentarz_odrzucenia": k.komentarz_odrzucenia,
         "created_at": k.created_at.strftime('%Y-%m-%d %H:%M:%S') if k.created_at else None,
         "updated_at": k.updated_at.strftime('%Y-%m-%d %H:%M:%S') if k.updated_at else None
     }
@@ -64,6 +65,7 @@ def evaluate_zopz():
         karta.ocena_param_zopz = val
         karta.ocena_opisowa_zopz = ocena_opisowa
         karta.status = 'Under_Review'
+        karta.komentarz_odrzucenia = None  # czyścimy po ponownym wystawieniu oceny
 
     db.session.commit()
     return api_success(serialize_karta(karta), status=201 if is_new else 200)
@@ -129,8 +131,13 @@ def patch_karta(karta_id):
         karta.ocena_opisowa_uopz = ocena_opisowa_uopz
 
     if status:
-        if status not in ['Draft', 'Under_Review', 'Approved', 'Closed']:
+        if status not in ['Draft', 'Under_Review', 'Approved', 'Rejected', 'Closed']:
             return api_error("INVALID_STATUS", "Nieprawidłowy status karty praktyki", status=400)
+        if status == 'Rejected':
+            komentarz = (data.get('komentarz_odrzucenia') or '').strip()
+            if not komentarz:
+                return api_error("MISSING_COMMENT", "Odrzucenie wymaga podania komentarza zwrotnego", status=400)
+            karta.komentarz_odrzucenia = komentarz
         karta.status = status
 
     db.session.commit()

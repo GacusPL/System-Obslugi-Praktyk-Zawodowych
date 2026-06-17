@@ -12,6 +12,9 @@
         <h1 class="h2 mb-1">Panel Opiekuna Zakładowego</h1>
         <p class="text-secondary mb-0">ZOPZ: <span class="fw-semibold text-primary">{{ current_user.imie }} {{ current_user.nazwisko }}</span></p>
     </div>
+    <a href="{{ url_for('main.zopz_moja_grupa') }}" class="btn btn-outline-primary">
+        <span class="material-symbols-outlined align-middle me-1">group</span>Moja Grupa
+    </a>
 </div>
 
 <!-- Calculate approved entries count -->
@@ -43,7 +46,7 @@
                 <span class="material-symbols-outlined">pending_actions</span>
             </div>
             <div class="stat-details">
-                <h2>{{ oczekujace_wpisy|length }}</h2>
+                <h2 id="stat-pending">{{ oczekujace_wpisy|length }}</h2>
                 <p>Wpisy do weryfikacji</p>
             </div>
         </div>
@@ -54,7 +57,7 @@
                 <span class="material-symbols-outlined">done_all</span>
             </div>
             <div class="stat-details">
-                <h2>{{ approved_count.value }}</h2>
+                <h2 id="stat-approved">{{ approved_count.value }}</h2>
                 <p>Zatwierdzone wpisy</p>
             </div>
         </div>
@@ -67,7 +70,7 @@
         <div class="card-sopz">
             <div class="card-sopz-header">
                 <h3>Oczekujące na weryfikację</h3>
-                <span class="badge bg-warning text-dark">{{ oczekujace_wpisy|length }} wpisów</span>
+                <span class="badge bg-warning text-dark"><span id="pending-count">{{ oczekujace_wpisy|length }}</span> wpisów</span>
             </div>
 
             {% if not oczekujace_wpisy %}
@@ -115,22 +118,12 @@
                                 </td>
                                 <td>
                                     <div class="d-flex gap-2">
-                                        <button class="btn btn-success btn-sm d-flex align-items-center justify-content-center p-2"
-                                                hx-patch="/api/v1/dziennik/wpisy/{{ wpis.id }}"
-                                                hx-vals='{"status": "Approved"}'
-                                                hx-headers='{"Content-Type": "application/json"}'
-                                                hx-target="#wpis-row-{{ wpis.id }}"
-                                                hx-swap="outerHTML"
-                                                title="Zatwierdź">
+                                        <button type="button" class="btn btn-success btn-sm d-flex align-items-center justify-content-center p-2 btn-wpis-approve"
+                                                data-id="{{ wpis.id }}" title="Zatwierdź">
                                             <span class="material-symbols-outlined" style="font-size: 16px;">check</span>
                                         </button>
-                                        <button class="btn btn-danger btn-sm d-flex align-items-center justify-content-center p-2"
-                                                hx-patch="/api/v1/dziennik/wpisy/{{ wpis.id }}"
-                                                hx-vals='{"status": "Rejected", "komentarz_zopz": "Wymaga poprawy"}'
-                                                hx-headers='{"Content-Type": "application/json"}'
-                                                hx-target="#wpis-row-{{ wpis.id }}"
-                                                hx-swap="outerHTML"
-                                                title="Odrzuć">
+                                        <button type="button" class="btn btn-danger btn-sm d-flex align-items-center justify-content-center p-2 btn-wpis-reject"
+                                                data-id="{{ wpis.id }}" title="Odrzuć">
                                             <span class="material-symbols-outlined" style="font-size: 16px;">close</span>
                                         </button>
                                     </div>
@@ -167,6 +160,7 @@
                             </div>
                         </div>
                         <div class="small text-secondary mb-3">
+                            <div><strong>Firma:</strong> {{ p.zaklad_pracy.nazwa }}</div>
                             <div><strong>Specjalność:</strong> {{ p.student.specjalnosc or 'Brak' }}</div>
                             <div><strong>Status:</strong> <span class="badge-status badge-status-{{ p.status|lower }}">{{ p.status|translate_status }}</span></div>
                             <div><strong>Dziennik:</strong> <span class="badge bg-light text-primary border">{{ p.dziennik_status|translate_status }}</span></div>
@@ -189,6 +183,27 @@
         </div>
     </div>
 </div>
+
+<!-- Modal odrzucenia wpisu -->
+<div class="modal fade" id="rejectWpisModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Odrzuć wpis dziennika</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="reject-wpis-id">
+                <label for="reject-wpis-komentarz" class="form-label">Komentarz dla studenta (wymagany)</label>
+                <textarea id="reject-wpis-komentarz" class="form-control" rows="3" placeholder="Opisz, co należy poprawić..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn btn-danger" id="btn-confirm-reject-wpis">Odrzuć wpis</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -196,6 +211,95 @@
     document.addEventListener('DOMContentLoaded', () => {
         initPagination('wpisy-weryfikacja-table', 20);
         initTableSearch('wpisy-weryfikacja-table', 'search-wpisy');
+
+        const rejectModalEl = document.getElementById('rejectWpisModal');
+        const rejectModal = rejectModalEl ? new bootstrap.Modal(rejectModalEl) : null;
+        const rejectIdInput = document.getElementById('reject-wpis-id');
+        const rejectKomentarzInput = document.getElementById('reject-wpis-komentarz');
+
+        function toast(msg, type) {
+            if (window.showToast) window.showToast(msg, type); else alert(msg);
+        }
+
+        function setNum(id, delta) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = Math.max(0, (parseInt(el.textContent, 10) || 0) + delta);
+        }
+
+        function removeRow(id, wasApproved) {
+            const row = document.getElementById(`wpis-row-${id}`);
+            if (row) row.remove();
+            setNum('pending-count', -1);
+            setNum('stat-pending', -1);
+            if (wasApproved) setNum('stat-approved', 1);
+            const remaining = document.querySelectorAll('#wpisy-weryfikacja-table tbody tr').length;
+            if (remaining === 0) window.location.reload();
+        }
+
+        function patchWpis(id, status, komentarz) {
+            const payload = { status: status };
+            if (komentarz) payload.komentarz_zopz = komentarz;
+            return fetch(`/api/v1/dziennik/wpisy/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(res => res.json().catch(() => ({ success: false, error: { message: 'Nieprawidłowa odpowiedź serwera' } })));
+        }
+
+        document.querySelectorAll('.btn-wpis-approve').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.getAttribute('data-id');
+                this.disabled = true;
+                patchWpis(id, 'Approved').then(data => {
+                    if (data.success) {
+                        toast('Wpis zatwierdzony.', 'success');
+                        try { removeRow(id, true); } catch (e) { console.error(e); }
+                    } else {
+                        this.disabled = false;
+                        toast('Błąd: ' + (data.error?.message || 'Nie udało się zatwierdzić wpisu.'), 'error');
+                    }
+                }).catch(() => {
+                    this.disabled = false;
+                    toast('Błąd połączenia z serwerem.', 'error');
+                });
+            });
+        });
+
+        document.querySelectorAll('.btn-wpis-reject').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (rejectIdInput) rejectIdInput.value = this.getAttribute('data-id');
+                if (rejectKomentarzInput) rejectKomentarzInput.value = '';
+                if (rejectModal) rejectModal.show();
+            });
+        });
+
+        const confirmRejectBtn = document.getElementById('btn-confirm-reject-wpis');
+        if (confirmRejectBtn) {
+            confirmRejectBtn.addEventListener('click', function() {
+                const id = rejectIdInput.value;
+                const komentarz = rejectKomentarzInput.value.trim();
+                if (!komentarz) {
+                    toast('Komentarz jest wymagany przy odrzuceniu.', 'warning');
+                    rejectKomentarzInput.focus();
+                    return;
+                }
+                this.disabled = true;
+                patchWpis(id, 'Rejected', komentarz).then(data => {
+                    this.disabled = false;
+                    if (data.success) {
+                        if (rejectModal) rejectModal.hide();
+                        toast('Wpis odrzucony i odesłany do poprawy.', 'info');
+                        try { removeRow(id, false); } catch (e) { console.error(e); }
+                    } else {
+                        toast('Błąd: ' + (data.error?.message || 'Nie udało się odrzucić wpisu.'), 'error');
+                    }
+                }).catch(() => {
+                    this.disabled = false;
+                    toast('Błąd połączenia z serwerem.', 'error');
+                });
+            });
+        }
     });
 </script>
 {% endblock %}

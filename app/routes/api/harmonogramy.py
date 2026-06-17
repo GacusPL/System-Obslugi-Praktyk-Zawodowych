@@ -1,7 +1,7 @@
 from flask import Blueprint, request, abort
 from flask_login import login_required, current_user
 from app import db
-from app.models import Harmonogram, HarmonogramDzial, Praktyka, Student, Uzytkownik
+from app.models import Harmonogram, HarmonogramDzial, Praktyka, Student, Uzytkownik, ProgramPraktykiPozycja, EfektUczenia
 from app.decorators import role_required
 from app.routes.api.helpers import api_success, api_error
 
@@ -15,12 +15,20 @@ def serialize_harmonogram(h):
         "podpis_zopz": h.podpis_zopz,
         "podpis_uopz": h.podpis_uopz,
         "status": h.status,
+        "komentarz_odrzucenia": h.komentarz_odrzucenia,
         "dzialy": [
             {
                 "id": d.id,
                 "nazwa_dzialu": d.nazwa_dzialu,
                 "planowane_dni": d.planowane_dni
             } for d in h.dzialy
+        ],
+        "program": [
+            {
+                "efekt_nr": p.efekt.nr,
+                "efekt_opis": p.efekt.opis,
+                "opis_realizacji": p.opis_realizacji
+            } for p in sorted(h.program_pozycje, key=lambda x: x.efekt.nr)
         ],
         "created_at": h.created_at.strftime('%Y-%m-%d %H:%M:%S') if h.created_at else None,
         "updated_at": h.updated_at.strftime('%Y-%m-%d %H:%M:%S') if h.updated_at else None
@@ -135,6 +143,11 @@ def update_harmonogram(harmonogram_id):
             new_status = data['status']
             if new_status not in ['Draft', 'Submitted', 'Under_Review', 'Approved', 'Rejected']:
                 return api_error("INVALID_STATUS", "Nieprawidłowy status harmonogramu", status=400)
+            if new_status == 'Rejected':
+                komentarz = (data.get('komentarz_odrzucenia') or '').strip()
+                if not komentarz:
+                    return api_error("MISSING_COMMENT", "Odrzucenie wymaga podania komentarza zwrotnego", status=400)
+                harmonogram.komentarz_odrzucenia = komentarz
             harmonogram.status = new_status
 
     elif current_user.rola == 'administrator':
@@ -161,20 +174,22 @@ def update_harmonogram(harmonogram_id):
 
 @harmonogramy_api_bp.route('/harmonogramy/<int:harmonogram_id>', methods=['PUT'])
 @login_required
-@role_required('student', 'uopz', 'administrator')
+@role_required('zopz', 'uopz', 'administrator')
 def save_harmonogram_divisions(harmonogram_id):
     harmonogram = Harmonogram.query.get_or_404(harmonogram_id)
     praktyka = harmonogram.praktyka
-    
-    # Access checks
-    if current_user.rola == 'student':
-        student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
-        if not student or praktyka.student_id != student.id:
+
+    # Access checks - harmonogram opracowuje opiekun zakładowy (ZOPZ)
+    if current_user.rola == 'zopz':
+        if not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
-        # Student cannot update if already signed or approved
-        if harmonogram.status not in ['Draft', 'Rejected'] or harmonogram.podpis_student:
+        # ZOPZ nie edytuje już podpisanego/zatwierdzonego harmonogramu
+        if harmonogram.status not in ['Draft', 'Rejected']:
             return api_error("NOT_EDITABLE", "Nie można edytować podpisanego lub zatwierdzonego harmonogramu", status=400)
-    elif current_user.rola not in ['uopz', 'administrator']:
+    elif current_user.rola == 'uopz':
+        if praktyka.uopz_id != current_user.id:
+            abort(403)
+    elif current_user.rola != 'administrator':
         abort(403)
 
     data = request.get_json() or {}
@@ -204,6 +219,30 @@ def save_harmonogram_divisions(harmonogram_id):
             planowane_dni=dni
         )
         db.session.add(dzial)
+
+    # Program praktyki (Zał. 2a) - mapowanie efektów na opis realizacji (opcjonalne)
+    program_data = data.get('program')
+    if program_data:
+        existing = {p.efekt_id: p for p in harmonogram.program_pozycje}
+        for item in program_data:
+            efekt_nr = item.get('efekt_nr')
+            opis = (item.get('opis_realizacji') or '').strip() or None
+            efekt = EfektUczenia.query.filter_by(nr=efekt_nr).first()
+            if not efekt:
+                continue
+            if efekt.id in existing:
+                existing[efekt.id].opis_realizacji = opis
+            else:
+                db.session.add(ProgramPraktykiPozycja(
+                    harmonogram_id=harmonogram.id,
+                    efekt_id=efekt.id,
+                    opis_realizacji=opis
+                ))
+
+    # Odrzucony harmonogram po edycji wraca do obiegu jako Draft
+    if harmonogram.status == 'Rejected':
+        harmonogram.status = 'Draft'
+        harmonogram.komentarz_odrzucenia = None
 
     db.session.commit()
     return api_success(serialize_harmonogram(harmonogram))

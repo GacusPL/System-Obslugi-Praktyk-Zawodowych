@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Nadzorowane praktyki - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="active">Nadzorowane praktyki</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h2 mb-1">Nadzorowane praktyki</h1>
+        <p class="text-secondary mb-0">Wybierz studenta, aby przejść do skupionego podglądu jego praktyki.</p>
+    </div>
+</div>
+
+<div class="card-sopz">
+    {% if not praktyki %}
+    <div class="empty-state py-5">
+        <span class="material-symbols-outlined" style="font-size: 48px;">school</span>
+        <h3>Brak nadzorowanych praktyk</h3>
+    </div>
+    {% else %}
+    <div class="table-responsive">
+        <table class="table-sopz align-middle" id="praktyki-table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Firma</th>
+                    <th>Status praktyki</th>
+                    <th>Dziennik</th>
+                    <th style="width: 140px;">Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in praktyki %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="table-avatar">{{ p.student.uzytkownik.imie[0] }}{{ p.student.uzytkownik.nazwisko[0] }}</div>
+                            <div>
+                                <div class="fw-semibold">{{ p.student.uzytkownik.imie }} {{ p.student.uzytkownik.nazwisko }}</div>
+                                <span class="text-secondary small">album: {{ p.student.nr_albumu }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ p.zaklad_pracy.nazwa }}</td>
+                    <td><span class="badge-status badge-status-{{ p.status|lower }}">{{ p.status|translate_status }}</span></td>
+                    <td><span class="badge bg-light text-primary border">{{ p.dziennik_status|translate_status }}</span></td>
+                    <td>
+                        <a href="{{ url_for('main.praktyka_przeglad', praktyka_id=p.id) }}" class="btn btn-primary btn-sm">
+                            <span class="material-symbols-outlined align-middle" style="font-size: 16px;">visibility</span> Przegląd
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

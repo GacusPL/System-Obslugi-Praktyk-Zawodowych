@@ -85,6 +85,45 @@ def dashboard():
         
     return render_template(template_name, **context)
 
+def _zopz_praktyki(user):
+    zaklady = ZakladPracy.query.filter(
+        (ZakladPracy.zopz_uzytkownik_id == user.id) |
+        ((ZakladPracy.zopz_uzytkownik_id.is_(None)) &
+         (ZakladPracy.zopz_imie == user.imie) &
+         (ZakladPracy.zopz_nazwisko == user.nazwisko))
+    ).all()
+    zaklad_ids = [z.id for z in zaklady]
+    return Praktyka.query.filter(Praktyka.zaklad_id.in_(zaklad_ids)).all() if zaklad_ids else []
+
+@main_bp.route('/zopz/moja-grupa')
+@login_required
+@role_required('zopz')
+def zopz_moja_grupa():
+    praktyki = _zopz_praktyki(current_user)
+    return render_template('dashboard/zopz_grupa.html', praktyki=praktyki)
+
+@main_bp.route('/uopz/praktyki')
+@login_required
+@role_required('uopz', 'administrator')
+def uopz_praktyki():
+    if current_user.rola == 'uopz':
+        praktyki = Praktyka.query.filter_by(uopz_id=current_user.id).all()
+    else:
+        praktyki = Praktyka.query.all()
+    return render_template('dashboard/uopz_praktyki.html', praktyki=praktyki)
+
+@main_bp.route('/praktyka/<int:praktyka_id>/przeglad')
+@login_required
+@role_required('uopz', 'zopz', 'administrator')
+def praktyka_przeglad(praktyka_id):
+    praktyka = Praktyka.query.get_or_404(praktyka_id)
+    check_praktyka_ownership(praktyka)
+    wpisy_approved = WpisDziennika.query.filter_by(praktyka_id=praktyka.id, status='Approved').count()
+    sprawozdanie = Sprawozdanie.query.filter_by(praktyka_id=praktyka.id).order_by(Sprawozdanie.wersja.desc()).first()
+    egzamin = Egzamin.query.filter_by(praktyka_id=praktyka.id).first()
+    return render_template('dashboard/praktyka_przeglad.html', praktyka=praktyka,
+                           wpisy_approved=wpisy_approved, sprawozdanie=sprawozdanie, egzamin=egzamin)
+
 @main_bp.route('/praktyka/zgloszenie')
 @login_required
 def zgloszenie_praktyki():
@@ -155,7 +194,12 @@ def harmonogram_edit():
         harmonogram = Harmonogram(praktyka_id=praktyka.id)
         db.session.add(harmonogram)
         db.session.commit()
-    return render_template('harmonogram/edit.html', praktyka=praktyka, harmonogram=harmonogram)
+
+    from app.models import EfektUczenia
+    efekty = EfektUczenia.query.order_by(EfektUczenia.nr.asc()).all()
+    program_map = {p.efekt_id: p.opis_realizacji for p in harmonogram.program_pozycje}
+    return render_template('harmonogram/edit.html', praktyka=praktyka, harmonogram=harmonogram,
+                           efekty=efekty, program_map=program_map)
 
 @main_bp.route('/dziennik')
 @login_required

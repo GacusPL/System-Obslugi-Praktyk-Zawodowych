@@ -1,7 +1,7 @@
 from flask import jsonify, request
 
 def api_success(data, meta=None, status=200):
-    response = {"data": data}
+    response = {"success": True, "data": data}
     if meta is not None:
         response["meta"] = meta
     return jsonify(response), status
@@ -13,7 +13,7 @@ def api_error(code, message, details=None, status=400):
     }
     if details is not None:
         error_payload["details"] = details
-    return jsonify({"error": error_payload}), status
+    return jsonify({"success": False, "error": error_payload}), status
 
 def paginate_query(query, page=None, per_page=None, serialize_fn=None):
     if page is None:

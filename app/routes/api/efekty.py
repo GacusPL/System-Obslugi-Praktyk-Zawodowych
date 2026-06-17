@@ -14,6 +14,7 @@ def serialize_potwierdzenie(pe):
         "godziny_zrealizowane": pe.godziny_zrealizowane,
         "opinia_uopz": pe.opinia_uopz,
         "status": pe.status,
+        "komentarz_odrzucenia": pe.komentarz_odrzucenia,
         "oceny": [
             {
                 "efekt_nr": o.efekt.nr,
@@ -174,6 +175,7 @@ def update_potwierdzenie(potwierdzenie_id):
             else:
                 db.session.add(PotwierdzenieEfektOcena(potwierdzenie_id=pe.id, efekt_id=efekt_id, uzyskano=uzyskano))
         pe.status = 'Submitted'
+        pe.komentarz_odrzucenia = None  # czyścimy po ponownym przesłaniu do oceny
 
     # UOPZ (lub admin) zapisuje opinie
     if 'opinia_uopz' in data and (is_uopz or is_admin):
@@ -206,6 +208,11 @@ def patch_potwierdzenie(potwierdzenie_id):
     if status:
         if status not in ['Draft', 'Submitted', 'Under_Review', 'Approved', 'Rejected']:
             return api_error("INVALID_STATUS", "Nieprawidłowy status", status=400)
+        if status == 'Rejected':
+            komentarz = (data.get('komentarz_odrzucenia') or '').strip()
+            if not komentarz:
+                return api_error("MISSING_COMMENT", "Odrzucenie wymaga podania komentarza zwrotnego", status=400)
+            pe.komentarz_odrzucenia = komentarz
         pe.status = status
 
     if opinia_uopz is not None:

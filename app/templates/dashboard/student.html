@@ -266,6 +266,22 @@
                 </div>
             </div>
 
+            <!-- Opiekun Zakładowy (ZOPZ) -->
+            {% set zaklad = praktyka.zaklad_pracy %}
+            <div class="card-sopz mb-4">
+                <h3 class="mb-3">Twój Opiekun Zakładowy</h3>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="table-avatar" style="width: 48px; height: 48px; font-size: 16px;">
+                        {{ zaklad.zopz_imie[0] }}{{ zaklad.zopz_nazwisko[0] }}
+                    </div>
+                    <div>
+                        <div class="fw-semibold">{{ zaklad.zopz_imie }} {{ zaklad.zopz_nazwisko }}</div>
+                        {% if zaklad.zopz_stanowisko %}<div class="text-secondary small">{{ zaklad.zopz_stanowisko }}</div>{% endif %}
+                        <div class="text-secondary small"><span class="material-symbols-outlined align-middle" style="font-size: 14px;">business</span> {{ zaklad.nazwa }}</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Alternatywne wnioski -->
             {% if wnioski %}
             <div class="card-sopz">

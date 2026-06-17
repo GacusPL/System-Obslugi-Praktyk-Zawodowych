@@ -25,7 +25,7 @@ def test_dziennik_crud_and_signatures(client, db_session, sample_student, sample
         student_id=sample_student.id,
         zaklad_id=sample_zaklad.id,
         uopz_id=sample_uopz.id,
-        termin_od=date(2026, 7, 1),
+        termin_od=date(2026, 1, 1),
         termin_do=date(2026, 9, 30),
         rok_akademicki="2025/2026",
         status="Approved"
@@ -40,7 +40,7 @@ def test_dziennik_crud_and_signatures(client, db_session, sample_student, sample
     data = {
         "praktyka_id": praktyka.id,
         "dzien_nr": 1,
-        "data_wpisu": "2026-07-01",
+        "data_wpisu": "2026-01-15",
         "opis_prac": "Konfiguracja środowiska",
         "efekty": [1, 2]
     }
@@ -109,3 +109,33 @@ def test_dziennik_crud_and_signatures(client, db_session, sample_student, sample
     # Check if Praktyka.dziennik_status is now 'Under_Review'
     p = Praktyka.query.get(praktyka.id)
     assert p.dziennik_status == "Under_Review"
+
+
+def test_dziennik_rejects_future_date(client, db_session, sample_student, sample_zaklad, sample_uopz):
+    from datetime import timedelta
+    efekt = EfektUczenia(nr=1, opis="Efekt 1")
+    db_session.add(efekt)
+    praktyka = Praktyka(
+        student_id=sample_student.id,
+        zaklad_id=sample_zaklad.id,
+        uopz_id=sample_uopz.id,
+        termin_od=date(2026, 1, 1),
+        termin_do=date(2026, 12, 31),
+        rok_akademicki="2025/2026",
+        status="Approved"
+    )
+    db_session.add(praktyka)
+    db_session.commit()
+
+    client.get(f'/auth/login?mock_email={sample_student.uzytkownik.email}&mock_rola=student')
+
+    future = (date.today() + timedelta(days=5)).strftime('%Y-%m-%d')
+    response = client.post('/api/v1/dziennik/wpisy', json={
+        "praktyka_id": praktyka.id,
+        "dzien_nr": 1,
+        "data_wpisu": future,
+        "opis_prac": "Wpis z przyszłości",
+        "efekty": [1]
+    })
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "INVALID_DATE_RANGE"

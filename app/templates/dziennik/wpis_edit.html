@@ -44,8 +44,8 @@
                         <div class="col-md-6 col-12">
                             <div class="form-check">
                                 <input class="form-check-input efekt-checkbox" type="checkbox" name="efekty" value="{{ efekt.nr }}" id="efekt-{{ efekt.id }}" {% if efekt.id in wpis_efekty_ids %}checked{% endif %}>
-                                <label class="form-check-label small text-secondary" for="efekt-{{ efekt.id }}">
-                                    <strong>{{ efekt.symbol }}</strong> - {{ efekt.tresc|truncate(60) }}
+                                <label class="form-check-label small text-secondary" for="efekt-{{ efekt.id }}" title="{{ efekt.opis }}">
+                                    <strong>EU{{ efekt.nr }}</strong> - {{ efekt.opis|truncate(60) }}
                                 </label>
                             </div>
                         </div>

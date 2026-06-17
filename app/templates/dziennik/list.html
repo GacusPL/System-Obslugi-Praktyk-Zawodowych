@@ -62,6 +62,8 @@
                             <th style="width: 160px;">Status</th>
                             {% if current_user.rola == 'zopz' %}
                             <th style="width: 180px;">Akcje (ZOPZ)</th>
+                            {% elif current_user.rola == 'student' %}
+                            <th style="width: 140px;">Akcje</th>
                             {% endif %}
                         </tr>
                     </thead>
@@ -111,6 +113,17 @@
                                     </div>
                                     {% else %}
                                     <span class="text-success small d-flex align-items-center gap-1"><span class="material-symbols-outlined align-middle" style="font-size: 18px;">check_circle</span>Zweryfikowany</span>
+                                    {% endif %}
+                                </td>
+                                {% elif current_user.rola == 'student' %}
+                                <td>
+                                    {% if wpis.status in ['Draft', 'Rejected'] %}
+                                    <a href="{{ url_for('main.wpis_edit_form', wpis_id=wpis.id) }}" class="btn btn-sm btn-outline-primary py-1 px-2">
+                                        <span class="material-symbols-outlined align-middle" style="font-size: 16px;">edit</span>
+                                        {% if wpis.status == 'Rejected' %}Popraw{% else %}Edytuj{% endif %}
+                                    </a>
+                                    {% else %}
+                                    <span class="text-secondary small">—</span>
                                     {% endif %}
                                 </td>
                                 {% endif %}

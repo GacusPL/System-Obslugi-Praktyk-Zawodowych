@@ -129,6 +129,7 @@ class Harmonogram(db.Model):
     podpis_zopz = db.Column(db.Integer, nullable=False, default=0)
     podpis_uopz = db.Column(db.Integer, nullable=False, default=0)
     status = db.Column(db.String(50), nullable=False, default='Draft')
+    komentarz_odrzucenia = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
@@ -156,6 +157,22 @@ class HarmonogramDzial(db.Model):
 
     __table_args__ = (
         db.CheckConstraint('planowane_dni > 0', name='check_harmonogram_dzial_planowane_dni'),
+    )
+
+class ProgramPraktykiPozycja(db.Model):
+    """Pozycja programu praktyki (Zał. 2a) - mapowanie efektu kształcenia na
+    dział/przykładowe prace wykonywane przez praktykanta. Wypełnia opiekun (ZOPZ)."""
+    __tablename__ = 'program_praktyki_pozycja'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    harmonogram_id = db.Column(db.Integer, db.ForeignKey('harmonogram.id'), nullable=False)
+    efekt_id = db.Column(db.Integer, db.ForeignKey('efekt_uczenia.id'), nullable=False)
+    opis_realizacji = db.Column(db.Text, nullable=True)
+
+    harmonogram = db.relationship('Harmonogram', backref=db.backref('program_pozycje', cascade='all, delete-orphan'))
+    efekt = db.relationship('EfektUczenia')
+
+    __table_args__ = (
+        db.UniqueConstraint('harmonogram_id', 'efekt_id', name='uq_program_harmonogram_efekt'),
     )
 
 class WpisDziennika(db.Model):
@@ -188,6 +205,7 @@ class PotwierdzenieEfektow(db.Model):
     godziny_zrealizowane = db.Column(db.Integer, nullable=False)
     opinia_uopz = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(50), nullable=False, default='Draft')
+    komentarz_odrzucenia = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
@@ -246,6 +264,7 @@ class KartaPraktyki(db.Model):
     ocena_opisowa_uopz = db.Column(db.Text, nullable=True)
     ocena_sprawozdania = db.Column(db.Float, nullable=True)
     status = db.Column(db.String(50), nullable=False, default='Draft')
+    komentarz_odrzucenia = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
@@ -255,7 +274,7 @@ class KartaPraktyki(db.Model):
         db.CheckConstraint('ocena_param_zopz BETWEEN 2.0 AND 5.0', name='check_karta_ocena_zopz'),
         db.CheckConstraint('ocena_param_uopz BETWEEN 2.0 AND 5.0', name='check_karta_ocena_uopz'),
         db.CheckConstraint('ocena_sprawozdania BETWEEN 2.0 AND 5.0', name='check_karta_ocena_sprawozdania'),
-        db.CheckConstraint("status IN ('Draft', 'Under_Review', 'Approved', 'Closed')", name='check_karta_status'),
+        db.CheckConstraint("status IN ('Draft', 'Under_Review', 'Approved', 'Rejected', 'Closed')", name='check_karta_status'),
     )
 
 class Ankieta(db.Model):

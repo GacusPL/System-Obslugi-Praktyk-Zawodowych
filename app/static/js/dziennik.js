@@ -263,10 +263,15 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify(payload)
         })
-        .then(res => res.json())
+        .then(res => res.json().catch(() => ({ success: false, error: { message: "Nieprawidłowa odpowiedź serwera" } })))
         .then(data => {
             if (data.success) {
-                callback(true);
+                // Po sukcesie aktualizacja UI nie może maskować się jako błąd połączenia
+                try {
+                    callback(true);
+                } catch (e) {
+                    console.error("Błąd aktualizacji widoku po zapisie:", e);
+                }
             } else {
                 if (window.showToast) {
                     window.showToast("Błąd: " + (data.error?.message || "Wystąpił błąd"), "error");
@@ -330,10 +335,14 @@ document.addEventListener('DOMContentLoaded', function() {
             cb.classList.add('d-none');
         }
 
-        // Remove actions buttons
+        // Replace actions with a verification label reflecting the real status
         const actionCell = row.querySelector('td:last-child');
         if (actionCell) {
-            actionCell.innerHTML = `<span class="text-secondary small d-flex align-items-center gap-1 justify-content-center"><span class="material-symbols-outlined text-success" style="font-size: 16px;">verified</span> Zweryfikowany</span>`;
+            if (status === 'Rejected') {
+                actionCell.innerHTML = `<span class="text-danger small d-flex align-items-center gap-1 justify-content-center"><span class="material-symbols-outlined" style="font-size: 16px;">cancel</span> Odrzucony – do poprawy</span>`;
+            } else {
+                actionCell.innerHTML = `<span class="text-success small d-flex align-items-center gap-1 justify-content-center"><span class="material-symbols-outlined text-success" style="font-size: 16px;">verified</span> Zweryfikowany</span>`;
+            }
         }
 
         // Add comment to description cell if present

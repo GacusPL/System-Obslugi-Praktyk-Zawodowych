@@ -89,9 +89,19 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.disabled = true;
             btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Zapisywanie...`;
             
+            // Program praktyki (Zał. 2a) - opis realizacji per efekt
+            const program = [];
+            document.querySelectorAll('.program-opis-input').forEach(ta => {
+                program.push({
+                    efekt_nr: parseInt(ta.getAttribute('data-efekt-nr')),
+                    opis_realizacji: ta.value
+                });
+            });
+
             const harmonogramId = form.getAttribute('data-harmonogram-id');
             const payload = {
-                dzialy: dzialy
+                dzialy: dzialy,
+                program: program
             };
             
             fetch(`/api/v1/harmonogramy/${harmonogramId}`, {

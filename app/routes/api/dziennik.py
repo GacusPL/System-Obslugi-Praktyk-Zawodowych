@@ -5,6 +5,7 @@ from app import db
 from app.models import WpisDziennika, Praktyka, Student, EfektUczenia, Uzytkownik
 from app.decorators import role_required
 from app.routes.api.helpers import api_success, api_error, paginate_query, validate_payload
+from app.validators import validate_wpis_date
 
 dziennik_api_bp = Blueprint('dziennik_api', __name__)
 
@@ -70,6 +71,10 @@ def create_wpis():
         data_wpisu = datetime.strptime(data_wpisu_str, '%Y-%m-%d').date()
     except ValueError:
         return api_error("INVALID_DATE_FORMAT", "Nieprawidłowy format daty (wymagany YYYY-MM-DD)", status=400)
+
+    ok, msg = validate_wpis_date(data_wpisu, praktyka.termin_od, praktyka.termin_do)
+    if not ok:
+        return api_error("INVALID_DATE_RANGE", msg, status=400)
 
     # Validate effects
     efekty = []
@@ -146,9 +151,13 @@ def update_wpis(wpis_id):
 
     if data_wpisu_str is not None:
         try:
-            wpis.data_wpisu = datetime.strptime(data_wpisu_str, '%Y-%m-%d').date()
+            nowa_data = datetime.strptime(data_wpisu_str, '%Y-%m-%d').date()
         except ValueError:
             return api_error("INVALID_DATE_FORMAT", "Nieprawidłowy format daty", status=400)
+        ok, msg = validate_wpis_date(nowa_data, praktyka.termin_od, praktyka.termin_do)
+        if not ok:
+            return api_error("INVALID_DATE_RANGE", msg, status=400)
+        wpis.data_wpisu = nowa_data
 
     if efekty_nrs is not None:
         efekty = []

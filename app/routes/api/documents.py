@@ -36,6 +36,11 @@ def compile_pdf_data(praktyka, typ):
             'nazwa_dzialu': d.nazwa_dzialu,
             'planowane_dni': d.planowane_dni
         } for d in harmonogram.dzialy] if harmonogram else []
+        data['program'] = [{
+            'efekt_nr': p.efekt.nr,
+            'efekt_opis': p.efekt.opis,
+            'opis_realizacji': p.opis_realizacji
+        } for p in sorted(harmonogram.program_pozycje, key=lambda x: x.efekt.nr)] if harmonogram else []
         data['podpis_student'] = harmonogram.podpis_student if harmonogram else False
         data['podpis_zopz'] = harmonogram.podpis_zopz if harmonogram else False
         data['podpis_uopz'] = harmonogram.podpis_uopz if harmonogram else False

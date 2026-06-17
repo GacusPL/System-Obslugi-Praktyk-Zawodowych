@@ -58,8 +58,35 @@ def generate_zal_nr2a(filepath, data):
     ]))
     story.append(meta_table)
     story.append(Spacer(1, 20))
-    
-    # 3. Harmonogram Table
+
+    # 3. Program Praktyki Table (mapowanie efektów na przykładowe prace)
+    program = data.get('program', [])
+    if program:
+        story.append(Paragraph("Program praktyki zawodowej:", styles['H2']))
+        prog_headers = [
+            Paragraph("Efekt kształcenia", styles['TableHeader']),
+            Paragraph("Dział (komórka) / przykładowe prace praktykanta", styles['TableHeader'])
+        ]
+        prog_data = [prog_headers]
+        for p in program:
+            efekt_label = f"<b>EU{int(p.get('efekt_nr', 0)):02d}</b> – {p.get('efekt_opis', '')}"
+            prog_data.append([
+                Paragraph(efekt_label, styles['TableBody']),
+                Paragraph(p.get('opis_realizacji') or '—', styles['TableBody'])
+            ])
+        prog_table = Table(prog_data, colWidths=[210, 277])
+        prog_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#4f46e5")),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        story.append(prog_table)
+        story.append(Spacer(1, 20))
+
+    # 4. Harmonogram Table
     story.append(Paragraph("Harmonogram Praktyki (wymagane 120 dni):", styles['H2']))
     
     harm_headers = [

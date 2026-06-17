@@ -41,6 +41,18 @@ def validate_dates_range(termin_od, termin_do):
         return False, "Data zakończenia nie może być wcześniejsza niż data rozpoczęcia"
     return True, "Zakres dat poprawny"
 
+def validate_wpis_date(data_wpisu, termin_od=None, termin_do=None):
+    """Wpis dziennika nie może mieć daty z przyszłości ani spoza okresu praktyki."""
+    if isinstance(data_wpisu, datetime):
+        data_wpisu = data_wpisu.date()
+    if data_wpisu > date.today():
+        return False, "Data wpisu nie może być datą z przyszłości"
+    if termin_od and data_wpisu < termin_od:
+        return False, "Data wpisu jest wcześniejsza niż termin rozpoczęcia praktyki"
+    if termin_do and data_wpisu > termin_do:
+        return False, "Data wpisu jest późniejsza niż termin zakończenia praktyki"
+    return True, "Data wpisu poprawna"
+
 def validate_ankieta_complete(ankieta_id):
     count = AnkietaOdpowiedz.query.filter_by(ankieta_id=ankieta_id).count()
     if count == 14:

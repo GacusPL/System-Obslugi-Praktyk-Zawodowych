@@ -4,7 +4,7 @@ from unittest.mock import patch
 def test_health_success(client):
     response = client.get('/api/v1/health')
     assert response.status_code == 200
-    assert response.get_json() == {"data": {"status": "ok"}}
+    assert response.get_json() == {"success": True, "data": {"status": "ok"}}
 
 def test_health_db_failure(client):
     with patch('app.db.session.execute') as mock_execute:

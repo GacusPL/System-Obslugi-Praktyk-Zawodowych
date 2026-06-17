@@ -10,6 +10,22 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-10">
+        {% set editable = (current_user.rola == 'zopz' and harmonogram.status in ['Draft', 'Rejected']) or current_user.rola == 'administrator' %}
+
+        {% if harmonogram.status == 'Rejected' and harmonogram.komentarz_odrzucenia %}
+        <div class="alert alert-danger border-0 shadow-sm mb-4" role="alert">
+            <span class="material-symbols-outlined align-middle me-2">cancel</span>
+            <strong>Harmonogram odrzucony.</strong> Komentarz opiekuna uczelnianego: {{ harmonogram.komentarz_odrzucenia }}
+        </div>
+        {% endif %}
+
+        {% if current_user.rola == 'student' %}
+        <div class="alert alert-info border-0 shadow-sm mb-4" role="alert">
+            <span class="material-symbols-outlined align-middle me-2">info</span>
+            Harmonogram i program praktyki opracowuje opiekun zakładowy. Masz tu podgląd oraz możliwość złożenia podpisu.
+        </div>
+        {% endif %}
+
         <!-- Status Bar z Podpisami -->
         <div class="card-sopz mb-4">
             <h5 class="fw-bold mb-3"><span class="material-symbols-outlined align-middle me-2" style="color: var(--primary);">person_check</span>Status Podpisów Harmonogramu</h5>
@@ -80,12 +96,42 @@
             </div>
         </div>
 
+        <!-- Program Praktyki (Zał. 2a) -->
+        <div class="card-sopz mb-4">
+            <h3 class="mb-2"><span class="material-symbols-outlined align-middle me-2" style="color: var(--primary);">menu_book</span>Program Praktyki Zawodowej (Zał. 2a)</h3>
+            <p class="text-secondary mb-4">Dla każdego efektu kształcenia wskaż dział/komórkę oraz przykładowe prace wykonywane przez praktykanta.</p>
+            <div class="table-responsive">
+                <table class="table-sopz align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 45%;">Efekt kształcenia</th>
+                            <th>Dział (komórka) / przykładowe prace praktykanta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for efekt in efekty %}
+                        <tr>
+                            <td><strong>EU{{ '%02d'|format(efekt.nr) }}</strong> – {{ efekt.opis }}</td>
+                            <td>
+                                {% if editable %}
+                                <textarea class="form-control program-opis-input" data-efekt-nr="{{ efekt.nr }}" rows="2" placeholder="Opis realizacji...">{{ program_map.get(efekt.id, '') }}</textarea>
+                                {% else %}
+                                {{ program_map.get(efekt.id) or '—' }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Harmonogram Tabela -->
         <div class="card-sopz">
             <h3 class="mb-2"><span class="material-symbols-outlined align-middle me-2" style="color: var(--primary);">calendar_month</span>Harmonogram Praktyki (P1)</h3>
             <p class="text-secondary mb-4">Podziel 120 dni praktyk na poszczególne działy/obszary tematyczne w firmie.</p>
 
-            {% if (harmonogram.status != 'Draft' and current_user.rola == 'student') or current_user.rola in ['zopz', 'uopz'] %}
+            {% if not editable %}
             <!-- Tryb tylko do odczytu -->
             <div class="table-responsive">
                 <table class="table-sopz">

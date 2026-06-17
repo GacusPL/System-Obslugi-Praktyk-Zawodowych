@@ -1,6 +1,6 @@
 import pytest
 from app import db
-from app.models import Harmonogram, HarmonogramDzial, Praktyka, Student, Uzytkownik
+from app.models import Harmonogram, HarmonogramDzial, Praktyka, Student, Uzytkownik, EfektUczenia
 
 def test_harmonogram_crud_and_signatures(client, db_session, sample_student, sample_zaklad, sample_uopz):
     # Setup ZOPZ user whose name matches the ZOPZ of sample_zaklad
@@ -116,11 +116,8 @@ def test_harmonogram_crud_and_signatures(client, db_session, sample_student, sam
     # Verify that the practice status is also updated to Under_Review
     assert Praktyka.query.get(praktyka.id).status == "Under_Review"
 
-    # 8. Test PUT save and PATCH /signature routes (using student login)
-    client.get('/auth/logout')
-    client.get(f'/auth/login?mock_email={sample_student.uzytkownik.email}&mock_rola=student')
-
-    # Create a fresh practice and harmonogram in draft for student to edit and sign
+    # 8. Test PUT save (ZOPZ authors harmonogram) and PATCH /signature routes
+    # Create a fresh practice and harmonogram in draft
     praktyka3 = Praktyka(
         student_id=sample_student.id,
         zaklad_id=sample_zaklad.id,
@@ -135,18 +132,35 @@ def test_harmonogram_crud_and_signatures(client, db_session, sample_student, sam
 
     h3 = Harmonogram(praktyka_id=praktyka3.id, status="Draft")
     db_session.add(h3)
+    if not EfektUczenia.query.filter_by(nr=1).first():
+        db_session.add(EfektUczenia(nr=1, opis="Efekt 1"))
     db_session.commit()
 
-    # Save divisions via PUT (sum = 120)
     put_data = {
         "dzialy": [
             {"nazwa_dzialu": "A", "planowane_dni": 50},
             {"nazwa_dzialu": "B", "planowane_dni": 70}
+        ],
+        "program": [
+            {"efekt_nr": 1, "opis_realizacji": "Realizacja w dziale IT"}
         ]
     }
+
+    # Student is no longer allowed to edit harmonogram content (read-only)
+    client.get('/auth/logout')
+    client.get(f'/auth/login?mock_email={sample_student.uzytkownik.email}&mock_rola=student')
+    response = client.put(f'/api/v1/harmonogramy/{h3.id}', json=put_data)
+    assert response.status_code == 403
+
+    # ZOPZ (opiekun zakładowy) opracowuje harmonogram + program
+    client.get('/auth/logout')
+    client.get(f'/auth/login?mock_email={zopz_user.email}&mock_rola=zopz')
+
     response = client.put(f'/api/v1/harmonogramy/{h3.id}', json=put_data)
     assert response.status_code == 200
     assert len(response.get_json()["data"]["dzialy"]) == 2
+    program = response.get_json()["data"]["program"]
+    assert any(p["efekt_nr"] == 1 and p["opis_realizacji"] == "Realizacja w dziale IT" for p in program)
 
     # Save divisions via PUT (invalid sum != 120) -> 400
     invalid_put_data = {
@@ -158,7 +172,9 @@ def test_harmonogram_crud_and_signatures(client, db_session, sample_student, sam
     response = client.put(f'/api/v1/harmonogramy/{h3.id}', json=invalid_put_data)
     assert response.status_code == 400
 
-    # Sign via PATCH .../signature
+    # Sign via PATCH .../signature (student still signs)
+    client.get('/auth/logout')
+    client.get(f'/auth/login?mock_email={sample_student.uzytkownik.email}&mock_rola=student')
     response = client.patch(f'/api/v1/harmonogramy/{h3.id}/signature', json={"rola": "student"})
     assert response.status_code == 200
     assert response.get_json()["data"]["podpis_student"] == 1

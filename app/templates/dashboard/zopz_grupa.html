@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Moja Grupa - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="active">Moja Grupa</li>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h1 class="h2 mb-1">Moja Grupa</h1>
+        <p class="text-secondary mb-0">Praktykanci przypisani do Twoich zakładów pracy.</p>
+    </div>
+</div>
+
+{% if not praktyki %}
+<div class="card-sopz">
+    <div class="empty-state py-5">
+        <span class="material-symbols-outlined" style="font-size: 48px;">group_off</span>
+        <h3>Brak praktykantów</h3>
+        <p>Nie masz obecnie przypisanych studentów.</p>
+    </div>
+</div>
+{% else %}
+<div class="row g-3">
+    {% for p in praktyki %}
+    <div class="col-md-6 col-xl-4">
+        <div class="card-sopz h-100">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div class="table-avatar" style="width: 44px; height: 44px;">
+                    {{ p.student.uzytkownik.imie[0] }}{{ p.student.uzytkownik.nazwisko[0] }}
+                </div>
+                <div>
+                    <div class="fw-semibold">{{ p.student.uzytkownik.imie }} {{ p.student.uzytkownik.nazwisko }}</div>
+                    <span class="text-secondary small">nr albumu: {{ p.student.nr_albumu }}</span>
+                </div>
+            </div>
+            <div class="small text-secondary mb-3">
+                <div><strong>Firma:</strong> {{ p.zaklad_pracy.nazwa }}</div>
+                <div><strong>Specjalność:</strong> {{ p.student.specjalnosc or 'Brak' }}</div>
+                <div><strong>Status:</strong> <span class="badge-status badge-status-{{ p.status|lower }}">{{ p.status|translate_status }}</span></div>
+                <div><strong>Dziennik:</strong> <span class="badge bg-light text-primary border">{{ p.dziennik_status|translate_status }}</span></div>
+            </div>
+            <div class="d-flex gap-1 flex-wrap">
+                <a href="{{ url_for('main.praktyka_przeglad', praktyka_id=p.id) }}" class="btn btn-secondary btn-sm flex-grow-1" style="font-size: 11px; padding: 4px 8px;">
+                    <span class="material-symbols-outlined align-middle me-1" style="font-size: 14px;">visibility</span>Przegląd
+                </a>
+                <a href="{{ url_for('main.dziennik_list') }}?praktyka_id={{ p.id }}" class="btn btn-outline-primary btn-sm flex-grow-1" style="font-size: 11px; padding: 4px 8px;">
+                    <span class="material-symbols-outlined align-middle me-1" style="font-size: 14px;">edit_note</span>Dziennik
+                </a>
+                <a href="{{ url_for('main.harmonogram_edit') }}?praktyka_id={{ p.id }}" class="btn btn-outline-primary btn-sm flex-grow-1" style="font-size: 11px; padding: 4px 8px;">
+                    <span class="material-symbols-outlined align-middle me-1" style="font-size: 14px;">calendar_month</span>Harmonogram
+                </a>
+                <a href="{{ url_for('main.karta_praktyki_view', praktyka_id=p.id) }}" class="btn btn-primary btn-sm flex-grow-1" style="font-size: 11px; padding: 4px 8px;">
+                    <span class="material-symbols-outlined align-middle me-1" style="font-size: 14px;">grade</span>Oceń
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
