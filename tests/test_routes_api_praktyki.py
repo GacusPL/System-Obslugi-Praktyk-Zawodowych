@@ -52,10 +52,12 @@ def test_praktyki_crud_and_transitions(client, db_session, sample_student, sampl
     client.get('/auth/logout')
     client.get(f'/auth/login?mock_email={student_email}&mock_rola=student')
 
-    # 6. DELETE Draft (happy path)
+    # 6. DELETE Draft (happy path) - soft-delete: dane zachowane, oznaczone jako archived
     response = client.delete(f'/api/v1/praktyki/{praktyka_id}')
     assert response.status_code == 200
-    assert Praktyka.query.get(praktyka_id) is None
+    deleted = Praktyka.query.get(praktyka_id)
+    assert deleted is not None
+    assert deleted.archived is True
 
     # 7. Create another and submit, try to delete Submitted (error check)
     response = client.post('/api/v1/praktyki', json=data)

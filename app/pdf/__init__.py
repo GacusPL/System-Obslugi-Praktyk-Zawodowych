@@ -19,7 +19,14 @@ try:
         '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
         '/usr/share/fonts/truetype/msttcorefonts/arialbd.ttf',
     ]
-    
+
+    font_italic_paths = [
+        os.path.join(windir, 'Fonts', 'ariali.ttf'),
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf',
+        '/usr/share/fonts/truetype/liberation/LiberationSans-Italic.ttf',
+        '/usr/share/fonts/truetype/msttcorefonts/ariali.ttf',
+    ]
+
     registered = False
     for path in font_paths:
         if os.path.exists(path):
@@ -33,7 +40,23 @@ try:
             pdfmetrics.registerFont(TTFont('Arial-Bold', path))
             registered_bold = True
             break
-            
+
+    for path in font_italic_paths:
+        if os.path.exists(path):
+            pdfmetrics.registerFont(TTFont('Arial-Italic', path))
+            break
+
+    # Zarejestruj rodzinę czcionek, aby znaczniki <b>/<i> w Paragraph
+    # mapowały się na Arial-Bold / Arial-Italic (inaczej <b> nie pogrubia).
+    if registered:
+        registered_names = pdfmetrics.getRegisteredFontNames()
+        bold_name = 'Arial-Bold' if 'Arial-Bold' in registered_names else 'Arial'
+        italic_name = 'Arial-Italic' if 'Arial-Italic' in registered_names else 'Arial'
+        pdfmetrics.registerFontFamily(
+            'Arial', normal='Arial', bold=bold_name,
+            italic=italic_name, boldItalic=bold_name
+        )
+
     # Fallback to Helvetica if no suitable font is found
     if not registered:
         # reportlab default

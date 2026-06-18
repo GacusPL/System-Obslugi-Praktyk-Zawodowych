@@ -92,6 +92,73 @@ def zaklady_manage():
     zaklady = ZakladPracy.query.all()
     return render_template('admin/zaklady.html', zaklady=zaklady)
 
+@admin_bp.route('/praktyki/<int:praktyka_id>/archive', methods=['POST'])
+@login_required
+@admin_required
+def archive_praktyka(praktyka_id):
+    from app.models import Praktyka
+    p = Praktyka.query.get_or_404(praktyka_id)
+    p.archived = True
+    db.session.commit()
+    flash("Praktyka została zarchiwizowana (dane zachowane).", "success")
+    return redirect(url_for('admin.praktyki_list'))
+
+@admin_bp.route('/praktyki/<int:praktyka_id>/restore', methods=['POST'])
+@login_required
+@admin_required
+def restore_praktyka(praktyka_id):
+    from app.models import Praktyka
+    p = Praktyka.query.get_or_404(praktyka_id)
+    p.archived = False
+    db.session.commit()
+    flash("Praktyka została przywrócona z archiwum.", "success")
+    return redirect(url_for('admin.praktyki_list'))
+
+@admin_bp.route('/zaklady/<int:zaklad_id>/archive', methods=['POST'])
+@login_required
+@admin_required
+def archive_zaklad(zaklad_id):
+    from app.models import ZakladPracy
+    z = ZakladPracy.query.get_or_404(zaklad_id)
+    z.archived = True
+    db.session.commit()
+    flash("Zakład pracy został zarchiwizowany.", "success")
+    return redirect(url_for('admin.zaklady_manage'))
+
+@admin_bp.route('/zaklady/<int:zaklad_id>/restore', methods=['POST'])
+@login_required
+@admin_required
+def restore_zaklad(zaklad_id):
+    from app.models import ZakladPracy
+    z = ZakladPracy.query.get_or_404(zaklad_id)
+    z.archived = False
+    db.session.commit()
+    flash("Zakład pracy został przywrócony z archiwum.", "success")
+    return redirect(url_for('admin.zaklady_manage'))
+
+@admin_bp.route('/users/<int:user_id>/archive', methods=['POST'])
+@login_required
+@admin_required
+def archive_user(user_id):
+    user = Uzytkownik.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash("Nie możesz zarchiwizować własnego konta.", "danger")
+        return redirect(url_for('admin.users_list'))
+    user.archived = True
+    db.session.commit()
+    flash(f"Konto {user.email} zostało zarchiwizowane.", "success")
+    return redirect(url_for('admin.users_list'))
+
+@admin_bp.route('/users/<int:user_id>/restore', methods=['POST'])
+@login_required
+@admin_required
+def restore_user(user_id):
+    user = Uzytkownik.query.get_or_404(user_id)
+    user.archived = False
+    db.session.commit()
+    flash(f"Konto {user.email} zostało przywrócone z archiwum.", "success")
+    return redirect(url_for('admin.users_list'))
+
 @admin_bp.route('/raporty', methods=['GET'])
 @login_required
 @admin_required

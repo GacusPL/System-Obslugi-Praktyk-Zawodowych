@@ -33,6 +33,7 @@ class Uzytkownik(UserMixin, db.Model):
     haslo_hash = db.Column(db.String(255), nullable=False)
     rola = db.Column(db.String(50), nullable=True) # Set nullable=True for first OAuth login
     microsoft_id = db.Column(db.String(255), nullable=True)
+    archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 
@@ -78,6 +79,7 @@ class ZakladPracy(db.Model):
     zopz_stanowisko = db.Column(db.String(100), nullable=False)
     zopz_wyksztalcenie = db.Column(db.String(100), nullable=False)
     status = db.Column(db.String(50), nullable=False, default='Approved')
+    archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     zopz_uzytkownik_id = db.Column(db.Integer, db.ForeignKey('uzytkownik.id'), nullable=True)
     
@@ -107,6 +109,7 @@ class Praktyka(db.Model):
     ocena_koncowa = db.Column(db.Float, nullable=True)
     ankieta_wypelniona = db.Column(db.Integer, nullable=False, default=0)
     dziennik_status = db.Column(db.String(50), nullable=False, default='Draft')
+    archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 

@@ -48,17 +48,13 @@ def compile_pdf_data(praktyka, typ):
     elif typ == 'zal_nr3':
         karta = praktyka.karta_praktyki
         data.update({
-            'bhp_completed': True,
-            'ocena_zopz_1': karta.ocena_param_zopz if karta else None,
-            'ocena_zopz_2': karta.ocena_param_zopz if karta else None,
-            'ocena_zopz_3': karta.ocena_param_zopz if karta else None,
-            'ocena_zopz_4': karta.ocena_param_zopz if karta else None,
-            'ocena_zopz_5': karta.ocena_param_zopz if karta else None,
-            'ocena_zopz_ogolna': karta.ocena_param_zopz if karta else None,
-            'opinia_zopz_opis': karta.ocena_opisowa_zopz if karta else "",
-            'opinia_uopz_opis': karta.ocena_opisowa_uopz if karta else "",
+            'porozumienie_nr': praktyka.id,
+            'ocena_param_zopz': karta.ocena_param_zopz if karta else None,
+            'ocena_opisowa_zopz': karta.ocena_opisowa_zopz if karta else "",
+            'ocena_param_uopz': karta.ocena_param_uopz if karta else None,
+            'ocena_opisowa_uopz': karta.ocena_opisowa_uopz if karta else "",
             'ocena_sprawozdania': karta.ocena_sprawozdania if karta else None,
-            'ocena_koncowa': praktyka.ocena_koncowa
+            'ocena_koncowa': praktyka.ocena_koncowa,
         })
 
     elif typ == 'zal_nr4':

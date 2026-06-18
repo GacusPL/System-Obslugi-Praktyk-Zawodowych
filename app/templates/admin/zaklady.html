@@ -36,11 +36,12 @@
                             <th>NIP</th>
                             <th>Opiekun (ZOPZ)</th>
                             <th>Status</th>
+                            <th style="width: 130px;">Akcje</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for z in zaklady %}
-                        <tr>
+                        <tr {% if z.archived %}class="table-secondary opacity-75"{% endif %}>
                             <td>
                                 <div class="fw-semibold text-primary">{{ z.nazwa }}</div>
                                 <span class="text-secondary small">{{ z.adres }}</span>
@@ -51,7 +52,9 @@
                                 <span class="text-secondary small">{{ z.zopz_stanowisko }} ({{ z.zopz_wyksztalcenie }})</span>
                             </td>
                             <td>
-                                {% if z.status == 'Approved' %}
+                                {% if z.archived %}
+                                    <span class="badge bg-secondary"><span class="material-symbols-outlined" style="font-size: 14px;">inventory_2</span> Archiwum</span>
+                                {% elif z.status == 'Approved' %}
                                     <span class="badge-status badge-status-approved">
                                         <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> Zatwierdzony
                                     </span>
@@ -59,6 +62,19 @@
                                     <span class="badge-status badge-status-rejected">
                                         <span class="material-symbols-outlined" style="font-size: 14px;">cancel</span> {{ z.status }}
                                     </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if z.archived %}
+                                <form method="POST" action="{{ url_for('admin.restore_zaklad', zaklad_id=z.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-success"><span class="material-symbols-outlined align-middle" style="font-size: 16px;">restore</span> Przywróć</button>
+                                </form>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('admin.archive_zaklad', zaklad_id=z.id) }}" onsubmit="return confirm('Zarchiwizować ten zakład pracy?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><span class="material-symbols-outlined align-middle" style="font-size: 16px;">inventory_2</span> Archiwizuj</button>
+                                </form>
                                 {% endif %}
                             </td>
                         </tr>

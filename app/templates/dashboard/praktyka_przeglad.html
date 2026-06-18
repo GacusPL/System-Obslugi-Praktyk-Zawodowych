@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Przegląd praktyki - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+{% if current_user.rola == 'uopz' %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.uopz_praktyki') }}">Nadzorowane praktyki</a></li>
+{% elif current_user.rola == 'zopz' %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.zopz_moja_grupa') }}">Moja Grupa</a></li>
+{% endif %}
+<li class="active">Przegląd</li>
+{% endblock %}
+
+{% block content %}
+{% set s = praktyka.student %}
+{% set harmonogram = praktyka.harmonogram %}
+{% set efekty = praktyka.potwierdzenie_efektow %}
+{% set karta = praktyka.karta_praktyki %}
+
+<div class="card-sopz mb-4">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div class="table-avatar" style="width: 56px; height: 56px; font-size: 18px;">
+            {{ s.uzytkownik.imie[0] }}{{ s.uzytkownik.nazwisko[0] }}
+        </div>
+        <div class="flex-grow-1">
+            <h1 class="h3 mb-1">{{ s.uzytkownik.imie }} {{ s.uzytkownik.nazwisko }}</h1>
+            <p class="text-secondary mb-0 small">
+                Album: {{ s.nr_albumu }} | Kierunek: {{ s.kierunek }} | Specjalność: {{ s.specjalnosc or 'Brak' }}<br>
+                Firma: <strong>{{ praktyka.zaklad_pracy.nazwa }}</strong> | Opiekun uczelniany: {{ praktyka.uopz.imie }} {{ praktyka.uopz.nazwisko }}
+            </p>
+        </div>
+        <div>
+            <span class="badge-status badge-status-{{ praktyka.status|lower }}">{{ praktyka.status|translate_status }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Postęp dziennika -->
+<div class="card-sopz mb-4">
+    <h3 class="mb-3">Postęp dziennika</h3>
+    {% set pct = (wpisy_approved / 120 * 100) | round(0, 'floor') %}
+    <div class="d-flex justify-content-between mb-1 small">
+        <span>Zatwierdzone dni</span>
+        <strong>{{ wpisy_approved }} / 120</strong>
+    </div>
+    <div class="progress" style="height: 14px;">
+        <div class="progress-bar bg-success" role="progressbar" style="width: {{ pct }}%;" aria-valuenow="{{ wpisy_approved }}" aria-valuemin="0" aria-valuemax="120"></div>
+    </div>
+    <div class="small text-secondary mt-2">Status dziennika: <span class="badge bg-light text-primary border">{{ praktyka.dziennik_status|translate_status }}</span></div>
+</div>
+
+<!-- Statusy dokumentów -->
+<div class="card-sopz mb-4">
+    <h3 class="mb-3">Statusy dokumentów</h3>
+    <div class="table-responsive">
+        <table class="table-sopz align-middle">
+            <tbody>
+                <tr>
+                    <td>Harmonogram (Zał. 2a)</td>
+                    <td><span class="badge-status badge-status-{{ (harmonogram.status if harmonogram else 'draft')|lower }}">{{ (harmonogram.status if harmonogram else 'Brak')|translate_status }}</span></td>
+                </tr>
+                <tr>
+                    <td>Potwierdzenie efektów (Zał. 4)</td>
+                    <td><span class="badge-status badge-status-{{ (efekty.status if efekty else 'draft')|lower }}">{{ (efekty.status if efekty else 'Brak')|translate_status }}</span></td>
+                </tr>
+                <tr>
+                    <td>Sprawozdanie (Zał. 7)</td>
+                    <td><span class="badge-status badge-status-{{ (sprawozdanie.status if sprawozdanie else 'draft')|lower }}">{{ (sprawozdanie.status if sprawozdanie else 'Brak')|translate_status }}</span></td>
+                </tr>
+                <tr>
+                    <td>Karta praktyki (Zał. 3)</td>
+                    <td><span class="badge-status badge-status-{{ (karta.status if karta else 'draft')|lower }}">{{ (karta.status if karta else 'Brak')|translate_status }}</span></td>
+                </tr>
+                <tr>
+                    <td>Ankieta ewaluacyjna (Zał. 5)</td>
+                    <td>
+                        {% if praktyka.ankieta_wypelniona == 1 %}
+                        <span class="badge-status badge-status-approved">Wypełniona</span>
+                        {% else %}
+                        <span class="badge bg-light text-secondary border">Brak</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>Egzamin (Zał. 8)</td>
+                    <td>
+                        {% if egzamin %}
+                        <span class="badge-status badge-status-{{ egzamin.status|lower }}">{{ egzamin.status|translate_status }}</span>
+                        {% if egzamin.ocena %}<span class="ms-2">Ocena: <strong>{{ egzamin.ocena }}</strong></span>{% endif %}
+                        {% else %}
+                        <span class="badge bg-light text-secondary border">Brak</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Szybkie akcje -->
+<div class="card-sopz">
+    <h3 class="mb-3">Szybkie akcje</h3>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('main.dziennik_list') }}?praktyka_id={{ praktyka.id }}" class="btn btn-outline-primary btn-sm">
+            <span class="material-symbols-outlined align-middle me-1" style="font-size: 16px;">edit_note</span>Dziennik
+        </a>
+        <a href="{{ url_for('main.harmonogram_edit') }}?praktyka_id={{ praktyka.id }}" class="btn btn-outline-primary btn-sm">
+            <span class="material-symbols-outlined align-middle me-1" style="font-size: 16px;">calendar_month</span>Harmonogram
+        </a>
+        {% if current_user.rola == 'uopz' %}
+        <a href="{{ url_for('main.sprawozdanie_form', praktyka_id=praktyka.id) }}" class="btn btn-outline-primary btn-sm">
+            <span class="material-symbols-outlined align-middle me-1" style="font-size: 16px;">description</span>Sprawozdanie
+        </a>
+        <a href="{{ url_for('main.dokumentacja_weryfikacja', praktyka_id=praktyka.id) }}" class="btn btn-outline-primary btn-sm">
+            <span class="material-symbols-outlined align-middle me-1" style="font-size: 16px;">folder_open</span>Dokumentacja
+        </a>
+        {% endif %}
+        <a href="{{ url_for('main.karta_praktyki_view', praktyka_id=praktyka.id) }}" class="btn btn-primary btn-sm">
+            <span class="material-symbols-outlined align-middle me-1" style="font-size: 16px;">grade</span>Karta praktyki
+        </a>
+    </div>
+</div>
+{% endblock %}

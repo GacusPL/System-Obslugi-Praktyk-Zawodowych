@@ -132,8 +132,8 @@ def zgloszenie_praktyki():
     from app.models import Student, ZakladPracy, Uzytkownik, Praktyka
     student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
     praktyka = Praktyka.query.filter_by(student_id=student.id).first() if student else None
-    zaklady = ZakladPracy.query.all()
-    uopz_list = Uzytkownik.query.filter_by(rola='uopz').all()
+    zaklady = ZakladPracy.query.filter_by(archived=False).all()
+    uopz_list = Uzytkownik.query.filter_by(rola='uopz', archived=False).all()
     return render_template('praktyka/zgloszenie.html', zaklady=zaklady, uopz_list=uopz_list, praktyka=praktyka)
 
 @main_bp.route('/wniosek/alternatywny')

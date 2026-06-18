@@ -73,7 +73,7 @@
                 <span class="material-symbols-outlined">dashboard</span>
                 Dashboard
             </a>
-            <a href="{{ url_for('main.dashboard') }}#students" class="sidebar-nav-item">
+            <a href="{{ url_for('main.zopz_moja_grupa') }}" class="sidebar-nav-item {% if request.endpoint in ['main.zopz_moja_grupa', 'main.praktyka_przeglad'] %}active{% endif %}">
                 <span class="material-symbols-outlined">group</span>
                 Moja Grupa
             </a>
@@ -98,7 +98,7 @@
                 <span class="material-symbols-outlined">dashboard</span>
                 Dashboard
             </a>
-            <a href="{{ url_for('main.dashboard') }}#praktyki" class="sidebar-nav-item">
+            <a href="{{ url_for('main.uopz_praktyki') }}" class="sidebar-nav-item {% if request.endpoint in ['main.uopz_praktyki', 'main.praktyka_przeglad'] %}active{% endif %}">
                 <span class="material-symbols-outlined">school</span>
                 Nadzorowane praktyki
             </a>

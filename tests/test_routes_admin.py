@@ -52,3 +52,47 @@ def test_non_admin_update_user_role(client, db_session):
     assert response.status_code == 403
 
     client.get('/auth/logout')
+
+
+def test_admin_archive_and_restore_praktyka(client, db_session, sample_student, sample_zaklad, sample_uopz):
+    from datetime import date
+    from app.models import Praktyka
+    p = Praktyka(
+        student_id=sample_student.id, zaklad_id=sample_zaklad.id, uopz_id=sample_uopz.id,
+        termin_od=date(2026, 1, 1), termin_do=date(2026, 6, 1),
+        rok_akademicki="2025/2026", status="Draft",
+    )
+    db_session.add(p)
+    db_session.commit()
+
+    client.get('/auth/login?mock_email=admin_arch@ans-elblag.pl&mock_rola=administrator')
+
+    r = client.post(f'/admin/praktyki/{p.id}/archive', follow_redirects=False)
+    assert r.status_code == 302
+    assert Praktyka.query.get(p.id).archived is True
+
+    r = client.post(f'/admin/praktyki/{p.id}/restore', follow_redirects=False)
+    assert r.status_code == 302
+    assert Praktyka.query.get(p.id).archived is False
+
+    client.get('/auth/logout')
+
+
+def test_admin_soft_delete_praktyka_via_api(client, db_session, sample_student, sample_zaklad, sample_uopz):
+    from datetime import date
+    from app.models import Praktyka
+    p = Praktyka(
+        student_id=sample_student.id, zaklad_id=sample_zaklad.id, uopz_id=sample_uopz.id,
+        termin_od=date(2026, 1, 1), termin_do=date(2026, 6, 1),
+        rok_akademicki="2025/2026", status="Draft",
+    )
+    db_session.add(p)
+    db_session.commit()
+
+    client.get(f'/auth/login?mock_email={sample_student.uzytkownik.email}&mock_rola=student')
+    r = client.delete(f'/api/v1/praktyki/{p.id}')
+    assert r.status_code == 200
+    # Dane są zachowane (soft-delete), nie usunięte z bazy
+    refreshed = Praktyka.query.get(p.id)
+    assert refreshed is not None
+    assert refreshed.archived is True

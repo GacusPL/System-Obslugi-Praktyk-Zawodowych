@@ -25,11 +25,12 @@
                             <th>Opiekun (UOPZ)</th>
                             <th>Termin</th>
                             <th>Status</th>
+                            <th style="width: 130px;">Akcje</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for p in praktyki %}
-                        <tr>
+                        <tr {% if p.archived %}class="table-secondary opacity-75"{% endif %}>
                             <td>
                                 <div class="fw-semibold">{{ p.student.uzytkownik.imie }} {{ p.student.uzytkownik.nazwisko }}</div>
                                 <span class="text-muted small">Album: {{ p.student.nr_albumu }}</span>
@@ -38,9 +39,26 @@
                             <td>{{ p.uopz.imie }} {{ p.uopz.nazwisko }}</td>
                             <td>{{ p.termin_od.strftime('%d.%m.%Y') }} - {{ p.termin_do.strftime('%d.%m.%Y') }}</td>
                             <td>
+                                {% if p.archived %}
+                                <span class="badge bg-secondary">Archiwum</span>
+                                {% else %}
                                 <span class="badge bg-{{ 'secondary' if p.status == 'Draft' else 'primary' if p.status == 'Submitted' else 'warning' if p.status == 'Under_Review' else 'success' if p.status == 'Approved' else 'danger' }}">
                                     {{ p.status }}
                                 </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if p.archived %}
+                                <form method="POST" action="{{ url_for('admin.restore_praktyka', praktyka_id=p.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-success"><span class="material-symbols-outlined align-middle" style="font-size: 16px;">restore</span> Przywróć</button>
+                                </form>
+                                {% else %}
+                                <form method="POST" action="{{ url_for('admin.archive_praktyka', praktyka_id=p.id) }}" onsubmit="return confirm('Zarchiwizować tę praktykę?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><span class="material-symbols-outlined align-middle" style="font-size: 16px;">inventory_2</span> Archiwizuj</button>
+                                </form>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

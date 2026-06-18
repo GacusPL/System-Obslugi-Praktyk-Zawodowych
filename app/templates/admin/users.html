@@ -43,11 +43,12 @@
                             <th>Adres E-mail</th>
                             <th>Aktualna Rola</th>
                             <th>Modyfikuj Rolę</th>
+                            <th style="width: 130px;">Konto</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for u in all_users %}
-                        <tr id="user-row-{{ u.id }}">
+                        <tr id="user-row-{{ u.id }}" {% if u.archived %}class="table-secondary opacity-75"{% endif %}>
                             <td class="fw-semibold text-primary">{{ u.imie }} {{ u.nazwisko }}</td>
                             <td class="text-secondary small">{{ u.email }}</td>
                             <td>
@@ -79,6 +80,21 @@
                                         <span class="material-symbols-outlined" style="font-size: 16px;">save</span> Zapisz
                                     </button>
                                 </form>
+                            </td>
+                            <td>
+                                {% if u.archived %}
+                                <form method="POST" action="{{ url_for('admin.restore_user', user_id=u.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-success"><span class="material-symbols-outlined align-middle" style="font-size: 16px;">restore</span> Przywróć</button>
+                                </form>
+                                {% elif u.id != current_user.id %}
+                                <form method="POST" action="{{ url_for('admin.archive_user', user_id=u.id) }}" onsubmit="return confirm('Zarchiwizować to konto?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><span class="material-symbols-outlined align-middle" style="font-size: 16px;">inventory_2</span> Archiwizuj</button>
+                                </form>
+                                {% else %}
+                                <span class="text-secondary small">—</span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

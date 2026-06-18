@@ -49,6 +49,29 @@ class NumberedCanvas(canvas.Canvas):
         self.restoreState()
 
 
+class PageNumberCanvas(canvas.Canvas):
+    """Stopka jako sam numer strony w formacie X/Y (bez tekstu instytucji)."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._saved_page_states = []
+
+    def showPage(self):
+        self._saved_page_states.append(dict(self.__dict__))
+        self._startPage()
+
+    def save(self):
+        num_pages = len(self._saved_page_states)
+        for state in self._saved_page_states:
+            self.__dict__.update(state)
+            self.saveState()
+            self.setFont("Arial", 9)
+            self.setFillColor(colors.black)
+            self.drawCentredString(A4[0] / 2.0, 32, f"{self._pageNumber}/{num_pages}")
+            self.restoreState()
+            super().showPage()
+        super().save()
+
+
 def get_premium_styles():
     styles = getSampleStyleSheet()
     

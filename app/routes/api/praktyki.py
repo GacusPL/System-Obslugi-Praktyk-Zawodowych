@@ -213,7 +213,8 @@ def delete_praktyka(praktyka_id):
         
     if praktyka.status != 'Draft':
         return api_error("CANNOT_DELETE", "Można usuwać tylko praktyki o statusie Draft", status=400)
-        
-    db.session.delete(praktyka)
+
+    # Soft-delete: dane są zachowywane (archiwizacja zamiast trwałego usunięcia)
+    praktyka.archived = True
     db.session.commit()
-    return api_success({"message": "Praktyka usunięta pomyślnie"})
+    return api_success({"message": "Praktyka została zarchiwizowana"})
