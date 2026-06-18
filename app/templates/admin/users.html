@@ -16,7 +16,11 @@
                     <span class="material-symbols-outlined text-primary" style="font-size: 28px;">people</span>
                     Zarządzanie Użytkownikami Systemu
                 </h2>
-                
+
+                <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary d-flex align-items-center gap-1">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">person_add</span> Dodaj użytkownika
+                </a>
+
                 <div class="d-flex gap-2 flex-wrap" style="min-width: 300px;">
                     <div class="flex-grow-1">
                         <input type="text" id="search-input" class="form-control" placeholder="Szukaj użytkowników...">
@@ -82,19 +86,20 @@
                                 </form>
                             </td>
                             <td>
-                                {% if u.archived %}
-                                <form method="POST" action="{{ url_for('admin.restore_user', user_id=u.id) }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-success"><span class="material-symbols-outlined align-middle" style="font-size: 16px;">restore</span> Przywróć</button>
-                                </form>
-                                {% elif u.id != current_user.id %}
-                                <form method="POST" action="{{ url_for('admin.archive_user', user_id=u.id) }}" onsubmit="return confirm('Zarchiwizować to konto?');">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger"><span class="material-symbols-outlined align-middle" style="font-size: 16px;">inventory_2</span> Archiwizuj</button>
-                                </form>
-                                {% else %}
-                                <span class="text-secondary small">—</span>
-                                {% endif %}
+                                <div class="d-flex flex-column gap-1">
+                                    <a href="{{ url_for('admin.edit_user', user_id=u.id) }}" class="btn btn-sm btn-outline-primary"><span class="material-symbols-outlined align-middle" style="font-size: 16px;">edit</span> Edytuj</a>
+                                    {% if u.archived %}
+                                    <form method="POST" action="{{ url_for('admin.restore_user', user_id=u.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-success w-100"><span class="material-symbols-outlined align-middle" style="font-size: 16px;">restore</span> Przywróć</button>
+                                    </form>
+                                    {% elif u.id != current_user.id %}
+                                    <form method="POST" action="{{ url_for('admin.archive_user', user_id=u.id) }}" onsubmit="return confirm('Zarchiwizować to konto?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger w-100"><span class="material-symbols-outlined align-middle" style="font-size: 16px;">inventory_2</span> Archiwizuj</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}

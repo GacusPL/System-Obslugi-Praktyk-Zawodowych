@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Weryfikacja Zgłoszenia Praktyki (UOPZ) - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item active" aria-current="page">Weryfikacja Zgłoszenia</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="card-sopz">
+            <div class="card-sopz-header">
+                <h2 class="h2 mb-0 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">assignment_ind</span>
+                    Weryfikacja Zgłoszenia Praktyki
+                </h2>
+            </div>
+
+            <p class="text-secondary mb-4">
+                Zatwierdź lub odrzuć wybór miejsca praktyki. Akceptacja odblokowuje studentowi
+                wypełnianie dziennika i pozostałej dokumentacji.
+            </p>
+
+            <div class="p-4 border rounded bg-light mb-4">
+                <h3 class="h3 mb-3 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 20px;">info</span>
+                    Szczegóły zgłoszenia
+                </h3>
+                <div class="row g-3">
+                    <div class="col-md-6"><strong>Student:</strong> {{ praktyka.student.uzytkownik.imie }} {{ praktyka.student.uzytkownik.nazwisko }}</div>
+                    <div class="col-md-6"><strong>Nr albumu:</strong> {{ praktyka.student.nr_albumu }}</div>
+                    <div class="col-md-6"><strong>Kierunek:</strong> {{ praktyka.student.kierunek }}{% if praktyka.student.specjalnosc %} / {{ praktyka.student.specjalnosc }}{% endif %}</div>
+                    <div class="col-md-6"><strong>Semestr:</strong> {{ praktyka.student.semestr }}</div>
+                    <div class="col-md-6"><strong>Zakład pracy:</strong> {{ praktyka.zaklad_pracy.nazwa }}</div>
+                    <div class="col-md-6"><strong>Opiekun zakładowy:</strong> {{ praktyka.zaklad_pracy.zopz_imie }} {{ praktyka.zaklad_pracy.zopz_nazwisko }}</div>
+                    <div class="col-md-6"><strong>Opiekun uczelniany:</strong> {{ praktyka.uopz.imie }} {{ praktyka.uopz.nazwisko }}</div>
+                    <div class="col-md-6"><strong>Rok akademicki:</strong> {{ praktyka.rok_akademicki }}</div>
+                    <div class="col-md-12"><strong>Termin praktyki:</strong> {{ praktyka.termin_od.strftime('%d.%m.%Y') }} - {{ praktyka.termin_do.strftime('%d.%m.%Y') }}</div>
+                </div>
+            </div>
+
+            <div class="p-4 border rounded mb-4">
+                <h3 class="h3 mb-3 d-flex align-items-center gap-2 text-success">
+                    <span class="material-symbols-outlined text-success" style="font-size: 22px;">task_alt</span>
+                    Decyzja
+                </h3>
+
+                <form id="zgloszenie-decyzja-form" data-praktyka-id="{{ praktyka.id }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Decyzja weryfikacyjna</label>
+                        <select name="status" id="decyzja-status" class="form-select" required>
+                            <option value="Approved">Zaakceptuj zgłoszenie (praktyka rozpoczęta)</option>
+                            <option value="Rejected">Odrzuć zgłoszenie (do poprawy)</option>
+                        </select>
+                    </div>
+                    <div class="mb-4 d-none" id="komentarz-wrapper">
+                        <label class="form-label fw-semibold">Komentarz zwrotny (wymagany przy odrzuceniu)</label>
+                        <textarea name="komentarz_odrzucenia" id="komentarz-odrzucenia" class="form-control" rows="3"
+                                  placeholder="Wyjaśnij studentowi, co należy poprawić w zgłoszeniu..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                        <span class="material-symbols-outlined">save</span> Zapisz decyzję
+                    </button>
+                </form>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Anuluj</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('decyzja-status').addEventListener('change', function() {
+        const wrapper = document.getElementById('komentarz-wrapper');
+        wrapper.classList.toggle('d-none', this.value !== 'Rejected');
+    });
+
+    document.getElementById('zgloszenie-decyzja-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const pId = this.getAttribute('data-praktyka-id');
+        const status = document.getElementById('decyzja-status').value;
+        const komentarz = document.getElementById('komentarz-odrzucenia').value.trim();
+
+        if (status === 'Rejected' && !komentarz) {
+            showToast('Odrzucenie zgłoszenia wymaga komentarza zwrotnego.', 'error');
+            return;
+        }
+
+        const payload = { status: status };
+        if (status === 'Rejected') payload.komentarz_odrzucenia = komentarz;
+
+        fetch(`/api/v1/praktyki/${pId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(res => {
+            if (res.ok) {
+                showToast('Decyzja została zapisana!', 'success');
+                setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
+            } else {
+                res.json().then(d => showToast('Błąd: ' + (d.error?.message || 'nie udało się zapisać decyzji.'), 'error'))
+                    .catch(() => showToast('Błąd zapisu decyzji.', 'error'));
+            }
+        }).catch(() => showToast('Błąd połączenia z serwerem.', 'error'));
+    });
+</script>
+{% endblock %}

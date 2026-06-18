@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}{% if all_approved %}Weryfikacja Końcowa Dokumentacji{% else %}Weryfikacja Zgłoszenia Praktyki{% endif %} (UOPZ) - SOPZ{% endblock %}
+{% block title %}Weryfikacja Końcowa Dokumentacji (UOPZ) - SOPZ{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
-<li class="breadcrumb-item active" aria-current="page">Weryfikacja Dokumentacji</li>
+<li class="breadcrumb-item active" aria-current="page">Weryfikacja Końcowa Dokumentacji</li>
 {% endblock %}
 
 {% block content %}
@@ -13,25 +13,49 @@
         <div class="card-sopz">
             <div class="card-sopz-header">
                 <h2 class="h2 mb-0 d-flex align-items-center gap-2">
-                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">{% if all_approved %}shield_heart{% else %}assignment_ind{% endif %}</span>
-                    {% if all_approved %}Weryfikacja Końcowa Dokumentacji{% else %}Weryfikacja Zgłoszenia Praktyki{% endif %}
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">shield_heart</span>
+                    Weryfikacja Końcowa Dokumentacji
                 </h2>
             </div>
-            
+
             <p class="text-secondary mb-4">Student: <strong>{{ praktyka.student.uzytkownik.imie }} {{ praktyka.student.uzytkownik.nazwisko }}</strong> (Album: {{ praktyka.student.nr_albumu }})</p>
 
             <h3 class="h3 mb-3 d-flex align-items-center gap-2">
-                <span class="material-symbols-outlined text-primary" style="font-size: 20px;">folder</span>
-                Załączone dokumenty i skany
+                <span class="material-symbols-outlined text-primary" style="font-size: 20px;">checklist</span>
+                Kompletność dokumentacji
             </h3>
-            
+            {% set labels = {
+                'harmonogram_approved': 'Harmonogram zatwierdzony',
+                'karta_approved': 'Karta praktyki zatwierdzona',
+                'efekty_approved': 'Potwierdzenie efektów zatwierdzone',
+                'ankieta_complete': 'Ankieta wypełniona',
+                'dziennik_complete': 'Dziennik (120 dni) zamknięty',
+                'sprawozdanie_approved': 'Sprawozdanie zatwierdzone'
+            } %}
+            <ul class="list-group list-group-flush mb-4">
+                {% for key, ok in checklist.items() %}
+                <li class="list-group-item d-flex justify-content-between align-items-center px-0 bg-transparent">
+                    <span>{{ labels.get(key, key) }}</span>
+                    {% if ok %}
+                        <span class="text-success fw-bold"><span class="material-symbols-outlined align-middle" style="font-size: 18px;">check_circle</span></span>
+                    {% else %}
+                        <span class="text-danger fw-bold"><span class="material-symbols-outlined align-middle" style="font-size: 18px;">cancel</span></span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+
+            <h3 class="h3 mb-3 d-flex align-items-center gap-2">
+                <span class="material-symbols-outlined text-primary" style="font-size: 20px;">folder</span>
+                Wygenerowane dokumenty
+            </h3>
             <div class="list-group list-group-flush mb-4">
                 {% if praktyka.dokumenty %}
                     {% for doc in praktyka.dokumenty %}
-                    <div class="list-group-item py-3 px-0 border-0 {% if not loop.first %}border-top{% endif %} d-flex justify-content-between align-items-center bg-transparent">
+                    <div class="list-group-item py-3 px-0 border-0 d-flex justify-content-between align-items-center bg-transparent">
                         <div>
                             <div class="fw-semibold text-primary" style="font-size: 15px;">{{ doc.typ }}</div>
-                            <span class="text-secondary small">Przesłano: {{ doc.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                            <span class="text-secondary small">Utworzono: {{ doc.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
                         </div>
                         <a href="/api/v1/documents/{{ doc.id }}/download" class="btn btn-sm btn-secondary d-flex align-items-center gap-1" target="_blank">
                             <span class="material-symbols-outlined" style="font-size: 16px;">download</span> Pobierz plik
@@ -39,84 +63,74 @@
                     </div>
                     {% endfor %}
                 {% else %}
-                    <p class="text-secondary small my-3">Student nie załączył jeszcze plików skanów podpisanych dokumentów.</p>
+                    <p class="text-secondary small my-3">Dokumenty PDF zostaną wygenerowane po zatwierdzeniu dokumentacji.</p>
                 {% endif %}
             </div>
 
-            <!-- Panel Ocen i Zaliczenia -->
+            {% if current_user.rola in ['uopz', 'administrator'] %}
             <div class="p-4 border rounded bg-light mb-4">
                 <h3 class="h3 mb-3 d-flex align-items-center gap-2 text-success">
                     <span class="material-symbols-outlined text-success" style="font-size: 22px;">task_alt</span>
-                    {% if all_approved %}Zatwierdzenie Końcowej Dokumentacji Praktyki{% else %}Akceptacja Zgłoszenia Praktyki{% endif %}
+                    Decyzja końcowa
                 </h3>
-                
+
                 <form id="zaliczenie-form" data-praktyka-id="{{ praktyka.id }}">
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-12">
-                            <label class="form-label fw-semibold">Decyzja weryfikacyjna</label>
-                            <select name="status" class="form-select" required>
-                                {% if all_approved %}
-                                <option value="Approved">Zatwierdź Dokumentację (Approved)</option>
-                                <option value="Rejected">Odrzuć i zwróć do poprawy (Rejected)</option>
-                                {% else %}
-                                <option value="Approved">Zaakceptuj wniosek o praktykę (Approved)</option>
-                                <option value="Rejected">Odrzuć wniosek o praktykę (Rejected)</option>
-                                {% endif %}
-                            </select>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Decyzja weryfikacyjna</label>
+                        <select name="status" id="final-status" class="form-select" required>
+                            <option value="Closed">Zatwierdź i zamknij praktykę (generuje dokumenty)</option>
+                            <option value="Approved">Zwróć do poprawy</option>
+                        </select>
+                    </div>
+                    <div class="mb-4 d-none" id="komentarz-wrapper">
+                        <label class="form-label fw-semibold">Komentarz zwrotny</label>
+                        <textarea name="komentarz_odrzucenia" id="komentarz-odrzucenia" class="form-control" rows="3"
+                                  placeholder="Wskaż, co należy poprawić w dokumentacji..."></textarea>
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
-                        <span class="material-symbols-outlined">save</span> Zapisz Decyzję Weryfikacyjną
+                        <span class="material-symbols-outlined">save</span> Zapisz decyzję
                     </button>
                 </form>
             </div>
+            {% endif %}
 
-            <script>
-                document.getElementById('zaliczenie-form').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const pId = this.getAttribute('data-praktyka-id');
-                    const formData = new FormData(this);
-                    
-                    const payload = {
-                        status: formData.get('status')
-                    };
-                    
-                    fetch(`/api/v1/dokumentacja/${pId}`, {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    }).then(res => {
-                        if (res.ok) {
-                            if (window.showToast) {
-                                window.showToast('Decyzja weryfikacyjna została zapisana!', 'success');
-                            } else {
-                                alert("Decyzja weryfikacyjna została zapisana!");
-                            }
-                            setTimeout(() => {
-                                window.location.href = '/dashboard';
-                            }, 1000);
-                        } else {
-                            if (window.showToast) {
-                                window.showToast('Błąd zapisu decyzji weryfikacyjnej.', 'error');
-                            } else {
-                                alert("Błąd zapisu decyzji weryfikacyjnej.");
-                            }
-                        }
-                    }).catch(err => {
-                        if (window.showToast) {
-                            window.showToast('Błąd połączenia z serwerem.', 'error');
-                        }
-                    });
-                });
-            </script>
-
-            <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+            <div class="d-flex justify-content-between align-items-center pt-3 border-top">
                 <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Anuluj</a>
             </div>
         </div>
     </div>
 </div>
+
+{% if current_user.rola in ['uopz', 'administrator'] %}
+<script>
+    document.getElementById('final-status').addEventListener('change', function() {
+        document.getElementById('komentarz-wrapper').classList.toggle('d-none', this.value !== 'Approved');
+    });
+
+    document.getElementById('zaliczenie-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const pId = this.getAttribute('data-praktyka-id');
+        const status = document.getElementById('final-status').value;
+        const komentarz = document.getElementById('komentarz-odrzucenia').value.trim();
+
+        const payload = { status: status };
+        if (status === 'Approved') payload.komentarz_odrzucenia = komentarz;
+
+        fetch(`/api/v1/dokumentacja/${pId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(res => {
+            if (res.ok) {
+                showToast('Decyzja końcowa została zapisana!', 'success');
+                setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
+            } else {
+                res.json().then(d => showToast('Błąd: ' + (d.error?.message || 'nie udało się zapisać decyzji.'), 'error'))
+                    .catch(() => showToast('Błąd zapisu decyzji.', 'error'));
+            }
+        }).catch(() => showToast('Błąd połączenia z serwerem.', 'error'));
+    });
+</script>
+{% endif %}
 {% endblock %}

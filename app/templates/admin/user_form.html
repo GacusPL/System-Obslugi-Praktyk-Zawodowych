@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}{% if mode == 'edit' %}Edycja użytkownika{% else %}Nowy użytkownik{% endif %} - SOPZ{% endblock %}
+
+{% block breadcrumb_items %}
+<li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('admin.users_list') }}">Użytkownicy</a></li>
+<li class="breadcrumb-item active" aria-current="page">{% if mode == 'edit' %}Edycja{% else %}Nowy{% endif %}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card-sopz">
+            <div class="card-sopz-header">
+                <h2 class="h2 mb-0 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-primary" style="font-size: 28px;">{% if mode == 'edit' %}manage_accounts{% else %}person_add{% endif %}</span>
+                    {% if mode == 'edit' %}Edycja użytkownika{% else %}Nowy użytkownik{% endif %}
+                </h2>
+            </div>
+
+            <form method="POST" action="{{ action_url }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Imię</label>
+                        <input type="text" name="imie" class="form-control" value="{{ data.imie or '' }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Nazwisko</label>
+                        <input type="text" name="nazwisko" class="form-control" value="{{ data.nazwisko or '' }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Adres e-mail</label>
+                        <input type="email" name="email" class="form-control" value="{{ data.email or '' }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Rola</label>
+                        <select name="rola" id="rola-select" class="form-select">
+                            <option value="">Brak roli (oczekujący)</option>
+                            {% for r in roles %}
+                            <option value="{{ r }}" {% if data.rola == r %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Hasło {% if mode == 'edit' %}<span class="text-secondary small fw-normal">(pozostaw puste, aby nie zmieniać)</span>{% endif %}</label>
+                        <input type="password" name="haslo" class="form-control" {% if mode == 'create' %}required{% endif %} autocomplete="new-password">
+                    </div>
+                </div>
+
+                <div id="student-fields" class="p-4 rounded-3 mb-3 {% if data.rola != 'student' %}d-none{% endif %}" style="background-color: var(--bg-page); border: 1px solid var(--border);">
+                    <h6 class="fw-bold mb-3"><span class="material-symbols-outlined align-middle me-2" style="font-size: 20px;">school</span>Profil studenta</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nr albumu</label>
+                            <input type="text" name="nr_albumu" class="form-control" value="{{ data.nr_albumu or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Kierunek</label>
+                            <input type="text" name="kierunek" class="form-control" value="{{ data.kierunek or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Specjalność</label>
+                            <input type="text" name="specjalnosc" class="form-control" value="{{ data.specjalnosc or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Semestr</label>
+                            <select name="semestr" class="form-select">
+                                <option value="">—</option>
+                                <option value="6" {% if data.semestr == '6' %}selected{% endif %}>6</option>
+                                <option value="7" {% if data.semestr == '7' %}selected{% endif %}>7</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Forma studiów</label>
+                            <select name="forma_studiow" class="form-select">
+                                <option value="">—</option>
+                                <option value="stacjonarne" {% if data.forma_studiow == 'stacjonarne' %}selected{% endif %}>stacjonarne</option>
+                                <option value="niestacjonarne" {% if data.forma_studiow == 'niestacjonarne' %}selected{% endif %}>niestacjonarne</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Rok akademicki</label>
+                            <input type="text" name="rok_akademicki" class="form-control" value="{{ data.rok_akademicki or '' }}" placeholder="np. 2025/2026">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                    <a href="{{ url_for('admin.users_list') }}" class="btn btn-secondary">Anuluj</a>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="material-symbols-outlined align-middle me-1">save</span>{% if mode == 'edit' %}Zapisz zmiany{% else %}Utwórz użytkownika{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('rola-select').addEventListener('change', function() {
+        document.getElementById('student-fields').classList.toggle('d-none', this.value !== 'student');
+    });
+</script>
+{% endblock %}

@@ -55,9 +55,9 @@
             <div class="stepper">
                 {% set step = 1 %}
                 {% if praktyka %}
-                    {% if praktyka.status in ['Draft', 'Submitted', 'Under_Review', 'Rejected'] %}
+                    {% if praktyka.status in ['Draft', 'Submitted', 'Rejected'] %}
                         {% set step = 1 %}
-                    {% elif praktyka.status in ['Approved', 'Closed'] %}
+                    {% elif praktyka.status in ['Approved', 'Under_Review', 'Closed'] %}
                         {% set step = 2 %}
                         {% if praktyka.harmonogram and praktyka.harmonogram.status == 'Approved' %}
                             {% set step = 3 %}
@@ -169,18 +169,27 @@
                 <div class="card-sopz-header">
                     <h3>Zadanie do wykonania</h3>
                 </div>
-                {% if step == 1 %}
+                {% if praktyka and praktyka.status == 'Under_Review' %}
+                    <p>Komplet dokumentacji został złożony i oczekuje na weryfikację końcową opiekuna uczelnianego.</p>
+                    <button class="btn btn-secondary" disabled>Oczekuje na weryfikację końcową</button>
+                {% elif step == 1 %}
                     {% if not praktyka %}
                         <p>Złóż formularz zgłoszenia praktyki, aby rozpocząć proces.</p>
                         <a href="{{ url_for('main.zgloszenie_praktyki') }}" class="btn btn-primary">Przejdź do Zgłoszenia</a>
                     {% elif praktyka.status == 'Draft' %}
                         <p>Masz utworzone zgłoszenie praktyki (szkic). Wyślij je do weryfikacji.</p>
                         <a href="{{ url_for('main.zgloszenie_praktyki') }}" class="btn btn-primary">Wyślij Zgłoszenie</a>
-                    {% elif praktyka.status in ['Submitted', 'Under_Review'] %}
-                        <p>Twoje zgłoszenie praktyki zostało wysłane i oczekuje na weryfikację przez opiekuna uczelnianego.</p>
+                    {% elif praktyka.status == 'Submitted' %}
+                        <p>Twoje zgłoszenie praktyki zostało wysłane i oczekuje na akceptację przez opiekuna uczelnianego.</p>
                         <button class="btn btn-secondary" disabled>Oczekuje na weryfikację</button>
                     {% elif praktyka.status == 'Rejected' %}
                         <p>Twoje zgłoszenie praktyki zostało odrzucone i wymaga poprawy.</p>
+                        {% if praktyka.komentarz_odrzucenia %}
+                        <div class="alert alert-danger d-flex align-items-start gap-2">
+                            <span class="material-symbols-outlined">feedback</span>
+                            <div><strong>Komentarz opiekuna:</strong> {{ praktyka.komentarz_odrzucenia }}</div>
+                        </div>
+                        {% endif %}
                         <a href="{{ url_for('main.zgloszenie_praktyki') }}" class="btn btn-danger">Popraw Zgłoszenie</a>
                     {% endif %}
                 {% elif step == 2 %}

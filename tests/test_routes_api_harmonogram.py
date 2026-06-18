@@ -104,7 +104,7 @@ def test_harmonogram_crud_and_signatures(client, db_session, sample_student, sam
     assert response.status_code == 200
     assert response.get_json()["data"]["podpis_zopz"] == 1
 
-    # 7. UOPZ signs their part -> Auto-approve
+    # 7. UOPZ signs their part -> harmonogram auto-approved
     client.get('/auth/logout')
     client.get(f'/auth/login?mock_email={sample_uopz.email}&mock_rola=uopz')
 
@@ -113,8 +113,8 @@ def test_harmonogram_crud_and_signatures(client, db_session, sample_student, sam
     assert response.get_json()["data"]["podpis_uopz"] == 1
     assert response.get_json()["data"]["status"] == "Approved"
 
-    # Verify that the practice status is also updated to Under_Review
-    assert Praktyka.query.get(praktyka.id).status == "Under_Review"
+    # Podpisanie harmonogramu NIE zmienia już statusu praktyki (rozdzielone etapy)
+    assert Praktyka.query.get(praktyka.id).status == "Draft"
 
     # 8. Test PUT save (ZOPZ authors harmonogram) and PATCH /signature routes
     # Create a fresh practice and harmonogram in draft

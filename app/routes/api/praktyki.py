@@ -22,6 +22,7 @@ def serialize_praktyka(p):
         "ocena_koncowa": p.ocena_koncowa,
         "ankieta_wypelniona": p.ankieta_wypelniona,
         "dziennik_status": p.dziennik_status,
+        "komentarz_odrzucenia": p.komentarz_odrzucenia,
         "created_at": p.created_at.strftime('%Y-%m-%d %H:%M:%S') if p.created_at else None,
         "updated_at": p.updated_at.strftime('%Y-%m-%d %H:%M:%S') if p.updated_at else None
     }
@@ -158,33 +159,54 @@ def update_praktyka_status(praktyka_id):
         return api_error("MISSING_STATUS", "Brak statusu w żądaniu", details=errors, status=400)
     new_status = sanitized['status']
         
+    # Cykl życia praktyki rozdzielony na dwa etapy:
+    #  - Zgłoszenie:   Draft -> Submitted -> Approved / Rejected (weryfikacja UOPZ)
+    #  - Rozliczenie:  Approved -> Under_Review -> Closed (finalna weryfikacja UOPZ)
     valid_transitions = {
         'Draft': ['Submitted'],
-        'Submitted': ['Under_Review', 'Draft'],
-        'Under_Review': ['Approved', 'Rejected'],
-        'Approved': ['Closed', 'Under_Review'],
+        'Submitted': ['Approved', 'Rejected', 'Draft'],
         'Rejected': ['Draft'],
+        'Approved': ['Under_Review'],
+        'Under_Review': ['Closed', 'Approved'],
         'Closed': []
     }
-    
+
     current_status = praktyka.status
     if new_status not in valid_transitions.get(current_status, []):
         return api_error("INVALID_TRANSITION", f"Niedozwolone przejście stanu z {current_status} do {new_status}", status=400)
 
     # Permission check for transitions
     if current_user.rola == 'student':
-        # Student can only submit a draft, or put rejected back to draft
-        is_submit = (new_status == 'Submitted' and current_status == 'Draft')
-        is_recall_or_edit = (new_status == 'Draft' and current_status == 'Rejected')
-        if not (is_submit or is_recall_or_edit):
+        # Student: składa zgłoszenie, wycofuje je lub poprawia odrzucone
+        allowed = (
+            (current_status == 'Draft' and new_status == 'Submitted') or
+            (current_status == 'Submitted' and new_status == 'Draft') or
+            (current_status == 'Rejected' and new_status == 'Draft')
+        )
+        if not allowed:
             abort(403)
     else:
-        # non-students (uopz, administrator)
-        if new_status == 'Submitted':
+        # UOPZ / administrator: weryfikują zgłoszenie oraz finalną dokumentację
+        allowed = (
+            (current_status == 'Submitted' and new_status in ('Approved', 'Rejected')) or
+            (current_status == 'Under_Review' and new_status in ('Closed', 'Approved'))
+        )
+        if not allowed:
             abort(403)
 
+    # Odrzucenie zgłoszenia wymaga komentarza zwrotnego
+    if new_status == 'Rejected':
+        komentarz = (data.get('komentarz_odrzucenia') or '').strip()
+        if not komentarz:
+            return api_error("MISSING_COMMENT", "Odrzucenie zgłoszenia wymaga podania komentarza zwrotnego", status=400)
+        praktyka.komentarz_odrzucenia = komentarz
+
+    # Powrót do szkicu (poprawa przez studenta) czyści komentarz odrzucenia
+    if new_status == 'Draft':
+        praktyka.komentarz_odrzucenia = None
+
     praktyka.status = new_status
-    
+
     # Update other fields if provided and role matches
     if current_status == 'Draft' and current_user.rola == 'student':
         if 'termin_od' in data:

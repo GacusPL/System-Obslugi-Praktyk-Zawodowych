@@ -49,8 +49,9 @@ def dashboard():
         zaklad_ids = [z.id for z in zaklady]
         praktyki = Praktyka.query.filter(Praktyka.zaklad_id.in_(zaklad_ids)).all() if zaklad_ids else []
         oczekujace_wpisy = WpisDziennika.query.join(Praktyka).filter(Praktyka.zaklad_id.in_(zaklad_ids), WpisDziennika.status == 'Submitted').all() if zaklad_ids else []
-        
+
         context.update({
+            'zaklady': zaklady,
             'praktyki': praktyki,
             'oczekujace_wpisy': oczekujace_wpisy
         })
@@ -285,6 +286,15 @@ def dokumentacja_checklist(praktyka_id):
     check_praktyka_ownership(praktyka)
     return render_template('dokumentacja/checklist.html', praktyka=praktyka)
 
+@main_bp.route('/praktyka/<int:praktyka_id>/weryfikacja-zgloszenia')
+@login_required
+@role_required('uopz', 'administrator')
+def weryfikacja_zgloszenia(praktyka_id):
+    praktyka = Praktyka.query.get_or_404(praktyka_id)
+    if current_user.rola == 'uopz' and praktyka.uopz_id != current_user.id:
+        abort(403)
+    return render_template('praktyka/weryfikacja_zgloszenia.html', praktyka=praktyka)
+
 @main_bp.route('/praktyka/<int:praktyka_id>/dokumentacja/weryfikacja')
 @login_required
 def dokumentacja_weryfikacja(praktyka_id):
@@ -293,7 +303,8 @@ def dokumentacja_weryfikacja(praktyka_id):
     from app.routes.api.dokumentacja import check_checklist
     checklist = check_checklist(praktyka)
     all_approved = all(checklist.values())
-    return render_template('dokumentacja/review.html', praktyka=praktyka, all_approved=all_approved)
+    return render_template('dokumentacja/review.html', praktyka=praktyka,
+                           checklist=checklist, all_approved=all_approved)
 
 @main_bp.route('/profile')
 @login_required

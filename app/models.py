@@ -109,6 +109,7 @@ class Praktyka(db.Model):
     ocena_koncowa = db.Column(db.Float, nullable=True)
     ankieta_wypelniona = db.Column(db.Integer, nullable=False, default=0)
     dziennik_status = db.Column(db.String(50), nullable=False, default='Draft')
+    komentarz_odrzucenia = db.Column(db.Text, nullable=True)
     archived = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)

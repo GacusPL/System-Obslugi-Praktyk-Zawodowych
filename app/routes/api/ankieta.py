@@ -51,8 +51,8 @@ def create_ankieta():
     if not praktyka or praktyka.student_id != student.id:
         abort(403)
 
-    if praktyka.status not in ('Approved', 'Closed'):
-        return api_error("ANKIETA_TOO_EARLY", "Ankietę można wypełnić dopiero po zakończeniu praktyki", status=400)
+    if praktyka.status not in ('Approved', 'Under_Review', 'Closed'):
+        return api_error("ANKIETA_TOO_EARLY", "Ankietę można wypełnić dopiero w trakcie lub po zakończeniu praktyki", status=400)
 
     if praktyka.ankieta_wypelniona == 1:
         return api_error("ANKIETA_ALREADY_SUBMITTED", "Ankieta dla tej praktyki została już wypełniona", status=400)

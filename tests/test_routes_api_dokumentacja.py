@@ -82,10 +82,10 @@ def test_dokumentacja_checklist_and_submission(client, db_session, sample_studen
     res_json = response.get_json()
     assert all(res_json["data"].values())
 
-    # 5. Submit documentation (should transition practice to Submitted)
+    # 5. Submit documentation (should transition practice Approved -> Under_Review)
     response = client.post('/api/v1/dokumentacja/zloz', json={"praktyka_id": praktyka.id})
     assert response.status_code == 200
-    assert response.get_json()["data"]["status"] == "Submitted"
+    assert response.get_json()["data"]["status"] == "Under_Review"
 
     # 6. Log in as UOPZ to review/approve the submitted documentation
     client.get('/auth/logout')
@@ -96,8 +96,7 @@ def test_dokumentacja_checklist_and_submission(client, db_session, sample_studen
     assert response.status_code == 200
     assert response.get_json()["data"]["documents"]["harmonogram"]["status"] == "Approved"
 
-    # UOPZ approves documentation (sets practice status to Approved or Closed/Rejected)
-    # Wait, valid transition from Under_Review is Approved or Rejected
-    response = client.patch(f'/api/v1/dokumentacja/{praktyka.id}', json={"status": "Approved"})
+    # UOPZ finalizes documentation: Under_Review -> Closed
+    response = client.patch(f'/api/v1/dokumentacja/{praktyka.id}', json={"status": "Closed"})
     assert response.status_code == 200
-    assert Praktyka.query.get(praktyka.id).status == "Approved"
+    assert Praktyka.query.get(praktyka.id).status == "Closed"

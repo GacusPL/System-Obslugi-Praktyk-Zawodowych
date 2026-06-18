@@ -31,41 +31,55 @@ def test_praktyki_crud_and_transitions(client, db_session, sample_student, sampl
     assert response.status_code == 200
     assert len(response.get_json()["data"]) == 1
 
-    # 4. PATCH status Draft -> Submitted (happy path)
+    # 4. PATCH status Draft -> Submitted (student składa zgłoszenie)
     response = client.patch(f'/api/v1/praktyki/{praktyka_id}', json={"status": "Submitted"})
     assert response.status_code == 200
     assert response.get_json()["data"]["status"] == "Submitted"
 
-    # 5. PATCH status Submitted -> Draft (invalid transition for student)
+    # 5. Student może wycofać własne zgłoszenie Submitted -> Draft
     response = client.patch(f'/api/v1/praktyki/{praktyka_id}', json={"status": "Draft"})
-    assert response.status_code == 403
-    
-    # Let's log in as uopz
+    assert response.status_code == 200
+    assert response.get_json()["data"]["status"] == "Draft"
+
+    # Ponowne złożenie do weryfikacji
+    client.patch(f'/api/v1/praktyki/{praktyka_id}', json={"status": "Submitted"})
+
+    # Log in as uopz to verify the zgłoszenie
     client.get('/auth/logout')
     client.get(f'/auth/login?mock_email={sample_uopz.email}&mock_rola=uopz')
 
-    # UOPZ transitions Submitted -> Draft (happy path)
-    response = client.patch(f'/api/v1/praktyki/{praktyka_id}', json={"status": "Draft"})
-    assert response.status_code == 200
+    # Odrzucenie bez komentarza jest blokowane
+    response = client.patch(f'/api/v1/praktyki/{praktyka_id}', json={"status": "Rejected"})
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "MISSING_COMMENT"
 
-    # Log in as student again
+    # Odrzucenie z komentarzem: Submitted -> Rejected
+    response = client.patch(f'/api/v1/praktyki/{praktyka_id}',
+                            json={"status": "Rejected", "komentarz_odrzucenia": "Popraw termin praktyki."})
+    assert response.status_code == 200
+    assert Praktyka.query.get(praktyka_id).komentarz_odrzucenia == "Popraw termin praktyki."
+
+    # 6. Student poprawia: Rejected -> Draft czyści komentarz
     client.get('/auth/logout')
     client.get(f'/auth/login?mock_email={student_email}&mock_rola=student')
+    response = client.patch(f'/api/v1/praktyki/{praktyka_id}', json={"status": "Draft"})
+    assert response.status_code == 200
+    assert Praktyka.query.get(praktyka_id).komentarz_odrzucenia is None
 
-    # 6. DELETE Draft (happy path) - soft-delete: dane zachowane, oznaczone jako archived
+    # 7. DELETE Draft (soft-delete: dane zachowane, oznaczone jako archived)
     response = client.delete(f'/api/v1/praktyki/{praktyka_id}')
     assert response.status_code == 200
     deleted = Praktyka.query.get(praktyka_id)
     assert deleted is not None
     assert deleted.archived is True
 
-    # 7. Create another and submit, try to delete Submitted (error check)
+    # 8. Create another and submit, try to delete Submitted (error check)
     response = client.post('/api/v1/praktyki', json=data)
     assert response.status_code == 201
     praktyka_id = response.get_json()["data"]["id"]
-    
+
     client.patch(f'/api/v1/praktyki/{praktyka_id}', json={"status": "Submitted"})
-    
+
     response = client.delete(f'/api/v1/praktyki/{praktyka_id}')
     assert response.status_code == 400
     assert "Draft" in response.get_json()["error"]["message"]

@@ -161,13 +161,11 @@ def update_harmonogram(harmonogram_id):
         if 'status' in data:
             harmonogram.status = data['status']
 
-    # If 3 signatures present, harmonogram is Approved. The praktyka itself is
-    # only nudged from Draft into Under_Review - final praktyka approval stays an
-    # explicit UOPZ decision (praktyki.py), so we never auto-Approve here.
+    # Komplet 3 podpisów zatwierdza sam harmonogram. Status praktyki NIE jest tu
+    # zmieniany - harmonogram to dokument realizowany gdy praktyka jest już
+    # zaakceptowana (Approved), a Under_Review oznacza teraz finalną weryfikację.
     if harmonogram.podpis_student == 1 and harmonogram.podpis_zopz == 1 and harmonogram.podpis_uopz == 1:
         harmonogram.status = 'Approved'
-        if praktyka.status == 'Draft':
-            praktyka.status = 'Under_Review'
 
     db.session.commit()
     return api_success(serialize_harmonogram(harmonogram))
@@ -296,13 +294,11 @@ def sign_harmonogram(harmonogram_id):
     else:
         return api_error("INVALID_ROLE", "Nieprawidłowa rola do podpisu", status=400)
 
-    # If 3 signatures present, harmonogram is Approved. The praktyka itself is
-    # only nudged from Draft into Under_Review - final praktyka approval stays an
-    # explicit UOPZ decision (praktyki.py), so we never auto-Approve here.
+    # Komplet 3 podpisów zatwierdza sam harmonogram. Status praktyki NIE jest tu
+    # zmieniany - harmonogram to dokument realizowany gdy praktyka jest już
+    # zaakceptowana (Approved), a Under_Review oznacza teraz finalną weryfikację.
     if harmonogram.podpis_student == 1 and harmonogram.podpis_zopz == 1 and harmonogram.podpis_uopz == 1:
         harmonogram.status = 'Approved'
-        if praktyka.status == 'Draft':
-            praktyka.status = 'Under_Review'
 
     db.session.commit()
     return api_success(serialize_harmonogram(harmonogram))

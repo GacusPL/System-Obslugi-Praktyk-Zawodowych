@@ -60,6 +60,14 @@ def zloz_dokumentacje():
     if not praktyka or praktyka.student_id != student.id:
         abort(403)
 
+    # Komplet dokumentacji można złożyć tylko z praktyki w toku (zaakceptowane zgłoszenie)
+    if praktyka.status != 'Approved':
+        return api_error(
+            "INVALID_PRACTICE_STATUS",
+            "Dokumentację można złożyć tylko dla praktyki w toku (status Approved).",
+            status=400
+        )
+
     # Verify checklist
     checklist = check_checklist(praktyka)
     missing = [k for k, v in checklist.items() if not v]
@@ -72,14 +80,14 @@ def zloz_dokumentacje():
             status=422
         )
 
-    # Transition practice status to Submitted
-    praktyka.status = 'Submitted'
+    # Złożenie kompletu dokumentacji uruchamia finalną weryfikację UOPZ
+    praktyka.status = 'Under_Review'
     db.session.commit()
 
     return api_success({
         "praktyka_id": praktyka.id,
         "status": praktyka.status,
-        "message": "Dokumentacja została złożona pomyślnie i oczekuje na weryfikację."
+        "message": "Dokumentacja została złożona pomyślnie i oczekuje na weryfikację końcową."
     })
 
 @dokumentacja_api_bp.route('/dokumentacja/<int:praktyka_id>/pelna', methods=['GET'])
@@ -122,49 +130,41 @@ def patch_dokumentacja(praktyka_id):
         abort(403)
 
     data = request.get_json() or {}
-    new_status = data.get('status') # e.g. Closed or Rejected
+    new_status = data.get('status') # Closed (zatwierdzenie) lub Approved (zwrot do poprawy)
 
     if not new_status:
         return api_error("MISSING_STATUS", "Brak statusu w żądaniu", status=400)
 
-    # Validate state transitions
+    # Finalna weryfikacja dokumentacji: praktyka jest w stanie Under_Review.
+    #  - Under_Review -> Closed:   UOPZ zatwierdza całość (generujemy PDF-y)
+    #  - Under_Review -> Approved: UOPZ zwraca dokumentację do poprawy
     valid_transitions = {
-        'Submitted': ['Under_Review', 'Approved', 'Rejected'],
-        'Under_Review': ['Approved', 'Rejected'],
-        'Approved': ['Closed', 'Under_Review'],
-        'Rejected': ['Draft']
+        'Under_Review': ['Closed', 'Approved'],
     }
-    
+
     current_status = praktyka.status
     if new_status not in valid_transitions.get(current_status, []):
         return api_error("INVALID_TRANSITION", f"Niedozwolone przejście stanu z {current_status} do {new_status}", status=400)
 
-    praktyka.status = new_status
-    
+    # Zwrot do poprawy może zawierać komentarz zwrotny
     if new_status == 'Approved':
+        komentarz = (data.get('komentarz_odrzucenia') or '').strip()
+        praktyka.komentarz_odrzucenia = komentarz or None
+
+    praktyka.status = new_status
+
+    if new_status == 'Closed':
+        praktyka.komentarz_odrzucenia = None
         checklist = check_checklist(praktyka)
-        all_approved = all(checklist.values())
-        if all_approved:
-            from app.routes.api.documents import compile_pdf_data
-            from app.pdf import generate_pdf
-            from app.models import Dokument
-            
+        if all(checklist.values()):
+            from app.routes.api.documents import generate_and_store
+
             types_to_generate = ['zal_nr2a', 'zal_nr3', 'zal_nr4', 'zal_nr6', 'zal_nr7']
+            if praktyka.egzaminy:
+                types_to_generate.append('zal_nr8')
             for t in types_to_generate:
-                try:
-                    pdf_data = compile_pdf_data(praktyka, t)
-                    filepath = generate_pdf(t, pdf_data)
-                    
-                    doc = Dokument.query.filter_by(praktyka_id=praktyka.id, typ=t).first()
-                    if not doc:
-                        doc = Dokument(praktyka_id=praktyka.id, typ=t, sciezka_pliku=filepath, status='Closed')
-                        db.session.add(doc)
-                    else:
-                        doc.sciezka_pliku = filepath
-                except Exception as e:
-                    # Log error and continue or fail gracefully
-                    print(f"Error generating automatic PDF {t}: {e}")
-                
+                generate_and_store(praktyka, t)
+
     db.session.commit()
 
     return api_success({

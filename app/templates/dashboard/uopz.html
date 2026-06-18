@@ -91,7 +91,7 @@
                     <tbody>
                         {% set zgl_count = namespace(value=0) %}
                         {% for p in praktyki %}
-                            {% if p.status in ['Submitted', 'Under_Review'] %}
+                            {% if p.status == 'Submitted' %}
                                 {% set zgl_count.value = zgl_count.value + 1 %}
                                 <tr>
                                     <td>
@@ -112,7 +112,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <a href="{{ url_for('main.dokumentacja_weryfikacja', praktyka_id=p.id) }}" class="btn btn-secondary btn-sm">Szczegóły</a>
+                                        <a href="{{ url_for('main.weryfikacja_zgloszenia', praktyka_id=p.id) }}" class="btn btn-primary btn-sm">Zweryfikuj zgłoszenie</a>
                                     </td>
                                 </tr>
                             {% endif %}
@@ -164,12 +164,12 @@
                                         <div class="d-flex gap-2">
                                             <a href="{{ url_for('main.dziennik_list', praktyka_id=p.id) }}" class="btn btn-secondary btn-sm">Podgląd</a>
                                             <button class="btn btn-primary btn-sm"
-                                                    hx-patch="/api/v1/praktyki/{{ p.id }}/status"
-                                                    hx-vals='{"status": "Approved"}'
+                                                    hx-patch="/api/v1/dziennik/{{ p.id }}"
+                                                    hx-vals='{"dziennik_status": "Closed"}'
                                                     hx-headers='{"Content-Type": "application/json"}'
                                                     hx-swap="none"
                                                     onclick="setTimeout(() => window.location.reload(), 500)">
-                                                Zatwierdź
+                                                Zatwierdź dziennik
                                             </button>
                                         </div>
                                     </td>
@@ -247,8 +247,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% if praktyki %}
-                            {% for p in praktyki %}
+                        {% set dok_count = namespace(value=0) %}
+                        {% for p in praktyki %}
+                            {% if p.status == 'Under_Review' %}
+                            {% set dok_count.value = dok_count.value + 1 %}
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
@@ -268,13 +270,14 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="{{ url_for('main.dokumentacja_weryfikacja', praktyka_id=p.id) }}" class="btn btn-secondary btn-sm">Zweryfikuj P6</a>
+                                    <a href="{{ url_for('main.dokumentacja_weryfikacja', praktyka_id=p.id) }}" class="btn btn-primary btn-sm">Weryfikacja końcowa</a>
                                 </td>
                             </tr>
-                            {% endfor %}
-                        {% else %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if dok_count.value == 0 %}
                             <tr>
-                                <td colspan="4" class="text-center text-secondary py-4">Brak praktyk pod nadzorem</td>
+                                <td colspan="4" class="text-center text-secondary py-4">Brak dokumentacji oczekującej na weryfikację końcową</td>
                             </tr>
                         {% endif %}
                     </tbody>

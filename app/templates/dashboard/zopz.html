@@ -11,6 +11,12 @@
     <div>
         <h1 class="h2 mb-1">Panel Opiekuna Zakładowego</h1>
         <p class="text-secondary mb-0">ZOPZ: <span class="fw-semibold text-primary">{{ current_user.imie }} {{ current_user.nazwisko }}</span></p>
+        {% if zaklady %}
+        <p class="text-secondary mb-0">
+            <span class="material-symbols-outlined align-middle" style="font-size: 16px;">business</span>
+            Zakład{% if zaklady|length > 1 %}y{% endif %}: <span class="fw-semibold">{{ zaklady|map(attribute='nazwa')|join(', ') }}</span>
+        </p>
+        {% endif %}
     </div>
     <a href="{{ url_for('main.zopz_moja_grupa') }}" class="btn btn-outline-primary">
         <span class="material-symbols-outlined align-middle me-1">group</span>Moja Grupa
