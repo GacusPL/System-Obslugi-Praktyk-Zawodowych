@@ -7,22 +7,23 @@ from app.routes.api.helpers import api_success, api_error
 
 ankieta_api_bp = Blueprint('ankieta_api', __name__)
 
-# List of 14 questions representing evaluation criteria
+# 14 pytań ankiety zgodnych z oryginalnym Zał. 5 (kwestionariusz ANS Elbląg).
+# Skala odpowiedzi 1-5: 5 = zdecydowanie tak ... 1 = zdecydowanie nie.
 QUESTIONS = [
-    {"nr": 1, "pytanie": "Jak oceniasz zgodność realizowanych zadań z programem praktyk?"},
-    {"nr": 2, "pytanie": "Jak oceniasz organizację praktyk ze strony zakładu pracy?"},
-    {"nr": 3, "pytanie": "Jak oceniasz opiekę merytoryczną ze strony opiekuna w zakładzie pracy?"},
-    {"nr": 4, "pytanie": "Jak oceniasz warunki pracy (miejsce, sprzęt, bezpieczeństwo)?"},
-    {"nr": 5, "pytanie": "Jak oceniasz atmosferę panującą w zespole/zakładzie pracy?"},
-    {"nr": 6, "pytanie": "W jakim stopniu praktyka pozwoliła Ci na wykorzystanie wiedzy teoretycznej?"},
-    {"nr": 7, "pytanie": "W jakim stopniu praktyka pozwoliła Ci rozwinąć umiejętności praktyczne?"},
-    {"nr": 8, "pytanie": "W jakim stopniu praktyka ułatwi Ci start na rynku pracy?"},
-    {"nr": 9, "pytanie": "Jak oceniasz kontakt i pomoc ze strony koordynatora praktyk uczelni (UOPZ)?"},
-    {"nr": 10, "pytanie": "Jak oceniasz sprawność procedur administracyjnych związanych z praktykami?"},
-    {"nr": 11, "pytanie": "Jak oceniasz przydatność dziennika praktyk w dokumentowaniu pracy?"},
-    {"nr": 12, "pytanie": "Czy polecił(a)byś ten zakład pracy innym studentom na praktyki?"},
-    {"nr": 13, "pytanie": "Jak oceniasz ogólny poziom zadowolenia z odbytych praktyk?"},
-    {"nr": 14, "pytanie": "Jak oceniasz wsparcie ze strony uczelni przy poszukiwaniu miejsca praktyk?"}
+    {"nr": 1, "pytanie": "Poznałam/poznałem zasady funkcjonowania instytucji, w której odbywałam/odbywałem praktyki zawodowe."},
+    {"nr": 2, "pytanie": "Poznałam/poznałem strukturę oraz regulamin organizacyjny instytucji, w której odbywałam/odbywałem praktyki zawodowe."},
+    {"nr": 3, "pytanie": "Praktyki zawodowe umożliwiły mi pełną realizację ramowego programu praktyk zawodowych przewidzianego w ramach mojego kierunku studiów."},
+    {"nr": 4, "pytanie": "Podczas praktyk zawodowych zwracano uwagę na przestrzeganie zasad etyki i tajemnicy zawodowej."},
+    {"nr": 5, "pytanie": "Podczas praktyk miałam/miałem możliwość praktycznego zastosowania wiedzy teoretycznej zdobytej na zajęciach."},
+    {"nr": 6, "pytanie": "Praktyki zawodowe przyczyniły się do pogłębienia mojej wiedzy i umiejętności zdobytych w trakcie studiów."},
+    {"nr": 7, "pytanie": "Mogłem liczyć na wsparcie merytoryczne Opiekuna zakładowego praktyk."},
+    {"nr": 8, "pytanie": "Mogłem liczyć na wsparcie merytoryczne Opiekuna uczelnianego praktyk."},
+    {"nr": 9, "pytanie": "Opiekun zakładowy odpowiedzialny za praktyki zawodowe w miejscu ich odbywania potrafił prawidłowo zorganizować ich przebieg."},
+    {"nr": 10, "pytanie": "Podczas praktyk zawodowych miałam/miałem możliwość pozyskiwania materiałów niezbędnych do przygotowania mojej pracy dyplomowej."},
+    {"nr": 11, "pytanie": "Praktyki zawodowe rozwinęły moje umiejętności skutecznego komunikowania się w sytuacjach zawodowych i pracy w zespole."},
+    {"nr": 12, "pytanie": "Praktyki zawodowe nauczyły mnie samodzielności i odpowiedzialności podczas wykonywania pracy."},
+    {"nr": 13, "pytanie": "Liczba godzin realizowana w ramach praktyk zawodowych jest wystarczająca."},
+    {"nr": 14, "pytanie": "Czy po zakończeniu praktyki zawodowej chciałaby/chciałby Pani/Pan współpracować z instytucją, w której Pani/Pan zrealizowała/zrealizował praktykę?"}
 ]
 
 @ankieta_api_bp.route('/ankieta/szablon', methods=['GET'])

@@ -1,86 +1,75 @@
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from app.pdf.base import NumberedCanvas, get_premium_styles
+from app.pdf.base import PageNumberCanvas
+from app.pdf._common import esc, doc_styles, header_flowables
+
 
 def generate_zal_nr6(filepath, data):
-    doc = SimpleDocTemplate(
-        filepath,
-        pagesize=A4,
-        rightMargin=40, # smaller margins for wide table
-        leftMargin=40,
-        topMargin=54,
-        bottomMargin=72
-    )
-    
-    styles = get_premium_styles()
-    story = []
-    
-    # Title
-    story.append(Paragraph("ZAŁĄCZNIK NR 6", styles['Subtitle']))
-    story.append(Paragraph("DZIENNIK PRZEBIEGU PRAKTYKI ZAWODOWEJ", styles['Title']))
+    doc = SimpleDocTemplate(filepath, pagesize=A4, rightMargin=42, leftMargin=42,
+                            topMargin=48, bottomMargin=54,
+                            title="Załącznik nr 6 - Dziennik praktyki zawodowej")
+    s = doc_styles()
+    story = header_flowables(s, "Załącznik nr 6")
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("DZIENNIK PRAKTYKI ZAWODOWEJ", s['title']))
+
+    studia = (data.get('forma_studiow') or '').strip()
+    studia_txt = f"inżynierskie, {studia}" if studia else "inżynierskie, stacjonarne"
+    story.append(Paragraph(
+        f"Student: <b>{esc(data.get('student_name', ''))}</b>"
+        f"&nbsp;&nbsp;&nbsp;&nbsp;Nr albumu: <b>{esc(data.get('nr_albumu', ''))}</b>", s['body']))
+    story.append(Paragraph(f"Kierunek: <b>{esc(data.get('kierunek', 'informatyka'))}</b>", s['body']))
+    story.append(Paragraph(f"W zakresie: <b>{esc(data.get('specjalnosc', '') or '—')}</b>", s['body']))
+    story.append(Paragraph(
+        f"Studia: <b>{esc(studia_txt)}</b>&nbsp;&nbsp;&nbsp;&nbsp;Rok ak.: <b>{esc(data.get('rok_akademicki', ''))}</b>", s['body']))
+    story.append(Paragraph(f"Miejsce odbywania praktyki: <b>{esc(data.get('zaklad_nazwa', ''))}</b>", s['body']))
+    story.append(Paragraph("(nazwa instytucji – zakładu pracy)", s['cap_l']))
+    story.append(Paragraph(
+        f"Data rozpoczęcia praktyki: <b>{esc(data.get('termin_od', ''))}</b>"
+        f"&nbsp;&nbsp;&nbsp;&nbsp;Data zakończenia praktyki: <b>{esc(data.get('termin_do', ''))}</b>", s['body']))
+    story.append(Spacer(1, 12))
+
+    # Miejsce na podpis studenta (po prawej, nad tabelą)
+    student_sig = Table([[Paragraph("…" * 16, s['body'])],
+                         [Paragraph("podpis studenta", s['cap'])]], colWidths=[220])
+    student_sig.hAlign = 'RIGHT'
+    student_sig.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                     ('LEFTPADDING', (0, 0), (-1, -1), 0), ('RIGHTPADDING', (0, 0), (-1, -1), 0)]))
+    story.append(student_sig)
     story.append(Spacer(1, 10))
-    
-    # Student & Metadata
-    meta_data = [
-        [Paragraph("Student:", styles['Label']), Paragraph(data.get('student_name', ''), styles['Body']),
-         Paragraph("Nr Albumu:", styles['Label']), Paragraph(data.get('nr_albumu', ''), styles['Body'])],
-        [Paragraph("Kierunek:", styles['Label']), Paragraph(data.get('kierunek', ''), styles['Body']),
-         Paragraph("Specjalność:", styles['Label']), Paragraph(data.get('specjalnosc', ''), styles['Body'])],
-        [Paragraph("Miejsce praktyki:", styles['Label']), Paragraph(data.get('zaklad_nazwa', ''), styles['Body']),
-         Paragraph("Przedział czasu:", styles['Label']), Paragraph(f"{data.get('termin_od', '')} - {data.get('termin_do', '')}", styles['Body'])]
+
+    # Tabela dziennika
+    header = [
+        Paragraph("Dzień", s['th']),
+        Paragraph("Data", s['th']),
+        Paragraph("Opis wykonanych prac", s['th']),
+        Paragraph("Nr efektów uczenia się", s['th']),
+        Paragraph("Podpis osoby nadzorującej", s['th']),
     ]
-    meta_table = Table(meta_data, colWidths=[90, 160, 110, 155])
-    meta_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-    ]))
-    story.append(meta_table)
-    story.append(Spacer(1, 15))
-    
-    # 120 Days Table
-    headers = [
-        Paragraph("Dzień", styles['TableHeader']),
-        Paragraph("Data", styles['TableHeader']),
-        Paragraph("Opis wykonywanych prac i zadań", styles['TableHeader']),
-        Paragraph("Efekty", styles['TableHeader']),
-        Paragraph("Podpis ZOPZ", styles['TableHeader'])
-    ]
-    
-    table_data = [headers]
-    
-    wpisy = data.get('wpisy', [])
-    # Sort entries by day number
-    wpisy = sorted(wpisy, key=lambda w: w.get('dzien_nr', 0))
-    
-    for w in wpisy:
-        # Format learning effects list: e.g. "EU01, EU03"
-        efekty_list = w.get('efekty', [])
-        efekty_str = ", ".join([f"EU{e:02d}" for e in efekty_list]) if efekty_list else "-"
-        
-        podpis_status = "Zatwierdził" if w.get('status') == 'Approved' else "Brak podpisu"
-        
-        table_data.append([
-            Paragraph(f"Dzień {w.get('dzien_nr')}", styles['TableBody']),
-            Paragraph(w.get('data_wpisu', ''), styles['TableBody']),
-            Paragraph(w.get('opis_prac', ''), styles['TableBody']),
-            Paragraph(efekty_str, styles['TableBody']),
-            Paragraph(podpis_status, styles['TableBody'])
+    rows = [header]
+    for w in sorted(data.get('wpisy', []), key=lambda x: x.get('dzien_nr', 0)):
+        efekty = ", ".join(str(n) for n in w.get('efekty', []))
+        rows.append([
+            Paragraph(f"<b>{w.get('dzien_nr', '')}</b>", s['td_c']),
+            Paragraph(f"<b>{esc(w.get('data_wpisu', ''))}</b>", s['td_c']),
+            Paragraph(f"<b>{esc(w.get('opis_prac', ''))}</b>", s['td']),
+            Paragraph(f"<b>{esc(efekty)}</b>", s['td_c']),
+            Paragraph("", s['td_c']),  # miejsce na ręczny podpis osoby nadzorującej
         ])
-        
-    # Table column widths: total 515 pt printable area with 40pt margins
-    # A4 width is 595.27pt. Margins are 40 + 40 = 80. Remaining = 515.27.
-    # col widths: 50, 65, 260, 70, 70
-    table = Table(table_data, colWidths=[50, 65, 260, 70, 70], repeatRows=1)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#4f46e5")),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+    if len(rows) == 1:
+        rows.append([Paragraph("", s['td']), Paragraph("", s['td']),
+                     Paragraph("Brak wpisów w dzienniku.", s['td']),
+                     Paragraph("", s['td']), Paragraph("", s['td'])])
+
+    tbl = Table(rows, colWidths=[34, 62, 279, 70, 66], repeatRows=1)
+    tbl.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#e8e8e8")),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-        ('TOPPADDING', (0, 0), (-1, -1), 5),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 0), (-1, -1), 4), ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4), ('RIGHTPADDING', (0, 0), (-1, -1), 4),
     ]))
-    
-    story.append(table)
-    
-    doc.build(story, canvasmaker=NumberedCanvas)
+    story.append(tbl)
+
+    doc.build(story, canvasmaker=PageNumberCanvas)

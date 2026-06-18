@@ -1,100 +1,83 @@
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from app.pdf.base import NumberedCanvas, get_premium_styles
+from app.pdf.base import PageNumberCanvas
+from app.pdf._common import esc, doc_styles, header_flowables
+
 
 def generate_zal_nr4(filepath, data):
-    doc = SimpleDocTemplate(
-        filepath,
-        pagesize=A4,
-        rightMargin=54,
-        leftMargin=54,
-        topMargin=54,
-        bottomMargin=72
-    )
-    
-    styles = get_premium_styles()
-    story = []
-    
-    # Header Logo
-    logo_path = "app/static/img/logo-ans-poziom.png"
-    import os
-    if os.path.exists(logo_path):
-        from reportlab.platypus import Image
-        img = Image(logo_path, width=120, height=35)
-        header_table = Table([[img, ""]], colWidths=[150, 330])
-        header_table.setStyle(TableStyle([
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ]))
-        story.append(header_table)
-        story.append(Spacer(1, 15))
-        
-    story.append(Paragraph("ZAŁĄCZNIK NR 4", styles['Subtitle']))
-    story.append(Paragraph("KARTA POTWIERDZENIA EFEKTÓW UCZENIA SIĘ", styles['Title']))
-    story.append(Spacer(1, 10))
-    
-    # Student Metadata
-    meta_data = [
-        [Paragraph("Student:", styles['Label']), Paragraph(data.get('student_name', ''), styles['Body']),
-         Paragraph("Nr Albumu:", styles['Label']), Paragraph(data.get('nr_albumu', ''), styles['Body'])],
-        [Paragraph("Kierunek:", styles['Label']), Paragraph(data.get('kierunek', ''), styles['Body']),
-         Paragraph("Zrealizowane godziny:", styles['Label']), Paragraph(f"{data.get('godziny_zrealizowane', '960')} godz.", styles['Body'])],
-    ]
-    meta_table = Table(meta_data, colWidths=[90, 150, 130, 117])
-    meta_table.setStyle(TableStyle([
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-    ]))
-    story.append(meta_table)
-    story.append(Spacer(1, 15))
-    
-    # Effects Table
-    story.append(Paragraph("Potwierdzenie osiągnięcia efektów uczenia się:", styles['H2']))
-    
-    eff_headers = [
-        Paragraph("Nr", styles['TableHeader']),
-        Paragraph("Opis efektu uczenia się", styles['TableHeader']),
-        Paragraph("Uzyskano", styles['TableHeader'])
-    ]
-    eff_data = [eff_headers]
-    
-    efekty = data.get('efekty', [])
-    for eff in efekty:
-        uzyskano_text = "TAK" if eff.get('uzyskano') else "NIE"
-        eff_data.append([
-            Paragraph(f"EU{eff.get('nr', 0):02d}", styles['TableBody']),
-            Paragraph(eff.get('opis', ''), styles['TableBody']),
-            Paragraph(uzyskano_text, styles['TableBody'])
+    doc = SimpleDocTemplate(filepath, pagesize=A4, rightMargin=50, leftMargin=50,
+                            topMargin=48, bottomMargin=54,
+                            title="Załącznik nr 4 - Potwierdzenie efektów uczenia się")
+    s = doc_styles()
+    story = header_flowables(s, "Załącznik nr 4")
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("POTWIERDZENIE UZYSKANIA EFEKTÓW UCZENIA SIĘ<br/>W RAMACH PRAKTYKI ZAWODOWEJ", s['title']))
+
+    # Metryczka
+    story.append(Paragraph(f"Student / ka: <b>{esc(data.get('student_name', ''))}</b>", s['body']))
+    story.append(Paragraph(f"Nr albumu: <b>{esc(data.get('nr_albumu', ''))}</b>", s['body']))
+    story.append(Paragraph(f"Kierunek studiów: <b>{esc(data.get('kierunek', 'Informatyka'))}</b>", s['body']))
+    story.append(Paragraph(f"Specjalność: <b>{esc(data.get('specjalnosc', '') or '—')}</b>", s['body']))
+    story.append(Spacer(1, 8))
+    story.append(Paragraph(
+        f"W ramach praktyki zawodowej zrealizowanej w wymiarze <b>{esc(str(data.get('godziny_zrealizowane', '')))}</b> "
+        f"godzin uzyskał/a / nie uzyskał/a* zakładane dla praktyki zawodowej efekty uczenia się:", s['body']))
+    story.append(Spacer(1, 8))
+
+    # Tabela efektów
+    rows = [[Paragraph("Efekty uczenia się", s['th']), "", Paragraph("Potwierdzenie uzyskania efektów", s['th'])]]
+    for e in data.get('efekty', []):
+        if e.get('uzyskano'):
+            potw = "<b>uzyskał/a</b><br/><strike>nie uzyskał/a</strike>"
+        else:
+            potw = "<strike>uzyskał/a</strike><br/><b>nie uzyskał/a</b>"
+        rows.append([
+            Paragraph(f"{int(e.get('nr', 0)):02d}", s['td_c']),
+            Paragraph(esc(e.get('opis', '')), s['td']),
+            Paragraph(potw, s['td_c'])
         ])
-        
-    eff_table = Table(eff_data, colWidths=[50, 370, 67])
-    eff_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#4f46e5")),
+    tbl = Table(rows, colWidths=[28, 357, 110], repeatRows=1)
+    tbl.setStyle(TableStyle([
+        ('SPAN', (0, 0), (1, 0)),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#e8e8e8")),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5e1")),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('TOPPADDING', (0, 0), (-1, -1), 4), ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 4), ('RIGHTPADDING', (0, 0), (-1, -1), 4),
     ]))
-    story.append(eff_table)
-    story.append(Spacer(1, 15))
-    
-    story.append(Paragraph(f"<b>Opinia UOPZ o efektach:</b><br/>{data.get('opinia_uopz', 'Brak opinii.')}", styles['Body']))
-    story.append(Spacer(1, 20))
-    
-    # Signatures
-    sig_data = [
-        [
-            Paragraph("....................................................<br/>Podpis ZOPZ (Opiekun z zakładu)", styles['Body']),
-            Paragraph("....................................................<br/>Podpis UOPZ (Opiekun z uczelni)", styles['Body'])
-        ]
-    ]
-    sig_table = Table(sig_data, colWidths=[240, 247])
-    sig_table.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('TOPPADDING', (0, 0), (-1, -1), 10),
+    story.append(tbl)
+    story.append(Spacer(1, 16))
+
+    # Potwierdzenie ZOPZ - miejsce na podpis po prawej stronie
+    zopz_sig = Table([[Paragraph("…" * 18, s['body'])],
+                      [Paragraph("Data, podpis i pieczęć zakładu pracy", s['cap'])]], colWidths=[250])
+    zopz_sig.hAlign = 'RIGHT'
+    zopz_sig.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                  ('LEFTPADDING', (0, 0), (-1, -1), 0), ('RIGHTPADDING', (0, 0), (-1, -1), 0)]))
+    story.append(KeepTogether([
+        Paragraph("Potwierdzenie bezpośredniego opiekuna zakładowego:", s['body']),
+        Spacer(1, 18),
+        zopz_sig,
     ]))
-    story.append(sig_table)
-    
-    doc.build(story, canvasmaker=NumberedCanvas)
+    story.append(Spacer(1, 14))
+
+    # Opinia UOPZ
+    opinia = (data.get('opinia_uopz') or '').strip()
+    opinia_flow = Paragraph(f"<b>{esc(opinia)}</b>", s['body']) if opinia else Paragraph("<br/>".join(["…" * 80] * 3), s['body'])
+    uopz_sig = Table([[Paragraph("…" * 18, s['body'])],
+                      [Paragraph("Data, podpis opiekuna uczelnianego", s['cap'])]], colWidths=[250])
+    uopz_sig.hAlign = 'RIGHT'
+    uopz_sig.setStyle(TableStyle([('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                  ('LEFTPADDING', (0, 0), (-1, -1), 0), ('RIGHTPADDING', (0, 0), (-1, -1), 0)]))
+    story.append(KeepTogether([
+        Paragraph("Opinia opiekuna uczelnianego", s['section']),
+        opinia_flow,
+        Spacer(1, 18),
+        uopz_sig,
+    ]))
+
+    story.append(Spacer(1, 10))
+    story.append(Paragraph("*niewłaściwe skreślić", s['foot']))
+
+    doc.build(story, canvasmaker=PageNumberCanvas)
