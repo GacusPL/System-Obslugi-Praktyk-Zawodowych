@@ -95,7 +95,12 @@ def callback():
         return redirect(url_for('auth.login'))
         
     user = Uzytkownik.query.filter_by(email=email).first()
-    
+
+    # Zarchiwizowane konto nie może się zalogować
+    if user and user.archived:
+        flash("To konto zostało zarchiwizowane. Skontaktuj się z administratorem.", "danger")
+        return redirect(url_for('auth.login'))
+
     if not user:
         # Create user with rola = None (first login)
         user = Uzytkownik(
@@ -108,7 +113,7 @@ def callback():
         )
         db.session.add(user)
         db.session.commit()
-        
+
     login_user(user)
     
     if user.rola is None:

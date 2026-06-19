@@ -16,7 +16,16 @@
 
             {% if current_user.rola == 'student' and (not sprawozdanie or sprawozdanie.status in ['Draft', 'Rejected']) %}
             <!-- Formularz Edycji dla Studenta -->
-            <form id="sprawozdanie-form">
+            {% if sprawozdanie and sprawozdanie.status == 'Rejected' %}
+            <div class="alert alert-danger d-flex align-items-start gap-2 mb-4">
+                <span class="material-symbols-outlined">cancel</span>
+                <div>
+                    <strong>Sprawozdanie zostało odrzucone do poprawy.</strong>
+                    {% if sprawozdanie.komentarz_odrzucenia %}<br><strong>Komentarz opiekuna:</strong> {{ sprawozdanie.komentarz_odrzucenia }}{% endif %}
+                </div>
+            </div>
+            {% endif %}
+            <form id="sprawozdanie-form" data-sprawozdanie-id="{{ sprawozdanie.id if sprawozdanie else '' }}">
                 <input type="hidden" name="praktyka_id" value="{{ praktyka.id }}">
                 <input type="hidden" id="sprawozdanie-status" name="status" value="Draft">
 
@@ -42,17 +51,24 @@
                     document.getElementById('sprawozdanie-form').addEventListener('submit', function(e) {
                         e.preventDefault();
                         const formData = new FormData(this);
-                        
+                        const sprawozdanieId = this.getAttribute('data-sprawozdanie-id');
+                        const isEdit = sprawozdanieId !== '';
+
                         const payload = {
-                            praktyka_id: parseInt(formData.get('praktyka_id')),
                             sekcja_I: formData.get('sekcja_I'),
                             sekcja_II: formData.get('sekcja_II'),
                             sekcja_III: formData.get('sekcja_III'),
                             status: document.getElementById('sprawozdanie-status').value
                         };
-                        
-                        fetch('/api/v1/sprawozdanie', {
-                            method: 'POST',
+                        if (!isEdit) {
+                            payload.praktyka_id = parseInt(formData.get('praktyka_id'));
+                        }
+
+                        const url = isEdit ? `/api/v1/sprawozdanie/${sprawozdanieId}` : '/api/v1/sprawozdanie';
+                        const method = isEdit ? 'PUT' : 'POST';
+
+                        fetch(url, {
+                            method: method,
                             headers: {
                                 'Content-Type': 'application/json'
                             },

@@ -10,13 +10,13 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        {% if praktyka %}
+        {% if praktyka and praktyka.status != 'Draft' %}
             <div class="card-sopz p-4">
                 <h3 class="mb-3 d-flex align-items-center gap-2">
                     <span class="material-symbols-outlined text-primary" style="font-size: 28px;">assignment</span>
                     Status Zgłoszenia Praktyki
                 </h3>
-                
+
                 <div class="alert alert-{% if praktyka.status in ['Approved', 'Closed'] %}success{% elif praktyka.status == 'Rejected' %}danger{% else %}warning{% endif %} d-flex align-items-center gap-2 mb-4">
                     <span class="material-symbols-outlined">
                         {% if praktyka.status in ['Approved', 'Closed'] %}check_circle{% elif praktyka.status == 'Rejected' %}cancel{% else %}hourglass_empty{% endif %}
@@ -44,35 +44,7 @@
                     </div>
                 </div>
 
-                {% if praktyka.status == 'Draft' %}
-                    <div class="alert alert-info">
-                        Twoje zgłoszenie jest szkicem. Kliknij przycisk poniżej, aby wysłać je do weryfikacji.
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button id="submit-draft-btn" class="btn btn-primary" data-praktyka-id="{{ praktyka.id }}">
-                            <span class="material-symbols-outlined align-middle me-2">send</span>Wyślij zgłoszenie do weryfikacji
-                        </button>
-                    </div>
-                    <script>
-                        document.getElementById('submit-draft-btn')?.addEventListener('click', function() {
-                            const pId = this.getAttribute('data-praktyka-id');
-                            fetch(`/api/v1/praktyki/${pId}/status`, {
-                                method: 'PATCH',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({ status: 'Submitted' })
-                            }).then(res => {
-                                if (res.ok) {
-                                    showToast("Zgłoszenie zostało wysłane!", "success");
-                                    setTimeout(() => window.location.reload(), 1000);
-                                } else {
-                                    showToast("Błąd wysyłania zgłoszenia.", "error");
-                                }
-                            });
-                        });
-                    </script>
-                {% elif praktyka.status == 'Rejected' %}
+                {% if praktyka.status == 'Rejected' %}
                     <div class="alert alert-danger mb-4">
                         Zgłoszenie zostało odrzucone i wymaga poprawy. Kliknij przycisk poniżej, aby je poprawić.
                     </div>
@@ -92,9 +64,7 @@
                             const pId = this.getAttribute('data-praktyka-id');
                             fetch(`/api/v1/praktyki/${pId}/status`, {
                                 method: 'PATCH',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
+                                headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ status: 'Draft' })
                             }).then(res => {
                                 if (res.ok) {
@@ -113,18 +83,23 @@
             </div>
         {% else %}
             <div class="card-sopz">
-                <h3 class="mb-2"><span class="material-symbols-outlined align-middle me-2" style="color: var(--primary);">assignment</span>Zgłoszenie Praktyki Zawodowej (P1)</h3>
-                <p class="text-secondary mb-4">Wypełnij poniższy formularz, aby zgłosić chęć odbycia praktyki zawodowej w wybranym zakładzie pracy.</p>
+                {% if praktyka %}
+                    <h3 class="mb-2"><span class="material-symbols-outlined align-middle me-2" style="color: var(--primary);">edit_document</span>Edycja Zgłoszenia Praktyki (szkic)</h3>
+                    <p class="text-secondary mb-4">Popraw dane zgłoszenia, a następnie zapisz szkic lub wyślij go do weryfikacji.</p>
+                {% else %}
+                    <h3 class="mb-2"><span class="material-symbols-outlined align-middle me-2" style="color: var(--primary);">assignment</span>Zgłoszenie Praktyki Zawodowej (P1)</h3>
+                    <p class="text-secondary mb-4">Wypełnij poniższy formularz, aby zgłosić chęć odbycia praktyki zawodowej w wybranym zakładzie pracy.</p>
+                {% endif %}
 
-                <form id="zgloszenie-form">
-                
+                <form id="zgloszenie-form" data-praktyka-id="{{ praktyka.id if praktyka else '' }}">
+
                 <!-- Wybór zakładu pracy -->
                 <div class="mb-4">
                     <label class="form-label fw-semibold">Zakład Pracy</label>
                     <select class="form-select mb-3" id="zaklad_select" name="zaklad_id" required>
                         <option value="">Wybierz istniejący zakład pracy...</option>
                         {% for z in zaklady %}
-                        <option value="{{ z.id }}">{{ z.nazwa }} (NIP: {{ z.nip }})</option>
+                        <option value="{{ z.id }}" {% if praktyka and praktyka.zaklad_id == z.id %}selected{% endif %}>{{ z.nazwa }} (NIP: {{ z.nip }})</option>
                         {% endfor %}
                         <option value="new">-- Dodaj nowy zakład pracy --</option>
                     </select>
@@ -172,24 +147,24 @@
                         <select class="form-select" name="uopz_id" required>
                             <option value="">Wybierz opiekuna uczelnianego...</option>
                             {% for u in uopz_list %}
-                            <option value="{{ u.id }}">{{ u.imie }} {{ u.nazwisko }}</option>
+                            <option value="{{ u.id }}" {% if praktyka and praktyka.uopz_id == u.id %}selected{% endif %}>{{ u.imie }} {{ u.nazwisko }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Rok Akademicki</label>
-                        <input type="text" class="form-control" name="rok_akademicki" placeholder="np. 2025/2026" required>
+                        <input type="text" class="form-control" name="rok_akademicki" placeholder="np. 2025/2026" value="{{ praktyka.rok_akademicki if praktyka else '' }}" required>
                     </div>
                 </div>
 
                 <div class="row mb-4">
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Termin od</label>
-                        <input type="date" class="form-control" id="termin_od" name="termin_od" required>
+                        <input type="date" class="form-control" id="termin_od" name="termin_od" value="{{ praktyka.termin_od.strftime('%Y-%m-%d') if praktyka else '' }}" required>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Termin do</label>
-                        <input type="date" class="form-control" id="termin_do" name="termin_do" required>
+                        <input type="date" class="form-control" id="termin_do" name="termin_do" value="{{ praktyka.termin_do.strftime('%Y-%m-%d') if praktyka else '' }}" required>
                     </div>
                 </div>
 
@@ -206,75 +181,115 @@
                         }
                     });
 
-                    document.getElementById('zgloszenie-form').addEventListener('submit', function(e) {
-                        e.preventDefault();
-                        const formData = new FormData(this);
-                        
-                        let payload = {
-                            uopz_id: parseInt(formData.get('uopz_id')),
-                            termin_od: formData.get('termin_od'),
-                            termin_do: formData.get('termin_do'),
-                            rok_akademicki: formData.get('rok_akademicki')
-                        };
+                    (function() {
+                        const form = document.getElementById('zgloszenie-form');
+                        const praktykaId = form.getAttribute('data-praktyka-id');
+                        const isEdit = praktykaId !== '';
+                        let pendingAction = 'submit'; // 'save' lub 'submit'
 
-                        if (formData.get('zaklad_id') === 'new') {
-                            payload.new_zaklad = {
-                                nazwa: formData.get('new_zaklad_nazwa'),
-                                adres: formData.get('new_zaklad_adres'),
-                                nip: formData.get('new_zaklad_nip'),
-                                zopz_imie: formData.get('new_zopz_imie'),
-                                zopz_nazwisko: formData.get('new_zopz_nazwisko'),
-                                zopz_stanowisko: formData.get('new_zopz_stanowisko'),
-                                zopz_wyksztalcenie: formData.get('new_zopz_wyksztalcenie')
+                        form.querySelectorAll('button[type="submit"]').forEach(btn => {
+                            btn.addEventListener('click', () => { pendingAction = btn.getAttribute('data-action') || 'submit'; });
+                        });
+
+                        function buildPayload() {
+                            const formData = new FormData(form);
+                            let payload = {
+                                uopz_id: parseInt(formData.get('uopz_id')),
+                                termin_od: formData.get('termin_od'),
+                                termin_do: formData.get('termin_do'),
+                                rok_akademicki: formData.get('rok_akademicki')
                             };
-                        } else {
-                            payload.zaklad_id = parseInt(formData.get('zaklad_id'));
+                            if (formData.get('zaklad_id') === 'new') {
+                                payload.new_zaklad = {
+                                    nazwa: formData.get('new_zaklad_nazwa'),
+                                    adres: formData.get('new_zaklad_adres'),
+                                    nip: formData.get('new_zaklad_nip'),
+                                    zopz_imie: formData.get('new_zopz_imie'),
+                                    zopz_nazwisko: formData.get('new_zopz_nazwisko'),
+                                    zopz_stanowisko: formData.get('new_zopz_stanowisko'),
+                                    zopz_wyksztalcenie: formData.get('new_zopz_wyksztalcenie')
+                                };
+                            } else {
+                                payload.zaklad_id = parseInt(formData.get('zaklad_id'));
+                            }
+                            return payload;
                         }
 
-                        fetch('/api/v1/praktyki', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(payload)
-                        }).then(res => {
-                            if (res.status === 201) {
-                                res.json().then(data => {
-                                    const praktykaId = data.data.id;
+                        function handleError(res) {
+                            res.json().then(data => {
+                                showToast("Błąd: " + (data.error?.message || "Nieznany błąd serwera. Sprawdź format danych (np. NIP)."), "error");
+                            }).catch(() => showToast("Błąd zapisu zgłoszenia.", "error"));
+                        }
+
+                        form.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            const payload = buildPayload();
+
+                            if (!isEdit) {
+                                // Tworzenie nowego zgłoszenia + automatyczna wysyłka
+                                fetch('/api/v1/praktyki', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                }).then(res => {
+                                    if (res.status === 201) {
+                                        res.json().then(data => {
+                                            const newId = data.data.id;
+                                            fetch(`/api/v1/praktyki/${newId}/status`, {
+                                                method: 'PATCH',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ status: 'Submitted' })
+                                            }).then(patchRes => {
+                                                showToast(patchRes.ok ? "Zgłoszenie zostało wysłane pomyślnie!" : "Utworzono szkic, ale nie udało się go automatycznie wysłać.", patchRes.ok ? "success" : "warning");
+                                                setTimeout(() => { window.location.href = '/dashboard'; }, 1200);
+                                            });
+                                        });
+                                    } else {
+                                        handleError(res);
+                                    }
+                                }).catch(() => showToast("Wystąpił błąd sieciowy.", "error"));
+                                return;
+                            }
+
+                            // Edycja istniejącego szkicu: zapisanie pól
+                            fetch(`/api/v1/praktyki/${praktykaId}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            }).then(res => {
+                                if (!res.ok) { handleError(res); return; }
+                                if (pendingAction === 'save') {
+                                    showToast("Zmiany zostały zapisane.", "success");
+                                    setTimeout(() => window.location.reload(), 1000);
+                                } else {
                                     fetch(`/api/v1/praktyki/${praktykaId}/status`, {
                                         method: 'PATCH',
-                                        headers: {
-                                            'Content-Type': 'application/json'
-                                        },
+                                        headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ status: 'Submitted' })
                                     }).then(patchRes => {
                                         if (patchRes.ok) {
-                                            showToast("Zgłoszenie zostało wysłane pomyślnie!", "success");
-                                            setTimeout(() => {
-                                                window.location.href = '/dashboard';
-                                            }, 1000);
+                                            showToast("Zgłoszenie zostało wysłane do weryfikacji!", "success");
+                                            setTimeout(() => { window.location.href = '/dashboard'; }, 1200);
                                         } else {
-                                            showToast("Utworzono szkic, ale nie udało się go automatycznie wysłać.", "warning");
-                                            setTimeout(() => {
-                                                window.location.href = '/dashboard';
-                                            }, 1500);
+                                            handleError(patchRes);
                                         }
                                     });
-                                });
-                            } else {
-                                res.json().then(data => {
-                                    showToast("Błąd: " + (data.error?.message || "Nieznany błąd serwera. Sprawdź format danych (np. NIP)."), "error");
-                                });
-                            }
-                        }).catch(err => {
-                            showToast("Wystąpił błąd sieciowy.", "error");
+                                }
+                            }).catch(() => showToast("Wystąpił błąd sieciowy.", "error"));
                         });
-                    });
+                    })();
                 </script>
 
                 <div class="d-flex justify-content-between align-items-center mt-4">
                     <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Anuluj</a>
-                    <button type="submit" class="btn btn-primary">Złóż Zgłoszenie</button>
+                    {% if praktyka %}
+                    <div class="d-flex gap-2">
+                        <button type="submit" data-action="save" class="btn btn-secondary">Zapisz zmiany</button>
+                        <button type="submit" data-action="submit" class="btn btn-primary">Wyślij do weryfikacji</button>
+                    </div>
+                    {% else %}
+                    <button type="submit" data-action="submit" class="btn btn-primary">Złóż Zgłoszenie</button>
+                    {% endif %}
                 </div>
             </form>
         </div>

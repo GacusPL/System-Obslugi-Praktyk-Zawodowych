@@ -83,3 +83,53 @@ def test_praktyki_crud_and_transitions(client, db_session, sample_student, sampl
     response = client.delete(f'/api/v1/praktyki/{praktyka_id}')
     assert response.status_code == 400
     assert "Draft" in response.get_json()["error"]["message"]
+
+
+def test_praktyka_create_with_new_zaklad(client, db_session, sample_student, sample_uopz):
+    client.get(f'/auth/login?mock_email={sample_student.uzytkownik.email}&mock_rola=student')
+    data = {
+        "uopz_id": sample_uopz.id,
+        "termin_od": "2026-07-01",
+        "termin_do": "2026-09-30",
+        "rok_akademicki": "2025/2026",
+        "new_zaklad": {
+            "nazwa": "Nowa Firma", "adres": "Elbląg, ul. Nowa 5", "nip": "9998887776",
+            "zopz_imie": "Jan", "zopz_nazwisko": "Opiekun",
+            "zopz_stanowisko": "Kierownik", "zopz_wyksztalcenie": "Wyższe"
+        }
+    }
+    response = client.post('/api/v1/praktyki', json=data)
+    assert response.status_code == 201
+    zaklad_id = response.get_json()["data"]["zaklad_id"]
+    assert ZakladPracy.query.get(zaklad_id).nip == "9998887776"
+
+    # Duplikat NIP -> błąd
+    response = client.post('/api/v1/praktyki', json=data)
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "NIP_NOT_UNIQUE"
+
+
+def test_praktyka_draft_field_edit(client, db_session, sample_student, sample_zaklad, sample_uopz):
+    # Drugi UOPZ do podmiany
+    uopz2 = Uzytkownik(imie="Piotr", nazwisko="Drugi", email="uopz2@ans-elblag.pl", rola="uopz")
+    uopz2.set_password("x")
+    db_session.add(uopz2)
+    db_session.commit()
+
+    client.get(f'/auth/login?mock_email={sample_student.uzytkownik.email}&mock_rola=student')
+    data = {
+        "zaklad_id": sample_zaklad.id, "uopz_id": sample_uopz.id,
+        "termin_od": "2026-07-01", "termin_do": "2026-09-30", "rok_akademicki": "2025/2026"
+    }
+    response = client.post('/api/v1/praktyki', json=data)
+    praktyka_id = response.get_json()["data"]["id"]
+
+    # Edycja pól szkicu bez zmiany statusu
+    response = client.patch(f'/api/v1/praktyki/{praktyka_id}', json={
+        "uopz_id": uopz2.id, "rok_akademicki": "2026/2027"
+    })
+    assert response.status_code == 200
+    p = Praktyka.query.get(praktyka_id)
+    assert p.uopz_id == uopz2.id
+    assert p.rok_akademicki == "2026/2027"
+    assert p.status == "Draft"

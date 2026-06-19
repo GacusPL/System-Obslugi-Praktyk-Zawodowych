@@ -9,6 +9,36 @@ from app.routes.api.helpers import api_success, api_error, paginate_query, valid
 
 praktyki_api_bp = Blueprint('praktyki_api', __name__)
 
+def resolve_zaklad_id(data):
+    """Rozwiązuje zaklad_id z payloadu zgłoszenia.
+    Jeśli podano obiekt new_zaklad - tworzy nowy ZakladPracy i zwraca jego id.
+    Zwraca (zaklad_id, error_response). Przy sukcesie error_response = None."""
+    new_zaklad = data.get('new_zaklad')
+    if new_zaklad:
+        required = ['nazwa', 'adres', 'nip', 'zopz_imie', 'zopz_nazwisko', 'zopz_stanowisko', 'zopz_wyksztalcenie']
+        cleaned = {k: (str(new_zaklad.get(k) or '')).strip() for k in required}
+        missing = [k for k, v in cleaned.items() if not v]
+        if missing:
+            return None, api_error("MISSING_ZAKLAD_FIELDS", "Brakujące dane nowego zakładu pracy", details={"missing": missing}, status=400)
+        if ZakladPracy.query.filter_by(nip=cleaned['nip']).first():
+            return None, api_error("NIP_NOT_UNIQUE", "Zakład pracy o podanym NIP już istnieje", status=400)
+        zaklad = ZakladPracy(
+            nazwa=cleaned['nazwa'], adres=cleaned['adres'], nip=cleaned['nip'],
+            zopz_imie=cleaned['zopz_imie'], zopz_nazwisko=cleaned['zopz_nazwisko'],
+            zopz_stanowisko=cleaned['zopz_stanowisko'], zopz_wyksztalcenie=cleaned['zopz_wyksztalcenie'],
+            status='Approved'
+        )
+        db.session.add(zaklad)
+        db.session.flush()
+        return zaklad.id, None
+
+    zaklad_id = data.get('zaklad_id')
+    if not zaklad_id:
+        return None, api_error("MISSING_ZAKLAD", "Wymagany jest zaklad_id lub dane nowego zakładu pracy", status=400)
+    if not ZakladPracy.query.get(zaklad_id):
+        return None, api_error("ZAKLAD_NOT_FOUND", "Zakład pracy o podanym ID nie istnieje", status=404)
+    return zaklad_id, None
+
 def serialize_praktyka(p):
     return {
         "id": p.id,
@@ -41,7 +71,7 @@ def create_praktyka():
 
     data = request.get_json() or {}
     schema = {
-        'zaklad_id': {'required': True, 'type': int},
+        'zaklad_id': {'required': False, 'type': int},
         'uopz_id': {'required': True, 'type': int},
         'termin_od': {'required': True, 'type': str},
         'termin_do': {'required': True, 'type': str},
@@ -51,7 +81,6 @@ def create_praktyka():
     if errors:
         return api_error("MISSING_FIELDS", "Brakujące wymagane pola lub nieprawidłowe typy", details=errors, status=400)
 
-    zaklad_id = sanitized['zaklad_id']
     uopz_id = sanitized['uopz_id']
     termin_od_str = sanitized['termin_od']
     termin_do_str = sanitized['termin_do']
@@ -66,10 +95,11 @@ def create_praktyka():
     termin_od = datetime.strptime(termin_od_str, '%Y-%m-%d').date()
     termin_do = datetime.strptime(termin_do_str, '%Y-%m-%d').date()
 
-    # Validate zaklad and uopz existence
-    if not ZakladPracy.query.get(zaklad_id):
-        return api_error("ZAKLAD_NOT_FOUND", "Zakład pracy o podanym ID nie istnieje", status=404)
-        
+    # Resolve zaklad (existing id or create from new_zaklad)
+    zaklad_id, err = resolve_zaklad_id(data)
+    if err:
+        return err
+
     uopz_user = Uzytkownik.query.get(uopz_id)
     if not uopz_user or uopz_user.rola != 'uopz':
         return api_error("UOPZ_NOT_FOUND", "UOPZ o podanym ID nie istnieje", status=404)
@@ -151,14 +181,43 @@ def get_praktyka(praktyka_id):
 def update_praktyka_status(praktyka_id):
     praktyka = Praktyka.query.get_or_404(praktyka_id)
     data = request.get_json() or {}
-    schema = {
-        'status': {'required': True, 'type': str}
-    }
-    sanitized, errors = validate_payload(data, schema)
-    if errors:
-        return api_error("MISSING_STATUS", "Brak statusu w żądaniu", details=errors, status=400)
-    new_status = sanitized['status']
-        
+    new_status = data.get('status')
+
+    is_owner_student = False
+    if current_user.rola == 'student':
+        student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+        is_owner_student = student is not None and praktyka.student_id == student.id
+
+    def apply_draft_edits():
+        """Aktualizuje edytowalne pola szkicu zgłoszenia. Zwraca error_response lub None."""
+        if 'uopz_id' in data:
+            uopz_user = Uzytkownik.query.get(data['uopz_id'])
+            if not uopz_user or uopz_user.rola != 'uopz':
+                return api_error("UOPZ_NOT_FOUND", "UOPZ o podanym ID nie istnieje", status=404)
+            praktyka.uopz_id = data['uopz_id']
+        if 'zaklad_id' in data or 'new_zaklad' in data:
+            zaklad_id, err = resolve_zaklad_id(data)
+            if err:
+                return err
+            praktyka.zaklad_id = zaklad_id
+        if 'termin_od' in data:
+            praktyka.termin_od = datetime.strptime(data['termin_od'], '%Y-%m-%d').date()
+        if 'termin_do' in data:
+            praktyka.termin_do = datetime.strptime(data['termin_do'], '%Y-%m-%d').date()
+        if 'rok_akademicki' in data:
+            praktyka.rok_akademicki = data['rok_akademicki']
+        return None
+
+    # Edycja pól szkicu bez zmiany statusu (poprawa odrzuconego/szkicowego zgłoszenia)
+    if not new_status:
+        if not (is_owner_student and praktyka.status == 'Draft'):
+            return api_error("MISSING_STATUS", "Brak statusu w żądaniu", status=400)
+        err = apply_draft_edits()
+        if err:
+            return err
+        db.session.commit()
+        return api_success(serialize_praktyka(praktyka))
+
     # Cykl życia praktyki rozdzielony na dwa etapy:
     #  - Zgłoszenie:   Draft -> Submitted -> Approved / Rejected (weryfikacja UOPZ)
     #  - Rozliczenie:  Approved -> Under_Review -> Closed (finalna weryfikacja UOPZ)
@@ -207,15 +266,12 @@ def update_praktyka_status(praktyka_id):
 
     praktyka.status = new_status
 
-    # Update other fields if provided and role matches
-    if current_status == 'Draft' and current_user.rola == 'student':
-        if 'termin_od' in data:
-            praktyka.termin_od = datetime.strptime(data['termin_od'], '%Y-%m-%d').date()
-        if 'termin_do' in data:
-            praktyka.termin_do = datetime.strptime(data['termin_do'], '%Y-%m-%d').date()
-        if 'rok_akademicki' in data:
-            praktyka.rok_akademicki = data['rok_akademicki']
-            
+    # Update other fields if provided and role matches (edycja przy wysyłce szkicu)
+    if current_status == 'Draft' and is_owner_student:
+        err = apply_draft_edits()
+        if err:
+            return err
+
     if new_status == 'Closed' and 'ocena_koncowa' in data:
         if current_user.rola in ['uopz', 'administrator']:
             praktyka.ocena_koncowa = float(data['ocena_koncowa'])

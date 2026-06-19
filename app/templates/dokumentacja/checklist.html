@@ -28,12 +28,12 @@
             {% set p6_status = 'Approved' if praktyka.karta_praktyki and praktyka.karta_praktyki.status == 'Approved' else 'Draft' %}
 
             {% set docs = [
-                {"name": "Zgłoszenie & Harmonogram Praktyki (P1)", "status": p1_status, "desc": "Podpisany przez Studenta, ZOPZ i UOPZ"},
-                {"name": "Dziennik Praktyk Zawodowych (P2)", "status": p2_status, "desc": "120 zatwierdzonych dni wpisów"},
-                {"name": "Potwierdzenie Efektów Uczenia Się (P3)", "status": p3_status, "desc": "Weryfikacja 13 efektów przez ZOPZ"},
-                {"name": "Sprawozdanie Studenta (P4)", "status": p4_status, "desc": "Złożone i ocenione sprawozdanie"},
-                {"name": "Ankieta Ewaluacyjna (P5)", "status": p5_status, "desc": "Wypełniona anonimowa ankieta"},
-                {"name": "Karta Praktyki (P6)", "status": p6_status, "desc": "Podsumowanie ocen i podpisany skan"}
+                {"name": "Zgłoszenie & Harmonogram Praktyki (P1)", "status": p1_status, "desc": "Podpisany przez Studenta, ZOPZ i UOPZ", "typ": "zal_nr2a"},
+                {"name": "Dziennik Praktyk Zawodowych (P2)", "status": p2_status, "desc": "120 zatwierdzonych dni wpisów", "typ": "zal_nr6"},
+                {"name": "Potwierdzenie Efektów Uczenia Się (P3)", "status": p3_status, "desc": "Weryfikacja 13 efektów przez ZOPZ", "typ": "zal_nr4"},
+                {"name": "Sprawozdanie Studenta (P4)", "status": p4_status, "desc": "Złożone i ocenione sprawozdanie", "typ": "zal_nr7"},
+                {"name": "Ankieta Ewaluacyjna (P5)", "status": p5_status, "desc": "Wypełniona anonimowa ankieta", "typ": "zal_nr5"},
+                {"name": "Karta Praktyki (P6)", "status": p6_status, "desc": "Podsumowanie ocen i podpisany skan", "typ": "zal_nr3"}
             ] %}
 
             {% set approved_count = (1 if p1_status == 'Approved' else 0) + 
@@ -62,11 +62,14 @@
                         <div class="fw-semibold text-primary" style="font-size: 15px;">{{ doc.name }}</div>
                         <span class="text-secondary small">{{ doc.desc }}</span>
                     </div>
-                    <div>
+                    <div class="d-flex align-items-center gap-2">
                         {% if doc.status == 'Approved' or doc.status == 'Closed' %}
                             <span class="badge-status badge-status-approved">
                                 <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span> Zatwierdzony
                             </span>
+                            <button type="button" class="btn btn-sm btn-secondary d-flex align-items-center gap-1 generate-doc-btn" data-typ="{{ doc.typ }}">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">download</span> Pobierz PDF
+                            </button>
                         {% else %}
                             <span class="badge-status badge-status-under-review">
                                 <span class="material-symbols-outlined" style="font-size: 16px;">hourglass_empty</span> W toku
@@ -76,6 +79,31 @@
                 </div>
                 {% endfor %}
             </div>
+
+            <script>
+                document.querySelectorAll('.generate-doc-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const typ = this.getAttribute('data-typ');
+                        const orig = this.innerHTML;
+                        this.disabled = true;
+                        this.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+                        fetch('/api/v1/documents/generate', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ praktyka_id: {{ praktyka.id }}, typ: typ })
+                        }).then(res => {
+                            if (res.status === 201) {
+                                res.json().then(data => {
+                                    window.open(data.data.download_url, '_blank');
+                                });
+                            } else {
+                                showToast("Nie udało się wygenerować dokumentu.", "error");
+                            }
+                        }).catch(() => showToast("Błąd połączenia z serwerem.", "error"))
+                          .finally(() => { this.disabled = false; this.innerHTML = orig; });
+                    });
+                });
+            </script>
 
             {% if praktyka.dokumenty %}
             <div class="mt-4 p-4 border rounded bg-light">

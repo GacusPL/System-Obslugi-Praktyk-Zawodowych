@@ -107,23 +107,17 @@
                                 <td>{{ u.email }}</td>
                                 <td>{{ u.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
                                 <td>
-                                    <div class="input-group input-group-sm" style="max-width: 250px;">
-                                        <select class="form-select" id="role-select-{{ u.id }}">
+                                    <form method="POST" action="{{ url_for('admin.update_user_role', user_id=u.id) }}" class="input-group input-group-sm" style="max-width: 250px;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <select name="rola" class="form-select" required>
                                             <option value="student">Student</option>
                                             <option value="zopz">Opiekun Zakładowy (ZOPZ)</option>
                                             <option value="uopz">Opiekun Uczelniany (UOPZ)</option>
                                             <option value="dyrektor">Dyrektor</option>
                                             <option value="administrator">Administrator</option>
                                         </select>
-                                        <button class="btn btn-primary" 
-                                                hx-post="/admin/users/{{ u.id }}/role"
-                                                hx-vals='js:{"rola": document.getElementById("role-select-{{ u.id }}").value}'
-                                                hx-headers='{"Content-Type": "application/json"}'
-                                                hx-target="#user-row-{{ u.id }}"
-                                                hx-swap="outerHTML">
-                                            Zapisz
-                                        </button>
-                                    </div>
+                                        <button type="submit" class="btn btn-primary">Zapisz</button>
+                                    </form>
                                 </td>
                             </tr>
                             {% endfor %}

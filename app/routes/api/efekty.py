@@ -4,6 +4,7 @@ from app import db
 from app.models import PotwierdzenieEfektow, PotwierdzenieEfektOcena, Praktyka, Student, EfektUczenia, Uzytkownik
 from app.decorators import role_required
 from app.routes.api.helpers import api_success, api_error, validate_payload
+from app.validators import validate_dziennik_completeness, validate_all_effects_rated
 
 efekty_api_bp = Blueprint('efekty_api', __name__)
 
@@ -75,6 +76,11 @@ def create_potwierdzenie():
     if current_user.rola == 'zopz':
         if not praktyka.zaklad_pracy.is_opiekun(current_user):
             abort(403)
+
+    # Potwierdzenie efektów można złożyć dopiero po wypełnieniu dziennika (120 zatwierdzonych dni)
+    ok, msg = validate_dziennik_completeness(praktyka_id)
+    if not ok:
+        return api_error("DZIENNIK_INCOMPLETE", f"Potwierdzenie efektów można złożyć dopiero po wypełnieniu dziennika. {msg}", status=400)
 
     # Check if already exists
     existing = PotwierdzenieEfektow.query.filter_by(praktyka_id=praktyka_id).first()
@@ -161,6 +167,11 @@ def update_potwierdzenie(potwierdzenie_id):
         if len(oceny_data) != 13:
             return api_error("INVALID_EFFECTS_COUNT", f"Należy ocenić dokładnie 13 efektów (przesłano {len(oceny_data)})", status=400)
 
+        # Potwierdzenie efektów można złożyć dopiero po wypełnieniu dziennika (120 zatwierdzonych dni)
+        ok, msg = validate_dziennik_completeness(praktyka.id)
+        if not ok:
+            return api_error("DZIENNIK_INCOMPLETE", f"Potwierdzenie efektów można złożyć dopiero po wypełnieniu dziennika. {msg}", status=400)
+
         existing = {o.efekt_id: o for o in pe.oceny}
         for o in oceny_data:
             efekt_id = o.get('efekt_id')
@@ -213,6 +224,13 @@ def patch_potwierdzenie(potwierdzenie_id):
             if not komentarz:
                 return api_error("MISSING_COMMENT", "Odrzucenie wymaga podania komentarza zwrotnego", status=400)
             pe.komentarz_odrzucenia = komentarz
+        if status == 'Approved':
+            rated_ok, rated_msg = validate_all_effects_rated(pe.id)
+            if not rated_ok:
+                return api_error("EFFECTS_NOT_RATED", f"Nie można zatwierdzić potwierdzenia. {rated_msg}", status=400)
+            uzyskane = PotwierdzenieEfektOcena.query.filter_by(potwierdzenie_id=pe.id, uzyskano=1).count()
+            if uzyskane == 0:
+                return api_error("NO_EFFECTS_CONFIRMED", "Nie można zatwierdzić potwierdzenia, w którym żaden efekt nie został oznaczony jako uzyskany", status=400)
         pe.status = status
 
     if opinia_uopz is not None:

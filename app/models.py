@@ -245,6 +245,7 @@ class Sprawozdanie(db.Model):
     wersja = db.Column(db.Integer, nullable=False, default=1)
     ocena = db.Column(db.Float, nullable=True)
     status = db.Column(db.String(50), nullable=False, default='Draft')
+    komentarz_odrzucenia = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=utcnow, onupdate=utcnow)
 

@@ -34,6 +34,25 @@ def test_admin_update_user_role(client, db_session):
 
     client.get('/auth/logout')
 
+def test_admin_create_student_without_profile(client, db_session):
+    from app.models import Student
+    client.get('/auth/login?mock_email=admin_create@ans-elblag.pl&mock_rola=administrator')
+
+    response = client.post('/admin/users/new', data={
+        'imie': 'Nowy', 'nazwisko': 'Student', 'email': 'nowy.student@ans-elblag.pl',
+        'rola': 'student', 'haslo': 'tajne123'
+    }, follow_redirects=False)
+    assert response.status_code == 302
+
+    user = Uzytkownik.query.filter_by(email='nowy.student@ans-elblag.pl').first()
+    assert user is not None
+    assert user.rola == 'student'
+    # Profil studenta NIE jest tworzony - student uzupełni go sam
+    assert Student.query.filter_by(uzytkownik_id=user.id).first() is None
+
+    client.get('/auth/logout')
+
+
 def test_non_admin_update_user_role(client, db_session):
     pending_user = Uzytkownik(imie="Test", nazwisko="Pending", email="pending2@ans-elblag.pl", rola=None)
     pending_user.set_password("pass")

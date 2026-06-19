@@ -4,6 +4,7 @@ from app import db
 from app.models import Sprawozdanie, Praktyka, Student, Uzytkownik
 from app.decorators import role_required
 from app.routes.api.helpers import api_success, api_error, validate_payload
+from app.validators import validate_dziennik_completeness
 
 sprawozdanie_api_bp = Blueprint('sprawozdanie_api', __name__)
 
@@ -17,6 +18,7 @@ def serialize_sprawozdanie(s):
         "wersja": s.wersja,
         "ocena": s.ocena,
         "status": s.status,
+        "komentarz_odrzucenia": s.komentarz_odrzucenia,
         "created_at": s.created_at.strftime('%Y-%m-%d %H:%M:%S') if s.created_at else None,
         "updated_at": s.updated_at.strftime('%Y-%m-%d %H:%M:%S') if s.updated_at else None
     }
@@ -70,6 +72,12 @@ def create_sprawozdanie():
     praktyka = Praktyka.query.get(praktyka_id)
     if not praktyka or praktyka.student_id != student.id:
         abort(403)
+
+    # Sprawozdanie można wysłać dopiero po wypełnieniu dziennika (120 zatwierdzonych dni)
+    if status == 'Submitted':
+        ok, msg = validate_dziennik_completeness(praktyka_id)
+        if not ok:
+            return api_error("DZIENNIK_INCOMPLETE", f"Sprawozdanie można złożyć dopiero po wypełnieniu dziennika. {msg}", status=400)
 
     # Check if sprawozdanie already exists
     existing = Sprawozdanie.query.filter_by(praktyka_id=praktyka_id).first()
@@ -166,11 +174,19 @@ def update_sprawozdanie(sprawozdanie_id):
     if len(sekcja_I) < 100 or len(sekcja_II) < 100 or len(sekcja_III) < 100:
         return api_error("SECTION_TOO_SHORT", "Każda sekcja sprawozdania musi mieć minimum 100 znaków", status=400)
 
+    # Ponowne złożenie dopiero po wypełnieniu dziennika (120 zatwierdzonych dni)
+    if status == 'Submitted':
+        ok, msg = validate_dziennik_completeness(praktyka.id)
+        if not ok:
+            return api_error("DZIENNIK_INCOMPLETE", f"Sprawozdanie można złożyć dopiero po wypełnieniu dziennika. {msg}", status=400)
+
     s.sekcja_I = sekcja_I
     s.sekcja_II = sekcja_II
     s.sekcja_III = sekcja_III
     s.status = status
     s.wersja += 1
+    # Ponowne przesłanie czyści poprzedni komentarz odrzucenia
+    s.komentarz_odrzucenia = None
 
     db.session.commit()
     return api_success(serialize_sprawozdanie(s))
@@ -199,6 +215,11 @@ def patch_sprawozdanie(sprawozdanie_id):
     if status:
         if status not in ['Draft', 'Submitted', 'Under_Review', 'Approved', 'Rejected']:
             return api_error("INVALID_STATUS", "Nieprawidłowy status", status=400)
+        if status == 'Rejected':
+            komentarz = (data.get('komentarz_odrzucenia') or '').strip()
+            if not komentarz:
+                return api_error("MISSING_COMMENT", "Odrzucenie sprawozdania wymaga podania komentarza zwrotnego", status=400)
+            s.komentarz_odrzucenia = komentarz
         s.status = status
 
     if ocena is not None:

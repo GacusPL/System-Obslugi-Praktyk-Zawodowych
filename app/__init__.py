@@ -69,7 +69,11 @@ def create_app(config_name=None):
     # Setup user loader
     @login_manager.user_loader
     def load_user(user_id):
-        return Uzytkownik.query.get(int(user_id))
+        user = Uzytkownik.query.get(int(user_id))
+        # Zarchiwizowane konta nie mogą utrzymać sesji
+        if user is None or user.archived:
+            return None
+        return user
         
     @app.context_processor
     def inject_active_praktyka():
@@ -149,6 +153,12 @@ def create_app(config_name=None):
         response.headers['X-Frame-Options'] = 'DENY'
         response.headers['X-XSS-Protection'] = '1; mode=block'
         response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data:;"
+        # Strony dynamiczne nie mogą trafiać do cache/bfcache - inaczej "wstecz"
+        # po wylogowaniu przywraca uwierzytelniony widok. Pliki statyczne pomijamy.
+        if request.endpoint != 'static':
+            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
         return response
                 
     return app

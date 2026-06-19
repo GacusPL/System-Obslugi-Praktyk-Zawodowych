@@ -148,6 +148,10 @@ def update_harmonogram(harmonogram_id):
                 if not komentarz:
                     return api_error("MISSING_COMMENT", "Odrzucenie wymaga podania komentarza zwrotnego", status=400)
                 harmonogram.komentarz_odrzucenia = komentarz
+                # Poprawiony harmonogram wymaga ponownych podpisów wszystkich stron
+                harmonogram.podpis_student = 0
+                harmonogram.podpis_zopz = 0
+                harmonogram.podpis_uopz = 0
             harmonogram.status = new_status
 
     elif current_user.rola == 'administrator':

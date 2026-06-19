@@ -4,6 +4,7 @@ from app import db
 from app.models import Ankieta, AnkietaOdpowiedz, Praktyka, Student
 from app.decorators import role_required
 from app.routes.api.helpers import api_success, api_error
+from app.validators import validate_dziennik_completeness
 
 ankieta_api_bp = Blueprint('ankieta_api', __name__)
 
@@ -53,6 +54,11 @@ def create_ankieta():
 
     if praktyka.status not in ('Approved', 'Under_Review', 'Closed'):
         return api_error("ANKIETA_TOO_EARLY", "Ankietę można wypełnić dopiero w trakcie lub po zakończeniu praktyki", status=400)
+
+    # Ankietę można wysłać dopiero po wypełnieniu dziennika (120 zatwierdzonych dni)
+    ok, msg = validate_dziennik_completeness(praktyka.id)
+    if not ok:
+        return api_error("DZIENNIK_INCOMPLETE", f"Ankietę można wypełnić dopiero po wypełnieniu dziennika. {msg}", status=400)
 
     if praktyka.ankieta_wypelniona == 1:
         return api_error("ANKIETA_ALREADY_SUBMITTED", "Ankieta dla tej praktyki została już wypełniona", status=400)

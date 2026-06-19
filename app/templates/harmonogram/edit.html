@@ -96,6 +96,43 @@
             </div>
         </div>
 
+        <!-- Zwrot harmonogramu do poprawki (UOPZ) -->
+        {% if current_user.rola == 'uopz' and harmonogram.status != 'Rejected' %}
+        <div class="card-sopz mb-4" style="border-left: 4px solid var(--danger);">
+            <h5 class="fw-bold mb-3"><span class="material-symbols-outlined align-middle me-2" style="color: var(--danger);">undo</span>Zwróć harmonogram do poprawki (ZOPZ)</h5>
+            <p class="text-secondary small">Wskaż opiekunowi zakładowemu, co należy poprawić. Po zwrocie podpisy wszystkich stron zostaną wyzerowane.</p>
+            <form id="reject-harmonogram-form" data-harmonogram-id="{{ harmonogram.id }}">
+                <div class="mb-3">
+                    <textarea name="komentarz_odrzucenia" class="form-control" rows="3" placeholder="Komentarz zwrotny dla opiekuna zakładowego..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-danger">
+                    <span class="material-symbols-outlined align-middle me-1">send</span>Zwróć do poprawki
+                </button>
+            </form>
+            <script>
+                document.getElementById('reject-harmonogram-form')?.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const hId = this.getAttribute('data-harmonogram-id');
+                    const komentarz = this.querySelector('textarea[name="komentarz_odrzucenia"]').value.trim();
+                    if (!komentarz) { showToast("Podaj komentarz zwrotny.", "error"); return; }
+                    fetch(`/api/v1/harmonogramy/${hId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: 'Rejected', komentarz_odrzucenia: komentarz })
+                    }).then(res => {
+                        if (res.ok) {
+                            showToast("Harmonogram zwrócony do poprawki.", "success");
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            res.json().then(d => showToast("Błąd: " + (d.error?.message || "nie udało się zwrócić harmonogramu."), "error"))
+                                .catch(() => showToast("Błąd zwrotu harmonogramu.", "error"));
+                        }
+                    }).catch(() => showToast("Błąd połączenia z serwerem.", "error"));
+                });
+            </script>
+        </div>
+        {% endif %}
+
         <!-- Program Praktyki (Zał. 2a) -->
         <div class="card-sopz mb-4">
             <h3 class="mb-2"><span class="material-symbols-outlined align-middle me-2" style="color: var(--primary);">menu_book</span>Program Praktyki Zawodowej (Zał. 2a)</h3>

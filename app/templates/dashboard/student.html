@@ -202,8 +202,23 @@
                     <p>Zweryfikuj i potwierdź zrealizowane efekty uczenia się.</p>
                     <a href="{{ url_for('main.efekty_potwierdzenie', praktyka_id=praktyka.id) }}" class="btn btn-primary">Potwierdź Efekty</a>
                 {% elif step == 5 %}
+                    {% set ostatnie_spr = praktyka.sprawozdania[-1] if praktyka.sprawozdania else None %}
+                    {% if ostatnie_spr and ostatnie_spr.status == 'Rejected' %}
+                    <div class="alert alert-danger d-flex align-items-start gap-2">
+                        <span class="material-symbols-outlined">cancel</span>
+                        <div>
+                            <strong>Sprawozdanie odrzucone do poprawy.</strong>
+                            {% if ostatnie_spr.komentarz_odrzucenia %}<br><strong>Komentarz opiekuna:</strong> {{ ostatnie_spr.komentarz_odrzucenia }}{% endif %}
+                        </div>
+                    </div>
+                    <a href="{{ url_for('main.sprawozdanie_form', praktyka_id=praktyka.id) }}" class="btn btn-danger">Popraw Sprawozdanie</a>
+                    {% elif ostatnie_spr and ostatnie_spr.status == 'Submitted' %}
+                    <p>Sprawozdanie zostało złożone i oczekuje na ocenę opiekuna uczelnianego.</p>
+                    <button class="btn btn-secondary" disabled>Oczekuje na ocenę</button>
+                    {% else %}
                     <p>Wypełnij i prześlij sprawozdanie z przebiegu praktyki.</p>
                     <a href="{{ url_for('main.sprawozdanie_form', praktyka_id=praktyka.id) }}" class="btn btn-primary">Wypełnij Sprawozdanie</a>
+                    {% endif %}
                 {% elif step == 6 %}
                     <p>Karta praktyki jest generowana po zatwierdzeniu sprawozdania.</p>
                     <a href="{{ url_for('main.karta_praktyki_view', praktyka_id=praktyka.id) }}" class="btn btn-primary">Zobacz Kartę Praktyki</a>

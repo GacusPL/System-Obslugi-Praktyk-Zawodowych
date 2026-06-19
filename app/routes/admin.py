@@ -31,6 +31,10 @@ def _user_form_data(form):
         'rok_akademicki': (form.get('rok_akademicki') or '').strip(),
     }
 
+def _has_student_profile_data(data):
+    """Czy admin wprowadził jakiekolwiek dane profilu studenta."""
+    return any(data[k] for k in ('nr_albumu', 'kierunek', 'specjalnosc', 'semestr', 'forma_studiow', 'rok_akademicki'))
+
 def _validate_student_profile(data, errors, exclude_student_id=None):
     if not (data['nr_albumu'] and data['kierunek'] and data['semestr'] and data['forma_studiow'] and data['rok_akademicki']):
         errors.append("Dla studenta wymagane są: nr albumu, kierunek, semestr, forma studiów, rok akademicki.")
@@ -65,7 +69,9 @@ def create_user():
         errors.append("Hasło jest wymagane przy tworzeniu konta.")
     if data['email'] and Uzytkownik.query.filter_by(email=data['email']).first():
         errors.append("Użytkownik z tym adresem email już istnieje.")
-    if data['rola'] == 'student':
+    # Profil studenta jest opcjonalny - student może go uzupełnić sam po zalogowaniu
+    has_profile = _has_student_profile_data(data)
+    if data['rola'] == 'student' and has_profile:
         _validate_student_profile(data, errors)
 
     if errors:
@@ -80,7 +86,7 @@ def create_user():
     db.session.add(user)
     db.session.flush()
 
-    if data['rola'] == 'student':
+    if data['rola'] == 'student' and has_profile:
         db.session.add(Student(
             uzytkownik_id=user.id, nr_albumu=data['nr_albumu'], kierunek=data['kierunek'],
             specjalnosc=data['specjalnosc'] or None, semestr=int(data['semestr']),
@@ -122,7 +128,9 @@ def edit_user(user_id):
         errors.append("Nieprawidłowa rola.")
     if data['email'] and Uzytkownik.query.filter(Uzytkownik.email == data['email'], Uzytkownik.id != user.id).first():
         errors.append("Inny użytkownik z tym adresem email już istnieje.")
-    if data['rola'] == 'student':
+    # Profil studenta jest opcjonalny - walidujemy tylko gdy podano dane
+    has_profile = _has_student_profile_data(data)
+    if data['rola'] == 'student' and has_profile:
         _validate_student_profile(data, errors, exclude_student_id=student.id if student else None)
 
     if errors:
@@ -138,7 +146,7 @@ def edit_user(user_id):
     if haslo:
         user.set_password(haslo)
 
-    if data['rola'] == 'student':
+    if data['rola'] == 'student' and has_profile:
         if student:
             student.nr_albumu = data['nr_albumu']
             student.kierunek = data['kierunek']
@@ -174,16 +182,16 @@ def update_user_role(user_id):
         if request.headers.get('HX-Request') or request.is_json:
             return {"error": "INVALID_ROLE", "message": "Nieprawidłowa rola"}, 400
         flash("Nieprawidłowa rola.", "danger")
-        return redirect(url_for('admin.users_list')), 400
-        
+        return redirect(request.referrer or url_for('admin.users_list')), 400
+
     user.rola = new_role
     db.session.commit()
-    
+
     if request.headers.get('HX-Request'):
         return ""
-        
+
     flash(f"Przypisano rolę {new_role} użytkownikowi {user.email}.", "success")
-    return redirect(url_for('admin.users_list'))
+    return redirect(request.referrer or url_for('admin.users_list'))
 
 @admin_bp.route('/praktyki', methods=['GET'])
 @login_required
