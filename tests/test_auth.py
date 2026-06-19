@@ -71,6 +71,52 @@ def test_oauth_callback_existing_user(client, db_session):
         assert response.status_code == 302
         assert response.location.endswith('/dashboard')
 
+def test_archived_user_session_invalidated(client, db_session):
+    from flask import g
+    # Login mock user, then archive the account
+    client.get('/auth/login?mock_email=arch_session@ans-elblag.pl&mock_rola=student')
+    user = Uzytkownik.query.filter_by(email="arch_session@ans-elblag.pl").first()
+    user.archived = True
+    db_session.commit()
+
+    # Conftest trzyma jeden app_context na cały test, a Flask-Login cache'uje
+    # użytkownika na g._login_user. W produkcji każde żądanie ma świeży kontekst,
+    # więc czyścimy cache, by user_loader wykonał się tak jak w realnym żądaniu.
+    g.pop('_login_user', None)
+
+    # Subsequent request: user_loader returns None -> redirect to login
+    response = client.get('/dashboard', follow_redirects=False)
+    assert response.status_code == 302
+    assert '/auth/login' in response.location
+
+
+def test_archived_user_oauth_blocked(client, db_session):
+    user = Uzytkownik(imie="Arch", nazwisko="User", email="arch_oauth@ans-elblag.pl", rola="uopz", archived=True)
+    user.set_password("pass")
+    db_session.add(user)
+    db_session.commit()
+
+    with patch('app.routes.auth.get_token_from_code') as mock_token, \
+         patch('app.routes.auth.get_user_info') as mock_user_info:
+        mock_token.return_value = {"access_token": "mock-token"}
+        mock_user_info.return_value = {
+            "mail": "arch_oauth@ans-elblag.pl", "givenName": "Arch", "surname": "User", "id": "ms-arch"
+        }
+        response = client.get('/auth/callback?code=mock-code', follow_redirects=False)
+        assert response.status_code == 302
+        assert response.location.endswith('/auth/login')
+
+    # Brak aktywnej sesji - próba wejścia na dashboard odbija do logowania
+    response = client.get('/dashboard', follow_redirects=False)
+    assert response.status_code == 302
+    assert '/auth/login' in response.location
+
+
+def test_no_store_cache_header(client, db_session):
+    response = client.get('/auth/login', follow_redirects=False)
+    assert 'no-store' in response.headers.get('Cache-Control', '')
+
+
 def test_logout(client, db_session):
     # Log in mock user
     client.get('/auth/login?mock_email=logout_test@ans-elblag.pl&mock_rola=student')
