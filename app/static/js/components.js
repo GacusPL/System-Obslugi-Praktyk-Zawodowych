@@ -236,6 +236,26 @@ async function fetchWithToast(url, options = {}) {
     }
 }
 
+/**
+ * Zatwierdza dziennik praktyk (UOPZ): ustawia dziennik_status na 'Closed'.
+ * @param {number} praktykaId
+ */
+function zatwierdzDziennik(praktykaId) {
+    fetch(`/api/v1/dziennik/${praktykaId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dziennik_status: 'Closed' })
+    }).then(res => {
+        if (res.ok) {
+            showToast('Dziennik zatwierdzony.', 'success');
+            setTimeout(() => window.location.reload(), 800);
+        } else {
+            res.json().then(d => showToast('Błąd: ' + (d.error?.message || 'nie udało się zatwierdzić dziennika.'), 'error'))
+                .catch(() => showToast('Błąd zatwierdzania dziennika.', 'error'));
+        }
+    }).catch(() => showToast('Błąd połączenia z serwerem.', 'error'));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initSidebar();
 });

@@ -56,47 +56,52 @@
                     document.getElementById('efekty-form').addEventListener('submit', function(e) {
                         e.preventDefault();
                         const pId = this.getAttribute('data-potwierdzenie-id');
-                        const checkboxes = this.querySelectorAll('.efekt-checkbox');
-                        
-                        let oceny = [];
-                        checkboxes.forEach(cb => {
-                            oceny.push({
-                                efekt_id: parseInt(cb.value),
-                                uzyskano: cb.checked ? 1 : 0
+                        const rola = "{{ current_user.rola }}";
+                        const opinia = this.querySelector('textarea[name="opinia_uopz"]')?.value || "";
+
+                        let options;
+                        if (rola === 'uopz') {
+                            // UOPZ zatwierdza efekty (status -> Approved) i zapisuje opinię
+                            options = {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ status: 'Approved', opinia_uopz: opinia })
+                            };
+                        } else {
+                            // ZOPZ/administrator zapisuje oceny 13 efektów
+                            let oceny = [];
+                            this.querySelectorAll('.efekt-checkbox').forEach(cb => {
+                                oceny.push({ efekt_id: parseInt(cb.value), uzyskano: cb.checked ? 1 : 0 });
                             });
-                        });
-                        
-                        const payload = {
-                            godziny_zrealizowane: {{ potwierdzenie.godziny_zrealizowane }},
-                            opinia_uopz: this.querySelector('textarea[name="opinia_uopz"]')?.value || "",
-                            oceny: oceny
-                        };
-                        
-                        fetch(`/api/v1/efekty/potwierdzenie/${pId}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(payload)
-                        }).then(res => {
+                            options = {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    godziny_zrealizowane: {{ potwierdzenie.godziny_zrealizowane }},
+                                    opinia_uopz: opinia,
+                                    oceny: oceny
+                                })
+                            };
+                        }
+
+                        fetch(`/api/v1/efekty/potwierdzenie/${pId}`, options).then(res => {
                             if (res.ok) {
-                                showToast("Zapisano potwierdzenie efektów.", "success");
-                                setTimeout(() => {
-                                    window.location.href = '/dashboard';
-                                }, 1000);
+                                showToast(rola === 'uopz' ? "Efekty zatwierdzone." : "Zapisano potwierdzenie efektów.", "success");
+                                setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
                             } else {
-                                showToast("Wystąpił błąd przy zapisywaniu.", "error");
+                                res.json().then(d => showToast("Błąd: " + (d.error?.message || "nie udało się zapisać."), "error"))
+                                    .catch(() => showToast("Wystąpił błąd przy zapisywaniu.", "error"));
                             }
-                        }).catch(err => {
-                            showToast("Wystąpił błąd sieciowy.", "error");
-                        });
+                        }).catch(() => showToast("Wystąpił błąd sieciowy.", "error"));
                     });
                 </script>
 
                 <div class="d-flex justify-content-between align-items-center mt-4">
                     <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Powrót</a>
-                    {% if current_user.rola in ['zopz', 'uopz'] %}
+                    {% if current_user.rola == 'zopz' %}
                     <button type="submit" class="btn btn-primary">Zapisz Potwierdzenie</button>
+                    {% elif current_user.rola == 'uopz' %}
+                    <button type="submit" class="btn btn-primary">Zatwierdź efekty</button>
                     {% endif %}
                 </div>
             </form>

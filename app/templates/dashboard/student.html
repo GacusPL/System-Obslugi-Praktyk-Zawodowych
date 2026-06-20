@@ -61,7 +61,7 @@
                         {% set step = 2 %}
                         {% if praktyka.harmonogram and praktyka.harmonogram.status == 'Approved' %}
                             {% set step = 3 %}
-                            {% if praktyka.dziennik_status == 'Approved' or praktyka.dziennik_status == 'Closed' %}
+                            {% if praktyka.dziennik_status == 'Closed' %}
                                 {% set step = 4 %}
                                 {% if praktyka.potwierdzenie_efektow and praktyka.potwierdzenie_efektow.status == 'Approved' %}
                                     {% set step = 5 %}
@@ -196,12 +196,22 @@
                     <p>Twój harmonogram wymaga uzupełnienia i podpisania przez Ciebie, opiekuna zakładowego oraz uczelnianego.</p>
                     <a href="{{ url_for('main.harmonogram_edit') }}" class="btn btn-primary">Przejdź do Harmonogramu</a>
                 {% elif step == 3 %}
+                    {% if praktyka.dziennik_status == 'Under_Review' %}
+                    <p>Dziennik kompletny (120 dni zatwierdzonych) - oczekuje na zatwierdzenie przez opiekuna uczelnianego. W międzyczasie możesz wypełnić ankietę po praktykach.</p>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-secondary" disabled>Oczekuje na zatwierdzenie dziennika</button>
+                        {% if not praktyka.ankieta_wypelniona %}
+                        <a href="{{ url_for('main.ankieta_form') }}" class="btn btn-primary">Wypełnij Ankietę</a>
+                        {% endif %}
+                    </div>
+                    {% else %}
                     <p>Uzupełniaj wpisy w dzienniku praktyk codziennie. Musisz uzbierać i zatwierdzić 120 dni praktyki.</p>
                     <a href="{{ url_for('main.dziennik_list') }}" class="btn btn-primary">Uzupełnij Dziennik</a>
-                {% elif step == 4 %}
-                    <p>Zweryfikuj i potwierdź zrealizowane efekty uczenia się.</p>
-                    <a href="{{ url_for('main.efekty_potwierdzenie', praktyka_id=praktyka.id) }}" class="btn btn-primary">Potwierdź Efekty</a>
-                {% elif step == 5 %}
+                    {% endif %}
+                {% elif step == 4 or step == 5 %}
+                    {% if step == 4 %}
+                    <p class="text-secondary small mb-3"><span class="material-symbols-outlined align-middle me-1" style="font-size: 16px;">info</span>Efekty uczenia się potwierdzają opiekunowie - masz do nich podgląd.</p>
+                    {% endif %}
                     {% set ostatnie_spr = praktyka.sprawozdania[-1] if praktyka.sprawozdania else None %}
                     {% if ostatnie_spr and ostatnie_spr.status == 'Rejected' %}
                     <div class="alert alert-danger d-flex align-items-start gap-2">

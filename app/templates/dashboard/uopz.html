@@ -163,12 +163,7 @@
                                     <td>
                                         <div class="d-flex gap-2">
                                             <a href="{{ url_for('main.dziennik_list', praktyka_id=p.id) }}" class="btn btn-secondary btn-sm">Podgląd</a>
-                                            <button class="btn btn-primary btn-sm"
-                                                    hx-patch="/api/v1/dziennik/{{ p.id }}"
-                                                    hx-vals='{"dziennik_status": "Closed"}'
-                                                    hx-headers='{"Content-Type": "application/json"}'
-                                                    hx-swap="none"
-                                                    onclick="setTimeout(() => window.location.reload(), 500)">
+                                            <button class="btn btn-primary btn-sm" onclick="zatwierdzDziennik({{ p.id }})">
                                                 Zatwierdź dziennik
                                             </button>
                                         </div>

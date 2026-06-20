@@ -21,6 +21,12 @@
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWpisModal">
                     <span class="material-symbols-outlined align-middle me-1">add</span> Dodaj Wpis
                 </button>
+                {% elif current_user.rola == 'uopz' and praktyka.dziennik_status == 'Under_Review' %}
+                <button type="button" class="btn btn-primary" onclick="zatwierdzDziennik({{ praktyka.id }})">
+                    <span class="material-symbols-outlined align-middle me-1">task_alt</span> Zatwierdź dziennik
+                </button>
+                {% elif current_user.rola == 'uopz' and praktyka.dziennik_status == 'Closed' %}
+                <span class="badge bg-success-light text-success border align-self-center">Dziennik zatwierdzony</span>
                 {% endif %}
             </div>
 
