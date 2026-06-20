@@ -23,6 +23,7 @@ COPY --from=builder /root/.local /root/.local
 COPY app/ app/
 COPY config.py config.py
 COPY run.py run.py
+COPY gunicorn.conf.py gunicorn.conf.py
 COPY migrations/ migrations/
 COPY docker-entrypoint.sh docker-entrypoint.sh
 

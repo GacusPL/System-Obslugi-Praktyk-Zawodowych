@@ -13,6 +13,8 @@ node_modules/
 .env
 .antigravitycli
 app/storage/generated/*
+app/static/uploads/
+app/static/generated/
 tests/
 Dockerfile
 docker-compose.yml
