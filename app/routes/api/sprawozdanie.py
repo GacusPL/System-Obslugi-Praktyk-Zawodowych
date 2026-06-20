@@ -1,7 +1,7 @@
 from flask import Blueprint, request, abort
 from flask_login import login_required, current_user
 from app import db
-from app.models import Sprawozdanie, Praktyka, Student, Uzytkownik
+from app.models import Sprawozdanie, Praktyka, Student, Uzytkownik, KartaPraktyki
 from app.decorators import role_required
 from app.routes.api.helpers import api_success, api_error, validate_payload
 from app.validators import validate_dziennik_completeness
@@ -230,6 +230,15 @@ def patch_sprawozdanie(sprawozdanie_id):
         if not (2.0 <= ocena_val <= 5.0):
             return api_error("INVALID_OCENA_RANGE", "Ocena musi być w zakresie 2.0 - 5.0", status=400)
         s.ocena = ocena_val
+
+    # Zatwierdzone sprawozdanie z oceną przenosi ocenę do karty praktyki (P6)
+    if s.status == 'Approved' and s.ocena is not None:
+        karta = KartaPraktyki.query.filter_by(praktyka_id=praktyka.id).first()
+        if not karta:
+            karta = KartaPraktyki(praktyka_id=praktyka.id, ocena_sprawozdania=s.ocena)
+            db.session.add(karta)
+        else:
+            karta.ocena_sprawozdania = s.ocena
 
     db.session.commit()
     return api_success(serialize_sprawozdanie(s))

@@ -231,7 +231,8 @@ def dziennik_list():
         return redirect(url_for('main.dashboard'))
 
     efekty = EfektUczenia.query.order_by(EfektUczenia.nr).all()
-    return render_template('dziennik/list.html', praktyka=praktyka, efekty=efekty)
+    from datetime import date
+    return render_template('dziennik/list.html', praktyka=praktyka, efekty=efekty, today=date.today().isoformat())
 
 @main_bp.route('/ankieta/formularz')
 @login_required

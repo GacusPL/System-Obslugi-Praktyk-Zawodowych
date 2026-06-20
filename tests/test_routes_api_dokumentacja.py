@@ -1,9 +1,10 @@
+import io
 import pytest
 from datetime import date
 from app import db
 from app.models import (
     Praktyka, Student, Uzytkownik, Harmonogram, KartaPraktyki,
-    PotwierdzenieEfektow, WpisDziennika, Sprawozdanie
+    PotwierdzenieEfektow, WpisDziennika, Sprawozdanie, PodpisanySkan
 )
 
 def test_dokumentacja_checklist_and_submission(client, db_session, sample_student, sample_zaklad, sample_uopz):
@@ -82,7 +83,20 @@ def test_dokumentacja_checklist_and_submission(client, db_session, sample_studen
     res_json = response.get_json()
     assert all(res_json["data"].values())
 
-    # 5. Submit documentation (should transition practice Approved -> Under_Review)
+    # 5a. Bez podpisanych skanów złożenie jest zablokowane
+    response = client.post('/api/v1/dokumentacja/zloz', json={"praktyka_id": praktyka.id})
+    assert response.status_code == 422
+    assert response.get_json()["error"]["code"] == "MISSING_SCANS"
+
+    # 5b. Dodaj komplet 6 podpisanych skanów
+    for slot in ['p1', 'p2', 'p3', 'p4', 'p5', 'p6']:
+        db_session.add(PodpisanySkan(
+            praktyka_id=praktyka.id, slot=slot,
+            nazwa_pliku=f"{slot}.pdf", sciezka_pliku=f"uploads/signed_docs/x/{slot}.pdf"
+        ))
+    db_session.commit()
+
+    # 5c. Submit documentation (should transition practice Approved -> Under_Review)
     response = client.post('/api/v1/dokumentacja/zloz', json={"praktyka_id": praktyka.id})
     assert response.status_code == 200
     assert response.get_json()["data"]["status"] == "Under_Review"
@@ -100,3 +114,51 @@ def test_dokumentacja_checklist_and_submission(client, db_session, sample_studen
     response = client.patch(f'/api/v1/dokumentacja/{praktyka.id}', json={"status": "Closed"})
     assert response.status_code == 200
     assert Praktyka.query.get(praktyka.id).status == "Closed"
+
+
+def test_upload_skan_per_slot(client, db_session, sample_student, sample_zaklad, sample_uopz):
+    praktyka = Praktyka(
+        student_id=sample_student.id, zaklad_id=sample_zaklad.id, uopz_id=sample_uopz.id,
+        termin_od=date(2026, 7, 1), termin_do=date(2026, 9, 30),
+        rok_akademicki="2025/2026", status="Approved"
+    )
+    db_session.add(praktyka)
+    db_session.commit()
+
+    client.get(f'/auth/login?mock_email={sample_student.uzytkownik.email}&mock_rola=student')
+
+    # Wgranie skanu do slotu p1
+    resp = client.post(
+        f'/api/v1/dokumentacja/{praktyka.id}/skan',
+        data={'slot': 'p1', 'file': (io.BytesIO(b'%PDF-1.4 test'), 'harmonogram.pdf')},
+        content_type='multipart/form-data'
+    )
+    assert resp.status_code == 201
+    assert resp.get_json()["data"]["slot"] == "p1"
+
+    # Ponowne wgranie do tego samego slotu -> upsert (nadal 1 rekord)
+    resp = client.post(
+        f'/api/v1/dokumentacja/{praktyka.id}/skan',
+        data={'slot': 'p1', 'file': (io.BytesIO(b'%PDF-1.4 test2'), 'harmonogram_v2.pdf')},
+        content_type='multipart/form-data'
+    )
+    assert resp.status_code == 201
+    assert PodpisanySkan.query.filter_by(praktyka_id=praktyka.id, slot='p1').count() == 1
+
+    # Nieprawidłowy slot -> 400
+    resp = client.post(
+        f'/api/v1/dokumentacja/{praktyka.id}/skan',
+        data={'slot': 'p9', 'file': (io.BytesIO(b'x'), 'x.pdf')},
+        content_type='multipart/form-data'
+    )
+    assert resp.status_code == 400
+    assert resp.get_json()["error"]["code"] == "INVALID_SLOT"
+
+    # Niedozwolony typ pliku -> 400
+    resp = client.post(
+        f'/api/v1/dokumentacja/{praktyka.id}/skan',
+        data={'slot': 'p2', 'file': (io.BytesIO(b'malware'), 'evil.exe')},
+        content_type='multipart/form-data'
+    )
+    assert resp.status_code == 400
+    assert resp.get_json()["error"]["code"] == "UPLOAD_ERROR"

@@ -68,6 +68,9 @@
             <button class="nav-link" id="sprawozdania-tab" data-bs-toggle="tab" data-bs-target="#sprawozdania" type="button" role="tab">Sprawozdania</button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link" id="efekty-karta-tab" data-bs-toggle="tab" data-bs-target="#efekty-karta" type="button" role="tab">Efekty / Karta</button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link" id="dokumentacja-tab" data-bs-toggle="tab" data-bs-target="#dokumentacja" type="button" role="tab">Dokumentacja</button>
         </li>
         <li class="nav-item" role="presentation">
@@ -229,6 +232,53 @@
             </div>
         </div>
         
+        <!-- Efekty / Karta Tab -->
+        <div class="tab-pane fade" id="efekty-karta" role="tabpanel">
+            <div class="table-responsive">
+                <table class="table-sopz" id="table-efekty-karta">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Zakład pracy</th>
+                            <th>Dziennik</th>
+                            <th>Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if praktyki %}
+                            {% for p in praktyki %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="table-avatar">
+                                            {{ p.student.uzytkownik.imie[0] }}{{ p.student.uzytkownik.nazwisko[0] }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold">{{ p.student.uzytkownik.imie }} {{ p.student.uzytkownik.nazwisko }}</div>
+                                            <span class="text-secondary small">album: {{ p.student.nr_albumu }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ p.zaklad_pracy.nazwa }}</td>
+                                <td><span class="badge bg-light text-primary border">{{ p.dziennik_status|translate_status }}</span></td>
+                                <td>
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ url_for('main.efekty_potwierdzenie', praktyka_id=p.id) }}" class="btn btn-secondary btn-sm">Efekty</a>
+                                        <a href="{{ url_for('main.ocena_uopz_form', praktyka_id=p.id) }}" class="btn btn-primary btn-sm">Karta</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-secondary py-4">Brak praktyk pod nadzorem</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Dokumentacja Tab -->
         <div class="tab-pane fade" id="dokumentacja" role="tabpanel">
             <div class="table-responsive">
@@ -357,6 +407,7 @@
         initPagination('table-zgloszenia', 10);
         initPagination('table-dzienniki', 10);
         initPagination('table-sprawozdania', 10);
+        initPagination('table-efekty-karta', 10);
         initPagination('table-dokumentacja', 10);
         initPagination('table-harmonogramy', 10);
     });

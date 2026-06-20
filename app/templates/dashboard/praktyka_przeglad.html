@@ -116,9 +116,19 @@
             <span class="material-symbols-outlined align-middle me-1" style="font-size: 16px;">folder_open</span>Dokumentacja
         </a>
         {% endif %}
+        {% if current_user.rola == 'zopz' %}
+        <a href="{{ url_for('main.ocena_zopz_form', praktyka_id=praktyka.id) }}" class="btn btn-primary btn-sm">
+            <span class="material-symbols-outlined align-middle me-1" style="font-size: 16px;">grade</span>Wystaw ocenę (Karta)
+        </a>
+        {% elif current_user.rola == 'uopz' %}
+        <a href="{{ url_for('main.ocena_uopz_form', praktyka_id=praktyka.id) }}" class="btn btn-primary btn-sm">
+            <span class="material-symbols-outlined align-middle me-1" style="font-size: 16px;">grade</span>Wystaw ocenę (Karta)
+        </a>
+        {% else %}
         <a href="{{ url_for('main.karta_praktyki_view', praktyka_id=praktyka.id) }}" class="btn btn-primary btn-sm">
             <span class="material-symbols-outlined align-middle me-1" style="font-size: 16px;">grade</span>Karta praktyki
         </a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

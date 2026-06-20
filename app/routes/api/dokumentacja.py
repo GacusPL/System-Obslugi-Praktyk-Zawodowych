@@ -1,11 +1,16 @@
-from flask import Blueprint, request, abort
+import os
+from flask import Blueprint, request, abort, send_file
 from flask_login import login_required, current_user
 from app import db
-from app.models import Praktyka, Student, Harmonogram, KartaPraktyki, PotwierdzenieEfektow, WpisDziennika, Sprawozdanie, Uzytkownik
+from app.models import Praktyka, Student, Harmonogram, KartaPraktyki, PotwierdzenieEfektow, WpisDziennika, Sprawozdanie, Uzytkownik, PodpisanySkan
 from app.decorators import role_required
 from app.routes.api.helpers import api_success, api_error
+from app.utils.upload import save_uploaded_file
 
 dokumentacja_api_bp = Blueprint('dokumentacja_api', __name__)
+
+# Sloty podpisanych skanów (P1-P6) odpowiadające 6 dokumentom do podpisu
+SKAN_SLOTS = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6']
 
 def check_checklist(praktyka):
     harmonogram = Harmonogram.query.filter_by(praktyka_id=praktyka.id).first()
@@ -77,6 +82,17 @@ def zloz_dokumentacje():
             "INCOMPLETE_DOCUMENTATION",
             "Nie można złożyć dokumentacji, ponieważ nie wszystkie elementy są zatwierdzone.",
             details={"missing_items": missing},
+            status=422
+        )
+
+    # Wszystkie 6 podpisanych skanów musi być wgranych
+    wgrane_sloty = {s.slot for s in PodpisanySkan.query.filter_by(praktyka_id=praktyka.id).all()}
+    brakujace_skany = [s for s in SKAN_SLOTS if s not in wgrane_sloty]
+    if brakujace_skany:
+        return api_error(
+            "MISSING_SCANS",
+            "Nie można złożyć dokumentacji - brakuje podpisanych skanów wszystkich 6 dokumentów.",
+            details={"missing_slots": brakujace_skany},
             status=422
         )
 
@@ -172,3 +188,75 @@ def patch_dokumentacja(praktyka_id):
         "status": praktyka.status,
         "message": f"Status praktyki zaktualizowany do {new_status}"
     })
+
+@dokumentacja_api_bp.route('/dokumentacja/<int:praktyka_id>/skan', methods=['POST'])
+@login_required
+@role_required('student')
+def upload_skan(praktyka_id):
+    student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+    if not student:
+        return api_error("STUDENT_PROFILE_NOT_FOUND", "Brak profilu studenta", status=400)
+
+    praktyka = Praktyka.query.get_or_404(praktyka_id)
+    if praktyka.student_id != student.id:
+        abort(403)
+
+    slot = (request.form.get('slot') or '').lower()
+    if slot not in SKAN_SLOTS:
+        return api_error("INVALID_SLOT", "Nieprawidłowy slot dokumentu", status=400)
+
+    file = request.files.get('file') or request.files.get('skan')
+    if not file:
+        return api_error("MISSING_FILE", "Brak pliku w żądaniu", status=400)
+
+    path, err = save_uploaded_file(file, 'signed_docs', max_size_mb=5)
+    if err:
+        return api_error("UPLOAD_ERROR", err, status=400)
+
+    skan = PodpisanySkan.query.filter_by(praktyka_id=praktyka.id, slot=slot).first()
+    if not skan:
+        skan = PodpisanySkan(praktyka_id=praktyka.id, slot=slot, nazwa_pliku=file.filename, sciezka_pliku=path)
+        db.session.add(skan)
+    else:
+        skan.nazwa_pliku = file.filename
+        skan.sciezka_pliku = path
+        skan.status = 'Submitted'
+
+    db.session.commit()
+    return api_success({
+        "id": skan.id,
+        "slot": skan.slot,
+        "nazwa_pliku": skan.nazwa_pliku,
+        "download_url": skan.get_download_url()
+    }, status=201)
+
+@dokumentacja_api_bp.route('/dokumentacja/skan/<int:skan_id>/download', methods=['GET'])
+@login_required
+def download_skan(skan_id):
+    skan = PodpisanySkan.query.get_or_404(skan_id)
+    praktyka = skan.praktyka
+
+    # Access checks
+    if current_user.rola == 'student':
+        student = Student.query.filter_by(uzytkownik_id=current_user.id).first()
+        if not student or praktyka.student_id != student.id:
+            abort(403)
+    elif current_user.rola == 'uopz':
+        if praktyka.uopz_id != current_user.id:
+            abort(403)
+    elif current_user.rola == 'zopz':
+        if not praktyka.zaklad_pracy.is_opiekun(current_user):
+            abort(403)
+
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+    paths_to_try = [
+        os.path.join(base_dir, 'app', 'static', skan.sciezka_pliku),
+        os.path.join(base_dir, 'app', skan.sciezka_pliku),
+        os.path.join(base_dir, skan.sciezka_pliku),
+        skan.sciezka_pliku,
+    ]
+    abs_path = next((p for p in paths_to_try if os.path.exists(p)), None)
+    if not abs_path:
+        abort(404)
+
+    return send_file(abs_path, as_attachment=True)

@@ -172,6 +172,18 @@
                 {% if praktyka and praktyka.status == 'Under_Review' %}
                     <p>Komplet dokumentacji został złożony i oczekuje na weryfikację końcową opiekuna uczelnianego.</p>
                     <button class="btn btn-secondary" disabled>Oczekuje na weryfikację końcową</button>
+                {% elif praktyka and praktyka.status == 'Closed' %}
+                    <div class="alert alert-success d-flex align-items-start gap-2">
+                        <span class="material-symbols-outlined">verified</span>
+                        <div><strong>Praktyka zaliczona.</strong> Dokumentacja została zatwierdzona przez opiekuna uczelnianego.</div>
+                    </div>
+                    {% set egz = praktyka.egzaminy[-1] if praktyka.egzaminy else None %}
+                    {% if egz %}
+                    <p class="mb-1">Egzamin z praktyki: <span class="badge-status badge-status-{{ egz.status|lower }}">{{ egz.status|translate_status }}</span>
+                    {% if egz.ocena_koncowa %}&middot; ocena końcowa: <strong>{{ egz.ocena_koncowa }}</strong>{% endif %}</p>
+                    {% else %}
+                    <p class="text-secondary mb-0">Pozostaje egzamin z praktyki (odbywa się stacjonarnie na uczelni, poza systemem).</p>
+                    {% endif %}
                 {% elif step == 1 %}
                     {% if not praktyka %}
                         <p>Złóż formularz zgłoszenia praktyki, aby rozpocząć proces.</p>
@@ -230,10 +242,15 @@
                     <a href="{{ url_for('main.sprawozdanie_form', praktyka_id=praktyka.id) }}" class="btn btn-primary">Wypełnij Sprawozdanie</a>
                     {% endif %}
                 {% elif step == 6 %}
-                    <p>Karta praktyki jest generowana po zatwierdzeniu sprawozdania.</p>
-                    <a href="{{ url_for('main.karta_praktyki_view', praktyka_id=praktyka.id) }}" class="btn btn-primary">Zobacz Kartę Praktyki</a>
+                    <p>Sprawozdanie zatwierdzone. Kartę praktyki wystawiają opiekunowie (zakładowy i uczelniany) - masz do niej podgląd. W międzyczasie możesz wypełnić ankietę.</p>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="{{ url_for('main.karta_praktyki_view', praktyka_id=praktyka.id) }}" class="btn btn-secondary">Podgląd Karty Praktyki</a>
+                        {% if not praktyka.ankieta_wypelniona %}
+                        <a href="{{ url_for('main.ankieta_form') }}" class="btn btn-primary">Wypełnij Ankietę</a>
+                        {% endif %}
+                    </div>
                 {% elif step == 7 %}
-                    <p>Zweryfikuj kompletość dokumentacji i prześlij wymagane załączniki.</p>
+                    <p>Wszystkie etapy zatwierdzone. Pobierz wygenerowane dokumenty, podpisz, załącz 6 skanów i złóż kompletną dokumentację do weryfikacji końcowej.</p>
                     <a href="{{ url_for('main.dokumentacja_checklist', praktyka_id=praktyka.id) }}" class="btn btn-primary">Przejdź do Dokumentacji</a>
                 {% elif step == 8 %}
                     <p>Wypełnij ankietę ewaluacyjną po zakończeniu praktyki.</p>

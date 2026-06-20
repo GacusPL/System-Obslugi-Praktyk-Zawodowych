@@ -15,6 +15,14 @@
                 <div>
                     <h3 class="fw-bold m-0" style="color: var(--primary);"><span class="material-symbols-outlined align-middle me-2">edit_note</span>Dziennik Praktyk Zawodowych (P2)</h3>
                     <p class="text-secondary mt-1 mb-0">Rejestr zadań realizowanych każdego dnia praktyki zawodowej. Sumarycznie wymagane jest 120 dni.</p>
+                    <div class="mt-2">
+                        <span class="text-secondary small me-1">Status dziennika:</span>
+                        {% if praktyka.dziennik_status == 'Closed' %}
+                        <span class="badge bg-success-light text-success border">Zatwierdzony przez opiekuna uczelnianego</span>
+                        {% else %}
+                        <span class="badge bg-light text-primary border">{{ praktyka.dziennik_status|translate_status }}</span>
+                        {% endif %}
+                    </div>
                 </div>
                 
                 {% if current_user.rola == 'student' %}
@@ -213,7 +221,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Data wpisu</label>
-                            <input type="date" name="data_wpisu" class="form-control" required>
+                            <input type="date" name="data_wpisu" class="form-control" value="{{ today }}" required>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Opis zrealizowanych prac i zadań</label>

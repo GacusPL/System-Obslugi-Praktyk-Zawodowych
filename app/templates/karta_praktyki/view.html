@@ -44,32 +44,11 @@
                 </div>
             </div>
 
-            <!-- Upload skanów podpisanych dokumentów -->
             {% if current_user.rola == 'student' %}
-            <div class="p-4 border rounded bg-light-subtle mb-4" style="border-color: var(--border) !important; background-color: var(--bg-page) !important;">
-                <h5 class="fw-bold mb-3" style="color: var(--text-primary);"><span class="material-symbols-outlined align-middle me-2">upload</span>Prześlij podpisany skan Karty Praktyki i Sprawozdania</h5>
-                <p class="text-secondary small">Przed zaliczeniem końcowym musisz wydrukować, podpisać i wgrać skan kompletnej dokumentacji (karta praktyk, opinie opiekunów).</p>
-                
-                <form action="/api/v1/files/upload" method="POST" enctype="multipart/form-data" id="skan-upload-form">
-                    <input type="hidden" name="praktyka_id" value="{{ praktyka.id }}">
-                    <div class="mb-3">
-                        <input type="file" name="skan_pdf" class="form-control" accept=".pdf,.png,.jpg,.jpeg" required>
-                    </div>
-                    
-                    <div id="upload-feedback" class="alert d-none mb-3 border-0 shadow-sm" role="alert"></div>
-
-                    <button type="submit" class="btn btn-primary" id="btn-upload">Prześlij plik</button>
-                </form>
+            <div class="alert alert-info d-flex align-items-start gap-2">
+                <span class="material-symbols-outlined">info</span>
+                <div>Karta praktyki jest wystawiana przez opiekunów. Podpisane skany dokumentów załączysz w sekcji <strong>Dokumentacja</strong>.</div>
             </div>
-
-            <!-- Przycisk złożenia wniosku o zaliczenie -->
-            {% if praktyka.status == 'Draft' %}
-            <div class="d-grid mt-4">
-                <button class="btn btn-success py-2 btn-submit-doc" data-id="{{ praktyka.id }}">
-                    <span class="material-symbols-outlined align-middle me-2">send</span> Złóż dokumentację do weryfikacji UOPZ
-                </button>
-            </div>
-            {% endif %}
             {% endif %}
 
             <div class="d-flex justify-content-between align-items-center mt-4">
@@ -78,79 +57,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const uploadForm = document.getElementById('skan-upload-form');
-        const feedbackDiv = document.getElementById('upload-feedback');
-        const btnUpload = document.getElementById('btn-upload');
-
-        if (uploadForm) {
-            uploadForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                
-                btnUpload.disabled = true;
-                btnUpload.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Przesyłanie...`;
-                
-                feedbackDiv.className = 'alert d-none';
-                
-                fetch('/api/v1/files/upload', {
-                    method: 'POST',
-                    body: formData
-                }).then(res => {
-                    if (res.ok) {
-                        feedbackDiv.className = 'alert alert-success border-0 shadow-sm';
-                        feedbackDiv.innerHTML = `<span class="material-symbols-outlined align-middle me-2">check_circle</span>Skan został pomyślnie przesłany!`;
-                        setTimeout(() => window.location.reload(), 1000);
-                    } else {
-                        feedbackDiv.className = 'alert alert-danger border-0 shadow-sm';
-                        feedbackDiv.innerHTML = `<span class="material-symbols-outlined align-middle me-2">warning</span>Wystąpił błąd przy przesyłaniu pliku.`;
-                        btnUpload.disabled = false;
-                        btnUpload.innerHTML = `Prześlij plik`;
-                    }
-                }).catch(err => {
-                    feedbackDiv.className = 'alert alert-danger border-0 shadow-sm';
-                    feedbackDiv.innerHTML = `<span class="material-symbols-outlined align-middle me-2">warning</span>Błąd połączenia z serwerem.`;
-                    btnUpload.disabled = false;
-                    btnUpload.innerHTML = `Prześlij plik`;
-                });
-            });
-        }
-
-        const btnSubmitDoc = document.querySelector('.btn-submit-doc');
-        if (btnSubmitDoc) {
-            btnSubmitDoc.addEventListener('click', function() {
-                const id = this.getAttribute('data-id');
-                btnSubmitDoc.disabled = true;
-                btnSubmitDoc.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Wysyłanie...`;
-                
-                fetch(`/api/v1/praktyki/${id}/status`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ status: 'Submitted' })
-                }).then(res => {
-                    if (res.ok) {
-                        showToast("Dokumentacja została złożona do weryfikacji!", "success");
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1000);
-                    } else {
-                        showToast("Wystąpił błąd podczas wysyłania wniosku.", "error");
-                        btnSubmitDoc.disabled = false;
-                        btnSubmitDoc.innerHTML = `<span class="material-symbols-outlined align-middle me-2">send</span> Złóż dokumentację do weryfikacji UOPZ`;
-                    }
-                }).catch(err => {
-                    showToast("Błąd połączenia.", "error");
-                    btnSubmitDoc.disabled = false;
-                    btnSubmitDoc.innerHTML = `<span class="material-symbols-outlined align-middle me-2">send</span> Złóż dokumentację do weryfikacji UOPZ`;
-                });
-            });
-        }
-    });
-</script>
 {% endblock %}

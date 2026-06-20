@@ -53,8 +53,8 @@
                 <a href="{{ url_for('main.harmonogram_edit') }}?praktyka_id={{ p.id }}" class="btn btn-outline-primary btn-sm flex-grow-1" style="font-size: 11px; padding: 4px 8px;">
                     <span class="material-symbols-outlined align-middle me-1" style="font-size: 14px;">calendar_month</span>Harmonogram
                 </a>
-                <a href="{{ url_for('main.karta_praktyki_view', praktyka_id=p.id) }}" class="btn btn-primary btn-sm flex-grow-1" style="font-size: 11px; padding: 4px 8px;">
-                    <span class="material-symbols-outlined align-middle me-1" style="font-size: 14px;">grade</span>Oceń
+                <a href="{{ url_for('main.ocena_zopz_form', praktyka_id=p.id) }}" class="btn btn-primary btn-sm flex-grow-1" style="font-size: 11px; padding: 4px 8px;">
+                    <span class="material-symbols-outlined align-middle me-1" style="font-size: 14px;">grade</span>Wystaw ocenę
                 </a>
             </div>
         </div>

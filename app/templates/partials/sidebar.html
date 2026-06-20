@@ -54,7 +54,7 @@
                 </a>
                 <a href="{{ url_for('main.dokumentacja_checklist', praktyka_id=active_praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.dokumentacja_checklist' %}active{% endif %}">
                     <span class="material-symbols-outlined">folder_open</span>
-                    Checklist P6
+                    Dokumentacja
                 </a>
                 <a href="{{ url_for('main.ankieta_form') }}" class="sidebar-nav-item {% if request.endpoint == 'main.ankieta_form' %}active{% endif %}">
                     <span class="material-symbols-outlined">quiz</span>
@@ -87,7 +87,7 @@
                     <span class="material-symbols-outlined">star_rate</span>
                     Ocena efektów
                 </a>
-                <a href="{{ url_for('main.karta_praktyki_view', praktyka_id=praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.karta_praktyki_view' %}active{% endif %}">
+                <a href="{{ url_for('main.ocena_zopz_form', praktyka_id=praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint in ['main.ocena_zopz_form', 'main.karta_praktyki_view'] %}active{% endif %}">
                     <span class="material-symbols-outlined">assessment</span>
                     Ocena karty
                 </a>
@@ -115,6 +115,10 @@
                 <a href="{{ url_for('main.efekty_potwierdzenie', praktyka_id=praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.efekty_potwierdzenie' %}active{% endif %}">
                     <span class="material-symbols-outlined">checklist</span>
                     Efekty uczenia się
+                </a>
+                <a href="{{ url_for('main.ocena_uopz_form', praktyka_id=praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.ocena_uopz_form' %}active{% endif %}">
+                    <span class="material-symbols-outlined">grade</span>
+                    Karta praktyki
                 </a>
                 <a href="{{ url_for('main.dokumentacja_weryfikacja', praktyka_id=praktyka.id) }}" class="sidebar-nav-item {% if request.endpoint == 'main.dokumentacja_weryfikacja' %}active{% endif %}">
                     <span class="material-symbols-outlined">folder_open</span>

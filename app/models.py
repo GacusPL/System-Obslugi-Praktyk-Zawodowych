@@ -399,3 +399,25 @@ class Dokument(db.Model):
 
     def get_download_url(self):
         return f"/api/v1/documents/{self.id}/download"
+
+class PodpisanySkan(db.Model):
+    """Podpisany skan dokumentu odesłany przez studenta na etapie kompletacji
+    dokumentacji (P6). Jeden slot na każdy z 6 dokumentów do podpisu."""
+    __tablename__ = 'podpisany_skan'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    praktyka_id = db.Column(db.Integer, db.ForeignKey('praktyka.id'), nullable=False)
+    slot = db.Column(db.String(10), nullable=False)
+    nazwa_pliku = db.Column(db.String(255), nullable=False)
+    sciezka_pliku = db.Column(db.String(255), nullable=False)
+    status = db.Column(db.String(50), nullable=False, default='Submitted')
+    created_at = db.Column(db.DateTime, nullable=False, default=utcnow)
+
+    praktyka = db.relationship('Praktyka', backref=db.backref('podpisane_skany', cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.CheckConstraint("slot IN ('p1', 'p2', 'p3', 'p4', 'p5', 'p6')", name='check_podpisany_skan_slot'),
+        db.UniqueConstraint('praktyka_id', 'slot', name='uq_podpisany_skan_praktyka_slot'),
+    )
+
+    def get_download_url(self):
+        return f"/api/v1/dokumentacja/skan/{self.id}/download"

@@ -76,6 +76,10 @@ def create_wpis():
     if not ok:
         return api_error("INVALID_DATE_RANGE", msg, status=400)
 
+    # Każdy wpis musi mieć unikalną datę w obrębie praktyki
+    if WpisDziennika.query.filter_by(praktyka_id=praktyka_id, data_wpisu=data_wpisu).first():
+        return api_error("DUPLICATE_DATE", f"Wpis z datą {data_wpisu_str} już istnieje w tym dzienniku", status=400)
+
     # Validate effects
     efekty = []
     for nr in efekty_nrs:
@@ -157,6 +161,13 @@ def update_wpis(wpis_id):
         ok, msg = validate_wpis_date(nowa_data, praktyka.termin_od, praktyka.termin_do)
         if not ok:
             return api_error("INVALID_DATE_RANGE", msg, status=400)
+        dup = WpisDziennika.query.filter(
+            WpisDziennika.praktyka_id == praktyka.id,
+            WpisDziennika.data_wpisu == nowa_data,
+            WpisDziennika.id != wpis.id
+        ).first()
+        if dup:
+            return api_error("DUPLICATE_DATE", f"Wpis z datą {data_wpisu_str} już istnieje w tym dzienniku", status=400)
         wpis.data_wpisu = nowa_data
 
     if efekty_nrs is not None:

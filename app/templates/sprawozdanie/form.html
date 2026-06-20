@@ -106,22 +106,31 @@
                 <span class="badge-status badge-status-{{ sprawozdanie.status|lower }} mb-2 d-inline-block">
                     {{ sprawozdanie.status|translate_status }}
                 </span>
+                {% if sprawozdanie.ocena is not none %}
+                <span class="badge bg-success-light text-success border ms-2 mb-2 d-inline-block">Ocena: {{ sprawozdanie.ocena }}</span>
+                {% endif %}
+                {% if sprawozdanie.status == 'Rejected' and sprawozdanie.komentarz_odrzucenia %}
+                <div class="alert alert-danger d-flex align-items-start gap-2 mt-2">
+                    <span class="material-symbols-outlined">feedback</span>
+                    <div><strong>Komentarz zwrotny:</strong> {{ sprawozdanie.komentarz_odrzucenia }}</div>
+                </div>
+                {% endif %}
                 <p class="text-secondary small">Wersja sprawozdania: {{ sprawozdanie.wersja }} (z dnia {{ sprawozdanie.updated_at.strftime('%d.%m.%Y') }})</p>
             </div>
 
             <div class="mb-4 p-4 rounded" style="background-color: var(--bg-page); border: 1px solid var(--border);">
                 <h6 class="fw-bold" style="color: var(--text-primary);">Sekcja I: Opis struktury organizacyjnej</h6>
-                <p class="mb-0" style="white-space: pre-wrap; color: var(--text-primary);">{{ sprawozdanie.sekcja_I }}</p>
+                <p class="mb-0" style="white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; color: var(--text-primary);">{{ sprawozdanie.sekcja_I }}</p>
             </div>
 
             <div class="mb-4 p-4 rounded" style="background-color: var(--bg-page); border: 1px solid var(--border);">
                 <h6 class="fw-bold" style="color: var(--text-primary);">Sekcja II: Opis stanowisk i zadań</h6>
-                <p class="mb-0" style="white-space: pre-wrap; color: var(--text-primary);">{{ sprawozdanie.sekcja_II }}</p>
+                <p class="mb-0" style="white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; color: var(--text-primary);">{{ sprawozdanie.sekcja_II }}</p>
             </div>
 
             <div class="mb-4 p-4 rounded" style="background-color: var(--bg-page); border: 1px solid var(--border);">
                 <h6 class="fw-bold" style="color: var(--text-primary);">Sekcja III: Podsumowanie i ocena własna</h6>
-                <p class="mb-0" style="white-space: pre-wrap; color: var(--text-primary);">{{ sprawozdanie.sekcja_III }}</p>
+                <p class="mb-0" style="white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; color: var(--text-primary);">{{ sprawozdanie.sekcja_III }}</p>
             </div>
 
             <!-- Panel Oceny dla UOPZ -->
@@ -131,8 +140,15 @@
                 <form id="ocena-sprawozdania-form" data-sprawozdanie-id="{{ sprawozdanie.id }}">
                     <div class="row g-3">
                         <div class="col-md-6">
+                            <label class="form-label fw-semibold">Status decyzji</label>
+                            <select name="status" id="spr-decyzja" class="form-select" required>
+                                <option value="Approved">Zatwierdź sprawozdanie (Approved)</option>
+                                <option value="Rejected">Odrzuć do poprawy (Rejected)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="spr-ocena-wrapper">
                             <label class="form-label fw-semibold">Ocena sprawozdania</label>
-                            <select name="ocena" class="form-select" required>
+                            <select name="ocena" id="spr-ocena" class="form-select">
                                 <option value="">Wybierz ocenę...</option>
                                 <option value="2.0">2.0 (ndst)</option>
                                 <option value="3.0">3.0 (dst)</option>
@@ -142,47 +158,59 @@
                                 <option value="5.0">5.0 (bdb)</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Status decyzji</label>
-                            <select name="status" class="form-select" required>
-                                <option value="Approved">Zatwierdź sprawozdanie (Approved)</option>
-                                <option value="Rejected">Odrzuć do poprawy (Rejected)</option>
-                            </select>
+                        <div class="col-12 d-none" id="spr-komentarz-wrapper">
+                            <label class="form-label fw-semibold">Komentarz zwrotny (wymagany przy odrzuceniu)</label>
+                            <textarea name="komentarz_odrzucenia" id="spr-komentarz" class="form-control" rows="3" placeholder="Wskaż studentowi, co należy poprawić..."></textarea>
                         </div>
                     </div>
 
                     <script>
-                        document.getElementById('ocena-sprawozdania-form').addEventListener('submit', function(e) {
-                            e.preventDefault();
-                            const sId = this.getAttribute('data-sprawozdanie-id');
-                            const formData = new FormData(this);
-                            
-                            const payload = {
-                                ocena: parseFloat(formData.get('ocena')),
-                                status: formData.get('status')
-                            };
-                            
-                            fetch(`/api/v1/sprawozdanie/${sId}`, {
-                                method: 'PATCH',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(payload)
-                            }).then(res => {
-                                if (res.ok) {
-                                    showToast("Ocena została wystawiona!", "success");
-                                    setTimeout(() => {
-                                        window.location.href = '/dashboard';
-                                    }, 1000);
+                        (function() {
+                            const decyzja = document.getElementById('spr-decyzja');
+                            const ocenaWrapper = document.getElementById('spr-ocena-wrapper');
+                            const komentarzWrapper = document.getElementById('spr-komentarz-wrapper');
+
+                            function syncDecyzja() {
+                                const isReject = decyzja.value === 'Rejected';
+                                ocenaWrapper.classList.toggle('d-none', isReject);
+                                komentarzWrapper.classList.toggle('d-none', !isReject);
+                            }
+                            decyzja.addEventListener('change', syncDecyzja);
+                            syncDecyzja();
+
+                            document.getElementById('ocena-sprawozdania-form').addEventListener('submit', function(e) {
+                                e.preventDefault();
+                                const sId = this.getAttribute('data-sprawozdanie-id');
+                                const status = decyzja.value;
+                                const payload = { status: status };
+
+                                if (status === 'Approved') {
+                                    const ocena = document.getElementById('spr-ocena').value;
+                                    if (!ocena) { showToast("Wybierz ocenę przed zatwierdzeniem.", "warning"); return; }
+                                    payload.ocena = parseFloat(ocena);
                                 } else {
-                                    showToast("Wystąpił błąd przy wystawianiu oceny.", "error");
+                                    const komentarz = document.getElementById('spr-komentarz').value.trim();
+                                    if (!komentarz) { showToast("Podaj komentarz zwrotny przy odrzuceniu.", "warning"); return; }
+                                    payload.komentarz_odrzucenia = komentarz;
                                 }
-                            }).catch(err => {
-                                showToast("Wystąpił błąd sieciowy.", "error");
+
+                                fetch(`/api/v1/sprawozdanie/${sId}`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify(payload)
+                                }).then(res => {
+                                    if (res.ok) {
+                                        showToast(status === 'Approved' ? "Sprawozdanie zatwierdzone." : "Sprawozdanie zwrócone do poprawy.", "success");
+                                        setTimeout(() => { window.location.href = '/dashboard'; }, 1000);
+                                    } else {
+                                        res.json().then(d => showToast("Błąd: " + (d.error?.message || "nie udało się zapisać decyzji."), "error"))
+                                            .catch(() => showToast("Wystąpił błąd przy zapisie decyzji.", "error"));
+                                    }
+                                }).catch(() => showToast("Wystąpił błąd sieciowy.", "error"));
                             });
-                        });
+                        })();
                     </script>
-                    <button type="submit" class="btn btn-primary mt-3">Zapisz ocenę</button>
+                    <button type="submit" class="btn btn-primary mt-3">Zapisz decyzję</button>
                 </form>
             </div>
             {% endif %}

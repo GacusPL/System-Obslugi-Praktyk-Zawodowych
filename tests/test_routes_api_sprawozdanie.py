@@ -1,6 +1,6 @@
 import pytest
 from app import db
-from app.models import Sprawozdanie, Praktyka, Student, Uzytkownik, WpisDziennika
+from app.models import Sprawozdanie, Praktyka, Student, Uzytkownik, WpisDziennika, KartaPraktyki
 
 
 def _seed_full_dziennik(db_session, praktyka):
@@ -165,3 +165,32 @@ def test_sprawozdanie_reject_requires_comment_and_resubmit(client, db_session, s
     assert response.status_code == 200
     assert response.get_json()["data"]["status"] == "Submitted"
     assert Sprawozdanie.query.get(sprawozdanie_id).komentarz_odrzucenia is None
+
+
+def test_sprawozdanie_approval_propagates_ocena_to_karta(client, db_session, sample_student, sample_zaklad, sample_uopz):
+    praktyka = Praktyka(
+        student_id=sample_student.id, zaklad_id=sample_zaklad.id, uopz_id=sample_uopz.id,
+        termin_od=sample_student.uzytkownik.created_at.date(),
+        termin_do=sample_student.uzytkownik.created_at.date(),
+        rok_akademicki="2025/2026", status="Approved"
+    )
+    db_session.add(praktyka)
+    db_session.commit()
+    _seed_full_dziennik(db_session, praktyka)
+
+    long_text = "A" * 105
+    client.get(f'/auth/login?mock_email={sample_student.uzytkownik.email}&mock_rola=student')
+    response = client.post('/api/v1/sprawozdanie', json={
+        "praktyka_id": praktyka.id, "sekcja_I": long_text, "sekcja_II": long_text,
+        "sekcja_III": long_text, "status": "Submitted"
+    })
+    sprawozdanie_id = response.get_json()["data"]["id"]
+
+    client.get('/auth/logout')
+    client.get(f'/auth/login?mock_email={sample_uopz.email}&mock_rola=uopz')
+    response = client.patch(f'/api/v1/sprawozdanie/{sprawozdanie_id}', json={"ocena": 4.5, "status": "Approved"})
+    assert response.status_code == 200
+
+    karta = KartaPraktyki.query.filter_by(praktyka_id=praktyka.id).first()
+    assert karta is not None
+    assert karta.ocena_sprawozdania == 4.5

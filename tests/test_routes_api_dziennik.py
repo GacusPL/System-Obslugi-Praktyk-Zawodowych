@@ -139,3 +139,30 @@ def test_dziennik_rejects_future_date(client, db_session, sample_student, sample
     })
     assert response.status_code == 400
     assert response.get_json()["error"]["code"] == "INVALID_DATE_RANGE"
+
+
+def test_dziennik_rejects_duplicate_date(client, db_session, sample_student, sample_zaklad, sample_uopz):
+    efekt = EfektUczenia(nr=1, opis="Efekt 1")
+    db_session.add(efekt)
+    praktyka = Praktyka(
+        student_id=sample_student.id,
+        zaklad_id=sample_zaklad.id,
+        uopz_id=sample_uopz.id,
+        termin_od=date(2026, 1, 1),
+        termin_do=date(2026, 9, 30),
+        rok_akademicki="2025/2026",
+        status="Approved"
+    )
+    db_session.add(praktyka)
+    db_session.commit()
+
+    client.get(f'/auth/login?mock_email={sample_student.uzytkownik.email}&mock_rola=student')
+
+    base = {"praktyka_id": praktyka.id, "data_wpisu": "2026-01-15", "opis_prac": "Praca", "efekty": [1]}
+    r1 = client.post('/api/v1/dziennik/wpisy', json={**base, "dzien_nr": 1})
+    assert r1.status_code == 201
+
+    # Inny dzień, ta sama data -> odrzucone
+    r2 = client.post('/api/v1/dziennik/wpisy', json={**base, "dzien_nr": 2})
+    assert r2.status_code == 400
+    assert r2.get_json()["error"]["code"] == "DUPLICATE_DATE"

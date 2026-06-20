@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Kompletacja Dokumentacji (P6) - SOPZ{% endblock %}
+{% block title %}Dokumentacja Praktyki - SOPZ{% endblock %}
 
 {% block breadcrumb_items %}
 <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
-<li class="breadcrumb-item active" aria-current="page">Dokumentacja (P6)</li>
+<li class="breadcrumb-item active" aria-current="page">Dokumentacja</li>
 {% endblock %}
 
 {% block content %}
@@ -14,7 +14,7 @@
             <div class="card-sopz-header">
                 <h2 class="h2 mb-0 d-flex align-items-center gap-2">
                     <span class="material-symbols-outlined text-primary" style="font-size: 28px;">folder_open</span>
-                    Kompletacja Dokumentacji Praktyki (P6)
+                    Dokumentacja Praktyki
                 </h2>
             </div>
             
@@ -28,13 +28,17 @@
             {% set p6_status = 'Approved' if praktyka.karta_praktyki and praktyka.karta_praktyki.status == 'Approved' else 'Draft' %}
 
             {% set docs = [
-                {"name": "Zgłoszenie & Harmonogram Praktyki (P1)", "status": p1_status, "desc": "Podpisany przez Studenta, ZOPZ i UOPZ", "typ": "zal_nr2a"},
-                {"name": "Dziennik Praktyk Zawodowych (P2)", "status": p2_status, "desc": "120 zatwierdzonych dni wpisów", "typ": "zal_nr6"},
-                {"name": "Potwierdzenie Efektów Uczenia Się (P3)", "status": p3_status, "desc": "Weryfikacja 13 efektów przez ZOPZ", "typ": "zal_nr4"},
-                {"name": "Sprawozdanie Studenta (P4)", "status": p4_status, "desc": "Złożone i ocenione sprawozdanie", "typ": "zal_nr7"},
-                {"name": "Ankieta Ewaluacyjna (P5)", "status": p5_status, "desc": "Wypełniona anonimowa ankieta", "typ": "zal_nr5"},
-                {"name": "Karta Praktyki (P6)", "status": p6_status, "desc": "Podsumowanie ocen i podpisany skan", "typ": "zal_nr3"}
+                {"name": "Zgłoszenie & Harmonogram Praktyki (P1)", "status": p1_status, "desc": "Podpisany przez Studenta, ZOPZ i UOPZ", "typ": "zal_nr2a", "slot": "p1"},
+                {"name": "Dziennik Praktyk Zawodowych (P2)", "status": p2_status, "desc": "120 zatwierdzonych dni wpisów", "typ": "zal_nr6", "slot": "p2"},
+                {"name": "Potwierdzenie Efektów Uczenia Się (P3)", "status": p3_status, "desc": "Weryfikacja 13 efektów przez ZOPZ", "typ": "zal_nr4", "slot": "p3"},
+                {"name": "Sprawozdanie Studenta (P4)", "status": p4_status, "desc": "Złożone i ocenione sprawozdanie", "typ": "zal_nr7", "slot": "p4"},
+                {"name": "Ankieta Ewaluacyjna (P5)", "status": p5_status, "desc": "Wypełniona anonimowa ankieta", "typ": "zal_nr5", "slot": "p5"},
+                {"name": "Karta Praktyki (P6)", "status": p6_status, "desc": "Podsumowanie ocen i podpisany skan", "typ": "zal_nr3", "slot": "p6"}
             ] %}
+
+            {% set skany_map = {} %}
+            {% for s in praktyka.podpisane_skany %}{% set _ = skany_map.update({s.slot: s}) %}{% endfor %}
+            {% set all_scans = skany_map|length == 6 %}
 
             {% set approved_count = (1 if p1_status == 'Approved' else 0) + 
                                    (1 if p2_status == 'Approved' or p2_status == 'Closed' else 0) + 
@@ -105,33 +109,74 @@
                 });
             </script>
 
-            {% if praktyka.dokumenty %}
-            <div class="mt-4 p-4 border rounded bg-light">
-                <h5 class="fw-bold mb-3 text-danger d-flex align-items-center gap-2">
-                    <span class="material-symbols-outlined text-danger">picture_as_pdf</span>
-                    Wygenerowane Dokumenty Oficjalne
+            <!-- Załączanie podpisanych skanów (6 slotów) -->
+            <div class="mt-4 p-4 border rounded" style="background-color: var(--bg-page); border-color: var(--border) !important;">
+                <h5 class="fw-bold mb-1 d-flex align-items-center gap-2" style="color: var(--text-primary);">
+                    <span class="material-symbols-outlined text-primary">upload_file</span>
+                    Podpisane skany dokumentów ({{ skany_map|length }}/6)
                 </h5>
-                <p class="text-secondary small">Pobierz wygenerowane pliki PDF w celu wydrukowania i podpisania:</p>
+                <p class="text-secondary small mb-3">Pobierz powyższe dokumenty, podpisz i załącz skan każdego z nich. Dozwolone pliki: PDF, JPG, PNG (maks. 5 MB).</p>
                 <div class="list-group list-group-flush">
-                    {% for doc in praktyka.dokumenty %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-0 bg-transparent">
-                        <div>
-                            <span class="fw-semibold text-primary">{{ doc.typ }}</span>
-                            <span class="text-secondary small ms-2">(Załącznik PDF)</span>
+                    {% for doc in docs %}
+                    {% set skan = skany_map.get(doc.slot) %}
+                    <div class="list-group-item py-3 px-0 border-0 {% if not loop.first %}border-top{% endif %} bg-transparent" data-slot="{{ doc.slot }}">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <div class="fw-semibold" style="font-size: 14px;">{{ doc.name }}</div>
+                                <div class="skan-state small {% if skan %}text-success{% else %}text-secondary{% endif %}">
+                                    {% if skan %}
+                                        <span class="material-symbols-outlined align-middle" style="font-size: 14px;">check_circle</span>
+                                        Przesłano: <a href="{{ skan.get_download_url() }}" target="_blank">{{ skan.nazwa_pliku }}</a>
+                                    {% else %}
+                                        Brak załączonego skanu
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="file" class="form-control form-control-sm skan-input" data-slot="{{ doc.slot }}" accept=".pdf,.png,.jpg,.jpeg" style="max-width: 230px;">
+                                <button type="button" class="btn btn-sm btn-secondary skan-upload-btn" data-slot="{{ doc.slot }}">Wyślij</button>
+                            </div>
                         </div>
-                        <a href="{{ doc.get_download_url() }}" class="btn btn-sm btn-secondary d-flex align-items-center gap-1">
-                            <span class="material-symbols-outlined" style="font-size: 16px;">download</span> Pobierz PDF
-                        </a>
                     </div>
                     {% endfor %}
                 </div>
             </div>
-            {% endif %}
+
+            <script>
+                document.querySelectorAll('.skan-upload-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const slot = this.getAttribute('data-slot');
+                        const input = document.querySelector(`.skan-input[data-slot="${slot}"]`);
+                        const file = input.files[0];
+                        if (!file) { showToast('Wybierz plik do przesłania.', 'warning'); return; }
+
+                        const fd = new FormData();
+                        fd.append('slot', slot);
+                        fd.append('file', file);
+
+                        const orig = this.innerHTML;
+                        this.disabled = true;
+                        this.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+
+                        fetch(`/api/v1/dokumentacja/{{ praktyka.id }}/skan`, { method: 'POST', body: fd })
+                            .then(res => {
+                                if (res.status === 201) {
+                                    showToast('Skan przesłany.', 'success');
+                                    setTimeout(() => window.location.reload(), 800);
+                                } else {
+                                    res.json().then(d => showToast('Błąd: ' + (d.error?.message || 'nie udało się przesłać pliku.'), 'error'))
+                                        .catch(() => showToast('Błąd przesyłania pliku.', 'error'));
+                                    this.disabled = false; this.innerHTML = orig;
+                                }
+                            }).catch(() => { showToast('Błąd połączenia z serwerem.', 'error'); this.disabled = false; this.innerHTML = orig; });
+                    });
+                });
+            </script>
 
             <div class="d-grid mt-4">
-                <button class="btn btn-success py-2 d-flex align-items-center justify-content-center gap-2" 
+                <button class="btn btn-success py-2 d-flex align-items-center justify-content-center gap-2"
                         id="submit-dokumentacja-btn"
-                        {% if not all_approved %}disabled{% endif %}>
+                        {% if not (all_approved and all_scans) %}disabled{% endif %}>
                     <span class="material-symbols-outlined">send</span> Złóż kompletną dokumentację praktyki
                 </button>
                 <div id="submit-feedback" class="alert d-none mt-3 border-0 shadow-sm" role="alert"></div>
@@ -179,9 +224,10 @@
                         });
                     });
                 </script>
-                {% if not all_approved %}
+                {% if not (all_approved and all_scans) %}
                 <div class="form-text text-center text-danger mt-2">
-                    <span class="material-symbols-outlined align-middle" style="font-size: 16px;">info</span> Przycisk będzie aktywny dopiero po zatwierdzeniu wszystkich 6 dokumentów.
+                    <span class="material-symbols-outlined align-middle" style="font-size: 16px;">info</span>
+                    Przycisk będzie aktywny po zatwierdzeniu wszystkich 6 dokumentów oraz załączeniu 6 podpisanych skanów.
                 </div>
                 {% endif %}
             </div>
