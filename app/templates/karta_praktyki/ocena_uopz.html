@@ -66,19 +66,15 @@
                     <textarea name="ocena_opisowa_uopz" class="form-control" rows="4" placeholder="Wpisz podsumowanie merytoryczne praktyki studenta..." required>{% if karta and karta.ocena_opisowa_uopz %}{{ karta.ocena_opisowa_uopz }}{% endif %}</textarea>
                 </div>
 
-                <div class="mb-4">
-                    <label class="form-label fw-semibold">Status Zaliczenia</label>
-                    <select name="status" class="form-select" required>
-                        <option value="Under_Review" {% if karta and karta.status == 'Under_Review' %}selected{% endif %}>W trakcie weryfikacji (Under_Review)</option>
-                        <option value="Approved" {% if karta and karta.status == 'Approved' %}selected{% endif %}>Zatwierdzona i Zakończona (Approved)</option>
-                        <option value="Closed" {% if karta and karta.status == 'Closed' %}selected{% endif %}>Zamknięta (Closed)</option>
-                    </select>
+                <div class="alert alert-info d-flex align-items-start gap-2">
+                    <span class="material-symbols-outlined">info</span>
+                    <div>Po zapisaniu Twojej oceny karta zostanie automatycznie zatwierdzona, a ocena końcowa wyliczona ze średniej 3 ocen (zakładowy, uczelniany, sprawozdanie).</div>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
                     <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Anuluj</a>
                     <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
-                        <span class="material-symbols-outlined">save</span> Zapisz decyzję
+                        <span class="material-symbols-outlined">save</span> Zatwierdź kartę praktyki
                     </button>
                 </div>
             </form>
@@ -109,8 +105,7 @@
         const payload = {
             ocena_param_uopz: parseFloat(formData.get('ocena_param_uopz')),
             ocena_sprawozdania: parseFloat(formData.get('ocena_sprawozdania')),
-            ocena_opisowa_uopz: formData.get('ocena_opisowa_uopz'),
-            status: formData.get('status')
+            ocena_opisowa_uopz: formData.get('ocena_opisowa_uopz')
         };
 
         fetch(`/api/v1/karta-praktyki/${kId}`, {

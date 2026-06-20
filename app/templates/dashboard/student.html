@@ -250,8 +250,20 @@
                         {% endif %}
                     </div>
                 {% elif step == 7 %}
+                    {% if praktyka.komentarz_odrzucenia %}
+                    <div class="alert alert-danger d-flex align-items-start gap-2">
+                        <span class="material-symbols-outlined">cancel</span>
+                        <div>
+                            <strong>Dokumentacja zwrócona do poprawy przez opiekuna uczelnianego.</strong><br>
+                            <strong>Komentarz:</strong> {{ praktyka.komentarz_odrzucenia }}
+                        </div>
+                    </div>
+                    <p>Popraw wskazane elementy, ponownie pobierz/załącz podpisane skany i złóż dokumentację jeszcze raz.</p>
+                    <a href="{{ url_for('main.dokumentacja_checklist', praktyka_id=praktyka.id) }}" class="btn btn-danger">Popraw Dokumentację</a>
+                    {% else %}
                     <p>Wszystkie etapy zatwierdzone. Pobierz wygenerowane dokumenty, podpisz, załącz 6 skanów i złóż kompletną dokumentację do weryfikacji końcowej.</p>
                     <a href="{{ url_for('main.dokumentacja_checklist', praktyka_id=praktyka.id) }}" class="btn btn-primary">Przejdź do Dokumentacji</a>
+                    {% endif %}
                 {% elif step == 8 %}
                     <p>Wypełnij ankietę ewaluacyjną po zakończeniu praktyki.</p>
                     <a href="{{ url_for('main.ankieta_form') }}" class="btn btn-primary">Wypełnij Ankietę</a>

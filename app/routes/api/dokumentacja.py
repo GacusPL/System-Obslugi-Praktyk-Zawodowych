@@ -98,6 +98,7 @@ def zloz_dokumentacje():
 
     # Złożenie kompletu dokumentacji uruchamia finalną weryfikację UOPZ
     praktyka.status = 'Under_Review'
+    praktyka.komentarz_odrzucenia = None  # czyścimy komentarz zwrotu po ponownym złożeniu
     db.session.commit()
 
     return api_success({

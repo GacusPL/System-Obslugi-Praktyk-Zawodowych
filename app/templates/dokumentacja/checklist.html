@@ -20,6 +20,16 @@
             
             <p class="text-secondary mb-4">Aby sfinalizować praktykę zawodową, wszystkie poniższe dokumenty muszą zostać zatwierdzone (status ✓).</p>
 
+            {% if praktyka.komentarz_odrzucenia %}
+            <div class="alert alert-danger d-flex align-items-start gap-2 mb-4">
+                <span class="material-symbols-outlined">cancel</span>
+                <div>
+                    <strong>Dokumentacja zwrócona do poprawy przez opiekuna uczelnianego.</strong><br>
+                    <strong>Komentarz:</strong> {{ praktyka.komentarz_odrzucenia }}
+                </div>
+            </div>
+            {% endif %}
+
             {% set p1_status = 'Approved' if praktyka.harmonogram and praktyka.harmonogram.status == 'Approved' else 'Draft' %}
             {% set p2_status = praktyka.dziennik_status %}
             {% set p3_status = 'Approved' if praktyka.potwierdzenie_efektow and praktyka.potwierdzenie_efektow.status == 'Approved' else 'Draft' %}

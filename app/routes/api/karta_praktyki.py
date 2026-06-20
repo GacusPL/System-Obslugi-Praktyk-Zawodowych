@@ -7,6 +7,18 @@ from app.routes.api.helpers import api_success, api_error
 
 karta_praktyki_api_bp = Blueprint('karta_praktyki_api', __name__)
 
+def karta_komplet_ocen(k):
+    """Karta ma komplet 3 ocen składowych (ZOPZ + UOPZ + sprawozdanie)."""
+    return (k.ocena_param_zopz is not None
+            and k.ocena_param_uopz is not None
+            and k.ocena_sprawozdania is not None)
+
+def finalize_karta_if_complete(k):
+    """Po zebraniu kompletu 3 ocen składowych (ZOPZ + UOPZ + sprawozdanie)
+    karta finalizuje się automatycznie (status Approved)."""
+    if karta_komplet_ocen(k):
+        k.status = 'Approved'
+
 def serialize_karta(k):
     return {
         "id": k.id,
@@ -66,6 +78,9 @@ def evaluate_zopz():
         karta.ocena_opisowa_zopz = ocena_opisowa
         karta.status = 'Under_Review'
         karta.komentarz_odrzucenia = None  # czyścimy po ponownym wystawieniu oceny
+
+    # Jeśli komplet 3 ocen - automatyczne wystawienie oceny końcowej i finalizacja
+    finalize_karta_if_complete(karta)
 
     db.session.commit()
     return api_success(serialize_karta(karta), status=201 if is_new else 200)
@@ -133,12 +148,17 @@ def patch_karta(karta_id):
     if status:
         if status not in ['Draft', 'Under_Review', 'Approved', 'Rejected', 'Closed']:
             return api_error("INVALID_STATUS", "Nieprawidłowy status karty praktyki", status=400)
+        if status == 'Approved' and not karta_komplet_ocen(karta):
+            return api_error("KARTA_INCOMPLETE", "Nie można zatwierdzić karty bez kompletu 3 ocen (opiekun zakładowy, opiekun uczelniany, sprawozdanie)", status=400)
         if status == 'Rejected':
             komentarz = (data.get('komentarz_odrzucenia') or '').strip()
             if not komentarz:
                 return api_error("MISSING_COMMENT", "Odrzucenie wymaga podania komentarza zwrotnego", status=400)
             karta.komentarz_odrzucenia = komentarz
         karta.status = status
+
+    # Komplet 3 ocen -> automatyczne wystawienie oceny końcowej i finalizacja karty
+    finalize_karta_if_complete(karta)
 
     db.session.commit()
     return api_success(serialize_karta(karta))

@@ -68,3 +68,45 @@ def test_karta_praktyki_crud_and_signatures(client, db_session, sample_student, 
     assert res_json["data"]["status"] == "Approved"
     assert res_json["data"]["ocena_param_uopz"] == 4.0
     assert res_json["data"]["ocena_sprawozdania"] == 4.5
+
+
+def _karta_setup(client, db_session, sample_student, sample_zaklad, sample_uopz):
+    praktyka = Praktyka(
+        student_id=sample_student.id, zaklad_id=sample_zaklad.id, uopz_id=sample_uopz.id,
+        termin_od=sample_student.uzytkownik.created_at.date(),
+        termin_do=sample_student.uzytkownik.created_at.date(),
+        rok_akademicki="2025/2026", status="Approved"
+    )
+    db_session.add(praktyka)
+    db_session.commit()
+    # Karta z oceną ZOPZ (status Under_Review)
+    karta = KartaPraktyki(praktyka_id=praktyka.id, ocena_param_zopz=4.0,
+                          ocena_opisowa_zopz="ok", status="Under_Review")
+    db_session.add(karta)
+    db_session.commit()
+    return praktyka, karta
+
+
+def test_karta_cannot_approve_without_all_grades(client, db_session, sample_student, sample_zaklad, sample_uopz):
+    praktyka, karta = _karta_setup(client, db_session, sample_student, sample_zaklad, sample_uopz)
+    client.get(f'/auth/login?mock_email={sample_uopz.email}&mock_rola=uopz')
+
+    # Brak oceny ze sprawozdania -> nie można zatwierdzić
+    response = client.patch(f'/api/v1/karta-praktyki/{karta.id}', json={
+        "ocena_param_uopz": 4.0, "status": "Approved"
+    })
+    assert response.status_code == 400
+    assert response.get_json()["error"]["code"] == "KARTA_INCOMPLETE"
+    assert KartaPraktyki.query.get(karta.id).status != "Approved"
+
+
+def test_karta_auto_finalizes_when_complete(client, db_session, sample_student, sample_zaklad, sample_uopz):
+    praktyka, karta = _karta_setup(client, db_session, sample_student, sample_zaklad, sample_uopz)
+    client.get(f'/auth/login?mock_email={sample_uopz.email}&mock_rola=uopz')
+
+    # Komplet ocen bez jawnego statusu -> automatyczne zatwierdzenie
+    response = client.patch(f'/api/v1/karta-praktyki/{karta.id}', json={
+        "ocena_param_uopz": 4.0, "ocena_sprawozdania": 4.5, "ocena_opisowa_uopz": "ok"
+    })
+    assert response.status_code == 200
+    assert response.get_json()["data"]["status"] == "Approved"
