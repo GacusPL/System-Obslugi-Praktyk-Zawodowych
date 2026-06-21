@@ -54,8 +54,9 @@ def login():
         try:
             auth_url = get_auth_url()
             return redirect(auth_url)
-        except ValueError as e:
-            flash("Nie można nawiązać połączenia z usługą Microsoft OAuth. Sprawdź konfigurację MICROSOFT_AUTHORITY / tenant ID lub użyj logowania lokalnego.", "danger")
+        except Exception as e:
+            current_app.logger.exception("Błąd inicjacji logowania Microsoft")
+            flash("Nie można nawiązać połączenia z usługą Microsoft OAuth (sprawdź konfigurację MICROSOFT_* oraz dostęp do sieci). Spróbuj ponownie.", "danger")
             return redirect(url_for('auth.login'))
 
     if is_dev or current_app.config.get('TESTING'):
@@ -74,13 +75,19 @@ def callback():
         flash("Błąd logowania: brak kodu autoryzacyjnego.", "danger")
         return redirect(url_for('auth.login'))
         
-    token_response = get_token_from_code(code)
-    if "error" in token_response:
-        flash(f"Błąd logowania Microsoft: {token_response.get('error_description')}", "danger")
+    try:
+        token_response = get_token_from_code(code)
+        if "error" in token_response:
+            flash(f"Błąd logowania Microsoft: {token_response.get('error_description')}", "danger")
+            return redirect(url_for('auth.login'))
+
+        access_token = token_response.get('access_token')
+        user_info = get_user_info(access_token)
+    except Exception:
+        current_app.logger.exception("Błąd wymiany kodu / pobierania danych użytkownika Microsoft")
+        flash("Błąd komunikacji z usługą Microsoft (sieć/konfiguracja). Spróbuj zalogować się ponownie.", "danger")
         return redirect(url_for('auth.login'))
-        
-    access_token = token_response.get('access_token')
-    user_info = get_user_info(access_token)
+
     if not user_info:
         flash("Nie udało się pobrać informacji o użytkowniku z Microsoft Graph.", "danger")
         return redirect(url_for('auth.login'))
